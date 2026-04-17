@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Late Knight Shift — prototype</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #111; color: #eee; margin: 2rem; }
+    h1 { font-size: 1.1rem; margin-bottom: 1rem; }
+    #board {
+      display: grid;
+      grid-template-columns: repeat(8, 48px);
+      grid-template-rows: repeat(8, 48px);
+      gap: 0;
+      width: max-content;
+      border: 1px solid #444;
+    }
+    .sq { width: 48px; height: 48px; }
+    .light { background: #d9c9a3; }
+    .dark  { background: #6b4a2b; }
+  </style>
+</head>
+<body>
+  <h1>Late Knight Shift — prototype</h1>
+  <div id="board"></div>
+  <script>
+    const board = document.getElementById("board");
+    for (let r = 0; r < 8; r++) {
+      for (let f = 0; f < 8; f++) {
+        const sq = document.createElement("div");
+        sq.className = "sq " + (((r + f) % 2 === 0) ? "light" : "dark");
+        board.appendChild(sq);
+      }
+    }
+  </script>
+</body>
+</html>
