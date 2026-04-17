@@ -1,5 +1,8 @@
+import pathlib
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, field_validator
 from backend.engine import GameState, VALID_CHARACTERS
 
@@ -10,6 +13,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+_FRONTEND = pathlib.Path(__file__).parent.parent / "frontend"
+app.mount("/static", StaticFiles(directory=_FRONTEND), name="static")
+
+
+@app.get("/")
+def index():
+    return FileResponse(_FRONTEND / "index.html")
 
 # In-memory game store (single session for prototype)
 _games: dict[str, GameState] = {}
