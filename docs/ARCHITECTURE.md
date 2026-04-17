@@ -27,6 +27,7 @@
 - python-chess (move validation, board)
 - pytest, httpx (tests)
 - Vanilla JS / HTML / CSS grid
+- Local env: `.venv/` in repo root (gitignored); activate before running any python/pytest command
 
 ## Transport
 - HTTP first; WebSocket later if needed

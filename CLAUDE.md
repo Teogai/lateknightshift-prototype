@@ -39,6 +39,13 @@
 - No build tools, no bundler
 - HTTP first, WebSocket later
 
-## Run
+## Run (local)
+- Activate venv first: `source .venv/bin/activate` (Linux/Mac) or `.venv\Scripts\activate` (Windows)
+- Tests: `.venv/Scripts/python -m pytest backend/tests/ -v`
+- Server: `bash backend/run.sh` or `.venv/Scripts/python -m uvicorn backend.server:app --reload`
+- Windows PowerShell: `.venv\Scripts\python.exe -m pytest backend/tests/ -v`
+
+## Run (devcontainer)
+- No venv needed inside container
 - Tests: `python -m pytest backend/tests/ -v`
-- Server: `bash backend/run.sh` or `python -m uvicorn backend.server:app --reload`
+- Server: `bash backend/run.sh`
