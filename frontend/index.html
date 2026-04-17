@@ -4,33 +4,362 @@
   <meta charset="utf-8" />
   <title>Late Knight Shift — prototype</title>
   <style>
+    *, *::before, *::after { box-sizing: border-box; }
     body { font-family: system-ui, sans-serif; background: #111; color: #eee; margin: 2rem; }
     h1 { font-size: 1.1rem; margin-bottom: 1rem; }
+
+    /* --- Screens --- */
+    .hidden { display: none !important; }
+
+    /* --- Character select --- */
+    #screen-select { max-width: 320px; }
+    #screen-select p { color: #aaa; margin-bottom: 1rem; }
+    .char-btn {
+      display: block; width: 100%; margin-bottom: 0.5rem;
+      padding: 0.6rem 1rem; font-size: 1rem;
+      background: #1e2a1e; color: #eee;
+      border: 1px solid #4a7a4a; border-radius: 4px; cursor: pointer;
+    }
+    .char-btn:hover { background: #2a3d2a; }
+    #select-error { color: #e05555; font-size: 0.85rem; min-height: 1.2em; }
+
+    /* --- Game layout --- */
+    #layout { display: flex; gap: 2rem; align-items: flex-start; }
+
+    /* --- Board --- */
     #board {
       display: grid;
-      grid-template-columns: repeat(8, 48px);
-      grid-template-rows: repeat(8, 48px);
+      grid-template-columns: repeat(8, 52px);
+      grid-template-rows: repeat(8, 52px);
       gap: 0;
+      border: 2px solid #444;
       width: max-content;
-      border: 1px solid #444;
     }
-    .sq { width: 48px; height: 48px; }
+    .sq {
+      width: 52px; height: 52px;
+      position: relative; cursor: pointer;
+      font-size: 30px;
+      display: flex; align-items: center; justify-content: center;
+      user-select: none;
+    }
     .light { background: #d9c9a3; }
     .dark  { background: #6b4a2b; }
+    .sq.selected-from { outline: 3px solid #f0e040; outline-offset: -3px; }
+    .piece-white { color: #f5f0e0; text-shadow: 0 0 3px #000, 0 0 1px #000; }
+    .piece-black { color: #1a1a1a; text-shadow: 0 0 3px #888; }
+
+    /* --- Controls column --- */
+    #controls-col {
+      display: flex; flex-direction: column; gap: 0.75rem;
+      min-width: 210px;
+    }
+    #status-bar { font-weight: bold; font-size: 1rem; min-height: 1.4em; }
+    .your-turn  { color: #7fc97f; }
+    .enemy-turn { color: #f4a460; }
+    .game-over  { color: #e05555; font-size: 1.2rem; }
+    #mana-display { color: #88ccff; font-size: 0.95rem; }
+    #deck-info { color: #888; font-size: 0.8rem; }
+
+    /* --- Hand --- */
+    #hand { display: flex; flex-direction: column; gap: 0.4rem; }
+    .card-btn {
+      padding: 0.45rem 0.7rem;
+      background: #2a2a3a; color: #eee;
+      border: 1px solid #555; border-radius: 4px;
+      cursor: pointer; text-align: left; width: 100%;
+      font-size: 0.9rem;
+    }
+    .card-btn:hover:not(:disabled) { border-color: #aaa; }
+    .card-btn.selected { border-color: #f0e040; background: #3a3a1a; }
+    .card-btn.unaffordable { opacity: 0.45; cursor: not-allowed; }
+
+    /* --- End turn button --- */
+    #btn-end-turn {
+      padding: 0.5rem 1rem; font-size: 0.95rem;
+      background: #1e3a1e; color: #eee;
+      border: 1px solid #4a7a4a; border-radius: 4px; cursor: pointer;
+      margin-top: 0.25rem;
+    }
+    #btn-end-turn:hover:not(:disabled) { background: #2a4a2a; }
+    #btn-end-turn:disabled { opacity: 0.4; cursor: not-allowed; }
+    #action-hint { color: #aaa; font-size: 0.85rem; min-height: 1.2em; }
   </style>
 </head>
 <body>
-  <h1>Late Knight Shift — prototype</h1>
-  <div id="board"></div>
+
+  <!-- Screen 1: Character select -->
+  <div id="screen-select">
+    <h1>Late Knight Shift</h1>
+    <p>Choose your character</p>
+    <button class="char-btn" id="btn-knight">The Knight — K + R + N + 2P</button>
+    <button class="char-btn" id="btn-bishop">The Bishop — K + 2B + 2P</button>
+    <p id="select-error"></p>
+  </div>
+
+  <!-- Screen 2: Game -->
+  <div id="screen-game" class="hidden">
+    <div id="layout">
+
+      <div id="board-col">
+        <div id="status-bar"></div>
+        <div id="board"></div>
+      </div>
+
+      <div id="controls-col">
+        <div id="mana-display"></div>
+        <div id="deck-info"></div>
+        <div id="hand"></div>
+        <button id="btn-end-turn">End Turn</button>
+        <div id="action-hint"></div>
+      </div>
+
+    </div>
+  </div>
+
   <script>
-    const board = document.getElementById("board");
-    for (let r = 0; r < 8; r++) {
-      for (let f = 0; f < 8; f++) {
-        const sq = document.createElement("div");
-        sq.className = "sq " + (((r + f) % 2 === 0) ? "light" : "dark");
-        board.appendChild(sq);
+    const API = 'http://localhost:8000';
+
+    const PIECES = {
+      white: { king:'♔', queen:'♕', rook:'♖', bishop:'♗', knight:'♘', pawn:'♙' },
+      black: { king:'♚', queen:'♛', rook:'♜', bishop:'♝', knight:'♞', pawn:'♟' },
+    };
+
+    let gameState = null;
+
+    const uiState = {
+      phase: 'idle',
+      selectedCardIndex: null,
+      selectedCardType: null,
+      selectedPieceType: null,
+      fromSq: null,
+    };
+
+    function resetUiState() {
+      uiState.phase = 'idle';
+      uiState.selectedCardIndex = null;
+      uiState.selectedCardType = null;
+      uiState.selectedPieceType = null;
+      uiState.fromSq = null;
+    }
+
+    // --- API helpers ---
+
+    async function apiFetch(path, method = 'GET', body = null) {
+      const opts = { method, headers: {} };
+      if (body !== null) {
+        opts.headers['Content-Type'] = 'application/json';
+        opts.body = JSON.stringify(body);
+      }
+      const res = await fetch(API + path, opts);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || res.statusText);
+      return data;
+    }
+
+    async function apiNewGame(character) {
+      gameState = await apiFetch('/game/new', 'POST', { character });
+    }
+
+    async function apiPlayMove(cardIndex, fromSq, toSq) {
+      gameState = await apiFetch('/game/play/move', 'POST', { card_index: cardIndex, from_sq: fromSq, to_sq: toSq });
+    }
+
+    async function apiPlaySummon(cardIndex, pieceType, toSq) {
+      gameState = await apiFetch('/game/play/summon', 'POST', { card_index: cardIndex, piece_type: pieceType, to_sq: toSq });
+    }
+
+    async function apiEndTurn() {
+      gameState = await apiFetch('/game/end-turn', 'POST');
+    }
+
+    // --- Render ---
+
+    function render() {
+      renderBoard();
+      renderHand();
+      renderStatus();
+    }
+
+    function renderBoard() {
+      const boardEl = document.getElementById('board');
+      boardEl.innerHTML = '';
+      for (let rank = 7; rank >= 0; rank--) {
+        for (let file = 0; file < 8; file++) {
+          const sqName = 'abcdefgh'[file] + (rank + 1);
+          const isLight = (rank + file) % 2 === 0;
+          const div = document.createElement('div');
+          div.className = 'sq ' + (isLight ? 'light' : 'dark');
+          div.dataset.sq = sqName;
+          if (uiState.phase === 'from_selected' && uiState.fromSq === sqName) {
+            div.classList.add('selected-from');
+          }
+          const piece = gameState && gameState.board[sqName];
+          if (piece) {
+            const span = document.createElement('span');
+            span.className = piece.color === 'white' ? 'piece-white' : 'piece-black';
+            span.textContent = PIECES[piece.color][piece.type] || '?';
+            div.appendChild(span);
+          }
+          div.addEventListener('click', () => handleSquareClick(sqName));
+          boardEl.appendChild(div);
+        }
       }
     }
+
+    function renderHand() {
+      const handEl = document.getElementById('hand');
+      handEl.innerHTML = '';
+      if (!gameState) return;
+      gameState.hand.forEach((card, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'card-btn';
+        btn.textContent = `${card.name}  (${card.cost})`;
+        if (idx === uiState.selectedCardIndex) btn.classList.add('selected');
+        if (card.cost > gameState.mana) {
+          btn.classList.add('unaffordable');
+          btn.disabled = true;
+        }
+        btn.addEventListener('click', () => handleCardClick(idx, card));
+        handEl.appendChild(btn);
+      });
+    }
+
+    function renderStatus() {
+      if (!gameState) return;
+      const statusEl = document.getElementById('status-bar');
+      statusEl.className = '';
+      const isOver = gameState.turn === 'player_won' || gameState.turn === 'enemy_won';
+      if (gameState.turn === 'player') {
+        statusEl.textContent = 'Your turn';
+        statusEl.classList.add('your-turn');
+      } else if (gameState.turn === 'enemy') {
+        statusEl.textContent = 'Enemy thinking…';
+        statusEl.classList.add('enemy-turn');
+      } else if (gameState.turn === 'player_won') {
+        statusEl.textContent = 'You win!';
+        statusEl.classList.add('game-over');
+      } else if (gameState.turn === 'enemy_won') {
+        statusEl.textContent = 'Game over.';
+        statusEl.classList.add('game-over');
+      }
+      document.getElementById('mana-display').textContent = `Mana: ${gameState.mana} / 3`;
+      document.getElementById('deck-info').textContent = `Deck: ${gameState.deck_size}  |  Discard: ${gameState.discard_size}`;
+      const endBtn = document.getElementById('btn-end-turn');
+      endBtn.disabled = gameState.turn !== 'player';
+    }
+
+    function setHint(text) {
+      document.getElementById('action-hint').textContent = text;
+    }
+
+    // --- Interaction ---
+
+    function handleCardClick(index, card) {
+      if (!gameState || gameState.turn !== 'player') return;
+      if (uiState.phase !== 'idle' && uiState.selectedCardIndex === index) {
+        resetUiState();
+        setHint('');
+        render();
+        return;
+      }
+      if (card.cost > gameState.mana) return;
+      uiState.phase = 'card_selected';
+      uiState.selectedCardIndex = index;
+      uiState.selectedCardType = card.type;
+      uiState.selectedPieceType = card.piece || null;
+      if (card.type === 'move') {
+        setHint('Click a friendly piece to move');
+      } else if (card.type === 'summon') {
+        setHint(`Click a valid square to summon ${card.piece}`);
+      }
+      render();
+    }
+
+    async function handleSquareClick(sq) {
+      if (uiState.phase === 'idle') return;
+
+      if (uiState.phase === 'card_selected') {
+        if (uiState.selectedCardType === 'move') {
+          const piece = gameState.board[sq];
+          if (piece && piece.color === 'white') {
+            uiState.phase = 'from_selected';
+            uiState.fromSq = sq;
+            setHint('Click a square to move to');
+            render();
+          } else {
+            setHint('Pick a friendly piece');
+          }
+        } else if (uiState.selectedCardType === 'summon') {
+          if (gameState.board[sq]) {
+            setHint('Square is occupied');
+            return;
+          }
+          try {
+            await apiPlaySummon(uiState.selectedCardIndex, uiState.selectedPieceType, sq);
+            resetUiState();
+            setHint('');
+            render();
+          } catch (e) {
+            setHint(e.message);
+            resetUiState();
+            render();
+          }
+        }
+        return;
+      }
+
+      if (uiState.phase === 'from_selected') {
+        if (sq === uiState.fromSq) {
+          uiState.phase = 'card_selected';
+          uiState.fromSq = null;
+          setHint('Click a friendly piece to move');
+          render();
+          return;
+        }
+        try {
+          await apiPlayMove(uiState.selectedCardIndex, uiState.fromSq, sq);
+          resetUiState();
+          setHint('');
+          render();
+        } catch (e) {
+          setHint(e.message);
+          resetUiState();
+          render();
+        }
+      }
+    }
+
+    async function handleEndTurn() {
+      const btn = document.getElementById('btn-end-turn');
+      btn.disabled = true;
+      resetUiState();
+      setHint('');
+      try {
+        await apiEndTurn();
+        render();
+      } catch (e) {
+        setHint(e.message);
+        render();
+      }
+    }
+
+    async function startGame(character) {
+      document.getElementById('select-error').textContent = '';
+      try {
+        await apiNewGame(character);
+        document.getElementById('screen-select').classList.add('hidden');
+        document.getElementById('screen-game').classList.remove('hidden');
+        resetUiState();
+        render();
+      } catch (e) {
+        document.getElementById('select-error').textContent = e.message;
+      }
+    }
+
+    // --- Init ---
+    document.getElementById('btn-knight').addEventListener('click', () => startGame('knight'));
+    document.getElementById('btn-bishop').addEventListener('click', () => startGame('bishop'));
+    document.getElementById('btn-end-turn').addEventListener('click', handleEndTurn);
   </script>
 </body>
 </html>
