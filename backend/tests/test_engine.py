@@ -28,15 +28,6 @@ def test_new_game_knight_pieces():
     assert len(player_pieces) == 5
 
 
-def test_new_game_bishop_pieces():
-    r = client.post("/game/new", json={"character": "bishop"})
-    data = r.json()
-    board = data["board"]
-    pieces = list(board.values())
-    player_pieces = [p for p in pieces if p["color"] == "white"]
-    # Bishop character: K + 2P + 2B = 5 pieces
-    assert len(player_pieces) == 5
-
 
 def test_new_game_enemy_pieces():
     r = client.post("/game/new", json={"character": "knight"})

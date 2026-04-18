@@ -43,7 +43,9 @@
     }
     .light { background: #d9c9a3; }
     .dark  { background: #6b4a2b; }
-    .sq.selected-from { outline: 3px solid #f0e040; outline-offset: -3px; }
+    .sq.selected-from  { outline: 3px solid #f0e040; outline-offset: -3px; }
+    .sq.knight-target  { outline: 3px solid #40c0f0; outline-offset: -3px; }
+    .sq.already-moved .piece-img { opacity: 0.4; }
     .piece-img { width: 46px; height: 46px; display: block; pointer-events: none; }
 
     /* --- Controls column --- */
@@ -90,7 +92,6 @@
     <h1>Late Knight Shift</h1>
     <p>Choose your character</p>
     <button class="char-btn" id="btn-knight">The Knight — K + R + N + 2P</button>
-    <button class="char-btn" id="btn-bishop">The Bishop — K + 2B + 2P</button>
     <p id="select-error"></p>
   </div>
 
@@ -144,6 +145,7 @@
       selectedCardType: null,
       selectedPieceType: null,
       fromSq: null,
+      knightTargets: [],
     };
 
     function resetUiState() {
@@ -152,6 +154,16 @@
       uiState.selectedCardType = null;
       uiState.selectedPieceType = null;
       uiState.fromSq = null;
+      uiState.knightTargets = [];
+    }
+
+    function knightAttacks(sq) {
+      const file = sq.charCodeAt(0) - 97;
+      const rank = parseInt(sq[1]) - 1;
+      return [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]
+        .map(([df, dr]) => [file + df, rank + dr])
+        .filter(([f, r]) => f >= 0 && f < 8 && r >= 0 && r < 8)
+        .map(([f, r]) => 'abcdefgh'[f] + (r + 1));
     }
 
     // --- API helpers ---
@@ -180,6 +192,10 @@
       gameState = await apiFetch('/game/play/summon', 'POST', { card_index: cardIndex, piece_type: pieceType, to_sq: toSq });
     }
 
+    async function apiPlayKnightMove(cardIndex, fromSq, toSq) {
+      gameState = await apiFetch('/game/play/knight-move', 'POST', { card_index: cardIndex, from_sq: fromSq, to_sq: toSq });
+    }
+
     async function apiEndTurn() {
       gameState = await apiFetch('/game/end-turn', 'POST');
     }
@@ -195,6 +211,7 @@
     function renderBoard() {
       const boardEl = document.getElementById('board');
       boardEl.innerHTML = '';
+      const movedSet = new Set(gameState ? (gameState.moved_this_turn || []) : []);
       for (let rank = 7; rank >= 0; rank--) {
         for (let file = 0; file < 8; file++) {
           const sqName = 'abcdefgh'[file] + (rank + 1);
@@ -202,8 +219,11 @@
           const div = document.createElement('div');
           div.className = 'sq ' + (isLight ? 'light' : 'dark');
           div.dataset.sq = sqName;
-          if (uiState.phase === 'from_selected' && uiState.fromSq === sqName) {
+          if ((uiState.phase === 'from_selected' || uiState.phase === 'knight_from_selected') && uiState.fromSq === sqName) {
             div.classList.add('selected-from');
+          }
+          if (uiState.knightTargets.includes(sqName)) {
+            div.classList.add('knight-target');
           }
           const piece = gameState && gameState.board[sqName];
           if (piece) {
@@ -211,6 +231,9 @@
             img.src = PIECES[piece.color][piece.type];
             img.className = 'piece-img';
             img.alt = piece.color + ' ' + piece.type;
+            if (piece.color === 'white' && movedSet.has(sqName)) {
+              div.classList.add('already-moved');
+            }
             div.appendChild(img);
           }
           div.addEventListener('click', () => handleSquareClick(sqName));
@@ -282,6 +305,8 @@
       uiState.selectedPieceType = card.piece || null;
       if (card.type === 'move') {
         setHint('Click a friendly piece to move');
+      } else if (card.type === 'knight_move') {
+        setHint('Knight Move: click a friendly piece to teleport');
       } else if (card.type === 'summon') {
         setHint(`Click a valid square to summon ${card.piece}`);
       }
@@ -298,6 +323,20 @@
             uiState.phase = 'from_selected';
             uiState.fromSq = sq;
             setHint('Click a square to move to');
+            render();
+          } else {
+            setHint('Pick a friendly piece');
+          }
+        } else if (uiState.selectedCardType === 'knight_move') {
+          const piece = gameState.board[sq];
+          if (piece && piece.color === 'white') {
+            uiState.phase = 'knight_from_selected';
+            uiState.fromSq = sq;
+            uiState.knightTargets = knightAttacks(sq).filter(t => {
+              const p = gameState.board[t];
+              return !p || p.color === 'black';
+            });
+            setHint('Click a highlighted square to teleport');
             render();
           } else {
             setHint('Pick a friendly piece');
@@ -340,6 +379,31 @@
           render();
         }
       }
+
+      if (uiState.phase === 'knight_from_selected') {
+        if (sq === uiState.fromSq) {
+          uiState.phase = 'card_selected';
+          uiState.fromSq = null;
+          uiState.knightTargets = [];
+          setHint('Knight Move: click a friendly piece to teleport');
+          render();
+          return;
+        }
+        if (!uiState.knightTargets.includes(sq)) {
+          setHint('Not a valid knight-jump square');
+          return;
+        }
+        try {
+          await apiPlayKnightMove(uiState.selectedCardIndex, uiState.fromSq, sq);
+          resetUiState();
+          setHint('');
+          render();
+        } catch (e) {
+          setHint(e.message);
+          resetUiState();
+          render();
+        }
+      }
     }
 
     async function handleEndTurn() {
@@ -371,7 +435,6 @@
 
     // --- Init ---
     document.getElementById('btn-knight').addEventListener('click', () => startGame('knight'));
-    document.getElementById('btn-bishop').addEventListener('click', () => startGame('bishop'));
     document.getElementById('btn-end-turn').addEventListener('click', handleEndTurn);
   </script>
 </body>

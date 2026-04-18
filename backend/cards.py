@@ -13,20 +13,16 @@ def summon_card(piece: str, cost: int = 2) -> Card:
     return {"name": f"Summon {piece.capitalize()}", "type": "summon", "piece": piece, "cost": cost}
 
 
+def knight_move_card() -> Card:
+    return {"name": "Knight Move", "type": "knight_move", "cost": 2}
+
+
 STARTER_DECKS: dict[str, list[Card]] = {
     "knight": [
         move_card(1), move_card(1), move_card(1), move_card(1), move_card(1),
-        move_card(0), move_card(0),
-        summon_card("knight", 2),
-        summon_card("pawn", 1),
-        summon_card("rook", 3),
-    ],
-    "bishop": [
-        move_card(1), move_card(1), move_card(1), move_card(1), move_card(1),
-        move_card(0), move_card(0),
-        summon_card("bishop", 2),
-        summon_card("pawn", 1),
-        summon_card("pawn", 1),
+        move_card(1), move_card(1),
+        summon_card("pawn", 1), summon_card("pawn", 1),
+        knight_move_card(),
     ],
 }
 

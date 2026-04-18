@@ -5,5 +5,4 @@
 
 ## Prototype roster
 
-- The Knight — K(e1) + R(a1) + N(b1) + 2P(d2,e2) | deck: see CARDS.md | relic TBD | signature TBD
-- The Bishop — K(e1) + 2B(c1,f1) + 2P(d2,e2) | deck: see CARDS.md | relic TBD | signature TBD
+- The Knight — K(e1) + R(a1) + N(b1) + 2P(d2,e2) | deck: see CARDS.md | relic TBD | signature: Knight Move

@@ -5,7 +5,7 @@
 
 ## Floor 1
 
-- Pawn Pusher — K(e8) + 4P(a7,c7,e7,g7) | ai: random move, prefers king capture | implemented
+- Pawn Pusher — K(e8) + 4P(a7,c7,e7,g7) | ai: pattern-based (see AI rules) | implemented
 - Lone Rook — TBD
 - Knight Rider — TBD
 - Bishop Pair — TBD
@@ -20,5 +20,6 @@
 
 ## AI rules
 
-- Enemy picks a random pseudo-legal move each turn
-- Always takes the white king if it can reach it
+- Priority order: king capture > any capture > advance most-forward pawn > random
+- "Most forward pawn" = pawn on lowest rank (closest to rank 1)
+- Pawn reaching rank 1 promotes to queen

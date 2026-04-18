@@ -72,6 +72,17 @@ class PlaySummonRequest(BaseModel):
     to_sq: str
 
 
+@app.post("/game/play/knight-move")
+def play_knight_move(req: PlayMoveRequest):
+    state = _games.get("current")
+    if state is None:
+        raise HTTPException(status_code=404, detail="no active game")
+    result = state.play_knight_move_card(req.card_index, req.from_sq, req.to_sq)
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    return state.to_dict()
+
+
 @app.post("/game/play/summon")
 def play_summon(req: PlaySummonRequest):
     state = _games.get("current")
