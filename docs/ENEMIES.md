@@ -25,4 +25,4 @@
 - Difficulty = search depth (not randomness); base 2, adaptive boost when few pieces remain
 - Tie-break: equal minimax scores resolved by higher immediate eval (achieve goals sooner)
 - Pawn reaching rank 1 promotes to queen (execution in `engine.endTurn`, not in search tree)
-- Personalities: PAWN_PUSHER, LONE_ROOK, KNIGHT_RIDER, BISHOP_PAIR implemented in `js/ai.js`; DUELIST / CASTELLAN documented as comments
+- Personalities: PAWN_PUSHER, LONE_ROOK, KNIGHT_RIDER, BISHOP_PAIR defined in `js/enemies.js`; loaded by `js/ai.js`; DUELIST / CASTELLAN TBD
