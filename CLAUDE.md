@@ -51,7 +51,7 @@
 - Screenshots are slow and unreliable; JS queries are fast and exact
 - Before starting backend for tests: check if it's already running (e.g. `netstat -ano | grep :8000`)
   - If running: ask user whether to kill it or skip testing
-- After tests complete: always stop the backend (`preview_stop`)
+- **ALWAYS call `preview_stop` after every test session — no exceptions, do not skip**
 
 ## Run (devcontainer)
 - No venv needed inside container

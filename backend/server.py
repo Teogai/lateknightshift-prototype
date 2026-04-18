@@ -111,3 +111,11 @@ def get_state():
     if state is None:
         raise HTTPException(status_code=404, detail="no active game")
     return state.to_dict()
+
+
+@app.get("/game/legal-moves/{square}")
+def legal_moves(square: str):
+    state = _games.get("current")
+    if state is None:
+        raise HTTPException(status_code=404, detail="no active game")
+    return {"square": square, "destinations": state.legal_destinations_for(square)}

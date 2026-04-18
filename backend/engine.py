@@ -65,8 +65,10 @@ class GameState:
         self.turn: Literal["player", "enemy", "player_won", "enemy_won"] = "player"
         self.summoned_this_turn: set[chess.Square] = set()
         self.moved_this_turn: set[chess.Square] = set()
+        self.last_move: tuple[str | None, str | None] = (None, None)
 
     def to_dict(self) -> dict:
+        check = self._check_info()
         return {
             "board": board_to_dict(self.board),
             "mana": self.mana,
@@ -75,6 +77,10 @@ class GameState:
             "deck_size": len(self.deck),
             "discard_size": len(self.discard),
             "moved_this_turn": [chess.square_name(sq) for sq in self.moved_this_turn],
+            "summoned_this_turn": [chess.square_name(sq) for sq in self.summoned_this_turn],
+            "last_move": {"from": self.last_move[0], "to": self.last_move[1]},
+            "in_check": check["in_check"],
+            "check_attacker_sq": check["check_attacker_sq"],
         }
 
     def legal_moves_for(self, color: chess.Color) -> list[chess.Move]:
@@ -117,6 +123,7 @@ class GameState:
         self.mana -= card["cost"]
         self.discard.append(hand.pop(card_index))
         self.moved_this_turn.add(to_square)
+        self.last_move = (from_sq, to_sq)
         self._check_king_captured()
         return {"ok": True}
 
@@ -154,6 +161,7 @@ class GameState:
         self.mana -= card["cost"]
         self.discard.append(hand.pop(card_index))
         self.moved_this_turn.add(to_square)
+        self.last_move = (from_sq, to_sq)
         self._check_king_captured()
         return {"ok": True}
 
@@ -193,6 +201,7 @@ class GameState:
         self.summoned_this_turn.add(to_square)
         self.mana -= card["cost"]
         self.discard.append(hand.pop(card_index))
+        self.last_move = (None, to_sq)
         return {"ok": True}
 
     def end_turn(self) -> dict:
@@ -218,10 +227,12 @@ class GameState:
 
             if king_captures:
                 chosen = king_captures[0]
+                self.last_move = (chess.square_name(chosen.from_square), chess.square_name(chosen.to_square))
                 self.board.turn = chess.BLACK
                 self.board.push(chosen)
             elif captures:
                 chosen = captures[0]
+                self.last_move = (chess.square_name(chosen.from_square), chess.square_name(chosen.to_square))
                 self.board.turn = chess.BLACK
                 self.board.push(chosen)
             else:
@@ -240,11 +251,13 @@ class GameState:
                         uci = chess.square_name(most_forward) + chess.square_name(target_sq)
                         if target_rank == 0:
                             uci += "q"  # promote to queen
+                        self.last_move = (chess.square_name(most_forward), chess.square_name(target_sq))
                         self.board.turn = chess.BLACK
                         self.board.push_uci(uci)
                         moved = True
                 if not moved:
                     chosen = random.choice(moves)
+                    self.last_move = (chess.square_name(chosen.from_square), chess.square_name(chosen.to_square))
                     self.board.turn = chess.BLACK
                     self.board.push(chosen)
 
@@ -267,6 +280,31 @@ class GameState:
             self.hand = drawn
 
         return {"ok": True}
+
+    def _check_info(self) -> dict:
+        white_king_sq = self.board.king(chess.WHITE)
+        if white_king_sq is None:
+            return {"in_check": False, "check_attacker_sq": None}
+        in_check = self.board.is_attacked_by(chess.BLACK, white_king_sq)
+        if not in_check:
+            return {"in_check": False, "check_attacker_sq": None}
+        attackers = self.board.attackers(chess.BLACK, white_king_sq)
+        attacker_sq = chess.square_name(next(iter(attackers))) if attackers else None
+        return {"in_check": True, "check_attacker_sq": attacker_sq}
+
+    def legal_destinations_for(self, sq: str) -> list[str]:
+        from_square = chess.parse_square(sq)
+        piece = self.board.piece_at(from_square)
+        if piece is None or piece.color != chess.WHITE:
+            return []
+        if from_square in self.summoned_this_turn or from_square in self.moved_this_turn:
+            return []
+        self.board.turn = chess.WHITE
+        return [
+            chess.square_name(m.to_square)
+            for m in self.board.pseudo_legal_moves
+            if m.from_square == from_square
+        ]
 
     def _check_king_captured(self):
         white_king = any(
