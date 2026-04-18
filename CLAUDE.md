@@ -45,6 +45,11 @@
 - Server: `bash backend/run.sh` or `.venv/Scripts/python -m uvicorn backend.server:app --reload`
 - Windows PowerShell: `.venv\Scripts\python.exe -m pytest backend/tests/ -v`
 
+## Frontend testing
+- Use `preview_eval` with JS selectors to inspect state — not `preview_screenshot`
+- e.g. `document.getElementById('deck-info').textContent` or `gameState.discard_size`
+- Screenshots are slow and unreliable; JS queries are fast and exact
+
 ## Run (devcontainer)
 - No venv needed inside container
 - Tests: `python -m pytest backend/tests/ -v`
