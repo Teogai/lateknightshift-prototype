@@ -1,12 +1,13 @@
 # ARCHITECTURE
 
-## Frontend JS modules
-- `frontend/js/cards.js` — card factories, STARTER_DECKS, buildStarterDeck, dealHand
-- `frontend/js/engine.js` — GameState class, board logic, chess.js wrapper, all card-play methods, endTurn AI
-- `frontend/js/ui.js` — DOM render functions, interaction handlers, uiState
-- `frontend/js/main.js` — entry point, event listener wiring
-- `frontend/style.css` — all styles (extracted from old index.html)
-- `frontend/index.html` — HTML shell only; loads style.css + main.js
+## Source files (project root)
+- `js/cards.js` — card factories, STARTER_DECKS, buildStarterDeck, dealHand
+- `js/engine.js` — GameState class, board logic, chess.js wrapper, all card-play methods, endTurn AI
+- `js/ui.js` — DOM render functions, interaction handlers, uiState
+- `js/main.js` — entry point, event listener wiring
+- `style.css` — all styles
+- `index.html` — HTML shell only; loads style.css + main.js
+- `pieces/` — chess piece PNG assets
 
 ## Tests
 - `tests/` — Vitest suite (58 tests, 1-1 port of former pytest suite)

@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest';
-import { GameState } from '../frontend/js/engine.js';
+import { GameState } from '../js/engine.js';
 
 function setupPawnOnE7() {
   const state = new GameState('knight');

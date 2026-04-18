@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { GameState, CHARACTER_PIECES, ENEMY_PIECES, HAND_SIZE, STARTING_MANA } from '../frontend/js/engine.js';
+import { GameState, CHARACTER_PIECES, ENEMY_PIECES, HAND_SIZE, STARTING_MANA } from '../js/engine.js';
 
 function freshGame(character = 'knight') {
   return new GameState(character);

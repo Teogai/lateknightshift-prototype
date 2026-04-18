@@ -1,6 +1,6 @@
 import { test, expect } from 'vitest';
-import { GameState } from '../frontend/js/engine.js';
-import { STARTER_DECKS } from '../frontend/js/cards.js';
+import { GameState } from '../js/engine.js';
+import { STARTER_DECKS } from '../js/cards.js';
 
 function freshGame() {
   return new GameState('knight');
