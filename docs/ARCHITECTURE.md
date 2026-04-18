@@ -2,7 +2,9 @@
 
 ## Source files (project root)
 - `js/cards.js` — card factories, STARTER_DECKS, buildStarterDeck, dealHand
-- `js/engine.js` — GameState class, board logic, chess.js wrapper, all card-play methods, endTurn AI dispatch
+- `js/engine.js` — GameState class + barrel re-exports; import from here for public API
+- `js/engine/constants.js` — game constants (STARTING_MANA, HAND_SIZE, VALID_PROMO, piece configs)
+- `js/engine/board.js` — standalone board helpers: boardToDict, knightAttacks, makeBoard, move generation, attack geometry, pseudoLegal/geometric move enumeration
 - `js/ai.js` — minimax+alpha-beta enemy engine: generateMoves, makeMove/unmakeMove, evaluate, selectMove, personality constants
 - `js/ui.js` — DOM render functions, interaction handlers, uiState
 - `js/main.js` — entry point, event listener wiring

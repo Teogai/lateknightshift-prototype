@@ -12,3 +12,4 @@
 - [2026-04-19] minimax+alpha-beta AI - personality via eval weights, difficulty via depth
 - [2026-04-19] r^2 pawn_advance scoring - breaks ties toward most-advanced pawn
 - [2026-04-19] immediate-eval tie-break in selectMove - prefer sooner win over detour
+- [2026-04-19] ~300 line module limit, barrel re-exports - Claude Code loads only relevant files per task

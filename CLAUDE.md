@@ -25,6 +25,13 @@
 - `docs/TASKS.md`: `[YYYY-MM-DD] done: <x>` / `[YYYY-MM-DD] todo: <x>`
 - `docs/DECISIONS.md`: `[YYYY-MM-DD] <decision> - <reason <10 words>`
 
+## Modules
+- One clear responsibility per file
+- Soft limit: ~300 lines per module
+- When a file approaches that limit, split by concern before adding more code
+- Name new files so Claude Code can load only what's relevant to the task
+- Use barrel re-exports in the parent file to keep public API unchanged after splits
+
 ## Doc rules
 - Flat bullets, no prose, <200 lines per file
 - Split by concern; link between docs instead of duplicating

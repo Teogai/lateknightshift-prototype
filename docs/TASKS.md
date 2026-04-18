@@ -11,3 +11,4 @@
 - [2026-04-18] todo: more enemy types (Lone Rook, Knight Rider, Bishop Pair)
 - [2026-04-18] todo: rewards + map node flow
 - [2026-04-19] done: en passant for player and enemy (track enPassantTarget, fix FEN, fix execution)
+- [2026-04-19] done: modularize engine.js — split into engine/constants.js + engine/board.js; add module-size rule to CLAUDE.md
