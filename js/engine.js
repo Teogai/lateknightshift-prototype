@@ -1,5 +1,6 @@
 import { Chess } from 'chess.js';
 import { buildStarterDeck, dealHand } from './cards.js';
+import { selectMove, PAWN_PUSHER } from './ai.js';
 
 export const STARTING_MANA = 3;
 export const HAND_SIZE = 5;
@@ -408,51 +409,7 @@ export class GameState {
     let moves = this.pseudoLegalMovesFor('b');
     if (!moves.length) moves = this._allGeometricMovesFor('b');
     if (moves.length) {
-      // Priority 1: king capture
-      const kingCaptures = moves.filter(m => {
-        const t = this._chess.get(m.to);
-        return t?.type === 'k' && t?.color === 'w';
-      });
-      // Priority 2: any capture (get() returns false/undefined for empty squares)
-      const captures = moves.filter(m => {
-        const t = this._chess.get(m.to);
-        return t && t.color === 'w';
-      });
-
-      let chosen = null;
-      let isKingCapture = false;
-
-      if (kingCaptures.length) {
-        chosen = kingCaptures[0];
-        isKingCapture = true;
-      } else if (captures.length) {
-        chosen = captures[0];
-      } else {
-        // Priority 3: advance most-forward black pawn (lowest rank number)
-        const blackPawns = [];
-        const board = this._chess.board();
-        for (let r = 0; r < 8; r++) {
-          for (let f = 0; f < 8; f++) {
-            if (board[r][f]?.type === 'p' && board[r][f]?.color === 'b') {
-              blackPawns.push(FILES[f] + (8 - r));
-            }
-          }
-        }
-
-        let moved = false;
-        if (blackPawns.length) {
-          const mostForward = blackPawns.reduce((a, b) => parseInt(a[1]) < parseInt(b[1]) ? a : b);
-          const targetRank = parseInt(mostForward[1]) - 1;
-          const targetSq = mostForward[0] + targetRank;
-          if (targetRank >= 1 && !this._chess.get(targetSq)) {
-            chosen = { from: mostForward, to: targetSq };
-            moved = true;
-          }
-        }
-        if (!moved) {
-          chosen = moves[Math.floor(Math.random() * moves.length)];
-        }
-      }
+      const chosen = selectMove(this._chess, moves, PAWN_PUSHER, 2);
 
       if (chosen) {
         this.lastMove = { from: chosen.from, to: chosen.to };

@@ -13,3 +13,6 @@
 - [2026-04-18] Vitest over pytest - same test coverage, no server overhead
 - [2026-04-18] manual put/remove for AI moves - avoids FEN validation on custom boards
 - [2026-04-18] piece-map save/restore in _getMovesForSq - FEN invalid when king missing
+- [2026-04-19] minimax+alpha-beta AI - personality via eval weights, difficulty via depth
+- [2026-04-19] r^2 pawn_advance scoring - breaks ties toward most-advanced pawn
+- [2026-04-19] immediate-eval tie-break in selectMove - prefer sooner win over detour
