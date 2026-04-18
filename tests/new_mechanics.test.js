@@ -95,6 +95,63 @@ test('knight move card costs 2 mana', () => {
   expect(result.error).toMatch(/mana/);
 });
 
+// --- Knight move pawn promotion ---
+
+function setupKnightPromo() {
+  const state = new GameState('knight');
+  state._chess.clear();
+  state._chess.put({ type: 'k', color: 'w' }, 'e1');
+  state._chess.put({ type: 'k', color: 'b' }, 'a8');
+  state._chess.put({ type: 'p', color: 'w' }, 'b7');
+  state.hand = [{ name: 'Knight Move', type: 'knight_move', cost: 2 }];
+  state.mana = 3;
+  state.movedThisTurn = new Set();
+  return state;
+}
+
+test('knight move pawn to rank 8 returns needs_promotion', () => {
+  const state = setupKnightPromo();
+  // b7 → d8 is a valid L-shape (+2 file, +1 rank)
+  const result = state.playKnightMoveCard(0, 'b7', 'd8');
+  expect(result.ok).toBe(true);
+  expect(result.needs_promotion).toEqual(['d8']);
+});
+
+test('pawn stays as pawn on rank 8 before applyPromotion', () => {
+  const state = setupKnightPromo();
+  state.playKnightMoveCard(0, 'b7', 'd8');
+  expect(state._chess.get('d8').type).toBe('p');
+});
+
+test('applyPromotion promotes pawn to queen', () => {
+  const state = setupKnightPromo();
+  state.playKnightMoveCard(0, 'b7', 'd8');
+  const result = state.applyPromotion('d8', 'q');
+  expect(result.ok).toBe(true);
+  expect(state._chess.get('d8').type).toBe('q');
+});
+
+test('applyPromotion promotes pawn to rook', () => {
+  const state = setupKnightPromo();
+  state.playKnightMoveCard(0, 'b7', 'd8');
+  const result = state.applyPromotion('d8', 'r');
+  expect(result.ok).toBe(true);
+  expect(state._chess.get('d8').type).toBe('r');
+});
+
+test('applyPromotion rejects invalid piece', () => {
+  const state = setupKnightPromo();
+  state.playKnightMoveCard(0, 'b7', 'd8');
+  const result = state.applyPromotion('d8', 'x');
+  expect(result.error).toMatch(/invalid/);
+});
+
+test('applyPromotion rejects non-pawn square', () => {
+  const state = setupKnightPromo();
+  const result = state.applyPromotion('e1', 'q');
+  expect(result.error).toBeDefined();
+});
+
 // --- Pattern-based AI ---
 
 test('AI advances most-forward black pawn', () => {

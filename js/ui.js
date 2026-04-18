@@ -27,8 +27,7 @@ export const uiState = {
   selectedCardType: null,
   selectedPieceType: null,
   fromSq: null,
-  pendingPromoFrom: null,
-  pendingPromoTo: null,
+  pendingPromos: [],
   knightTargets: [],
   legalDests: [],
   summonTargets: [],
@@ -40,8 +39,7 @@ export function resetUiState() {
   uiState.selectedCardType = null;
   uiState.selectedPieceType = null;
   uiState.fromSq = null;
-  uiState.pendingPromoFrom = null;
-  uiState.pendingPromoTo = null;
+  uiState.pendingPromos = [];
   uiState.knightTargets = [];
   uiState.legalDests = [];
   uiState.summonTargets = [];
@@ -178,6 +176,13 @@ export function handleCardClick(index, card) {
   render();
 }
 
+function showNextPromo() {
+  if (uiState.pendingPromos.length === 0) {
+    resetUiState(); render(); return;
+  }
+  document.getElementById('promotion-modal').classList.remove('hidden');
+}
+
 export function handleSquareClick(sq) {
   if (uiState.phase === 'idle') return;
   const d = gameState.toDict();
@@ -229,10 +234,8 @@ export function handleSquareClick(sq) {
       render(); return;
     }
     const piece = d.board[uiState.fromSq];
-    const isPromo = piece && piece.type === 'pawn' && piece.color === 'white' && sq[1] === '8';
-    if (isPromo) {
-      uiState.pendingPromoFrom = uiState.fromSq;
-      uiState.pendingPromoTo = sq;
+    if (piece && piece.type === 'pawn' && piece.color === 'white' && sq[1] === '8') {
+      uiState.pendingPromos = [{ from: uiState.fromSq, to: sq, cardType: 'move', cardIndex: uiState.selectedCardIndex }];
       document.getElementById('promotion-modal').classList.remove('hidden');
       return;
     }
@@ -254,8 +257,13 @@ export function handleSquareClick(sq) {
       setHint('Not a valid knight-jump square'); return;
     }
     const result = gameState.playKnightMoveCard(uiState.selectedCardIndex, uiState.fromSq, sq);
-    if (result.error) { setHint(result.error); }
-    resetUiState(); setHint(''); render();
+    if (result.error) { setHint(result.error); return; }
+    if (result.needs_promotion) {
+      uiState.pendingPromos = result.needs_promotion.map(s => ({ sq: s, cardType: null }));
+      showNextPromo();
+    } else {
+      resetUiState(); setHint(''); render();
+    }
   }
 }
 
@@ -269,13 +277,15 @@ export function handleEndTurn() {
 
 export function handlePromotionChoice(promoLetter) {
   document.getElementById('promotion-modal').classList.add('hidden');
-  const cardIndex = uiState.selectedCardIndex;
-  const fromSq    = uiState.pendingPromoFrom;
-  const toSq      = uiState.pendingPromoTo;
-  resetUiState();
-  const result = gameState.playMoveCard(cardIndex, fromSq, toSq, promoLetter);
+  const item = uiState.pendingPromos.shift();
+  let result;
+  if (item.cardType === 'move') {
+    result = gameState.playMoveCard(item.cardIndex, item.from, item.to, promoLetter);
+  } else {
+    result = gameState.applyPromotion(item.sq, promoLetter);
+  }
   if (result.error) setHint(result.error);
-  setHint(''); render();
+  showNextPromo();
 }
 
 export function startGame(character) {

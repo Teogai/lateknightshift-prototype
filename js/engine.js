@@ -382,6 +382,17 @@ export class GameState {
     this.movedThisTurn.add(toSq);
     this.lastMove = { from: fromSq, to: toSq };
     this._checkKingCaptured();
+
+    if (piece.type === 'p' && toSq[1] === '8') return { ok: true, needs_promotion: [toSq] };
+    return { ok: true };
+  }
+
+  applyPromotion(sq, promoType) {
+    if (!VALID_PROMO.has(promoType)) return { error: 'invalid promotion piece' };
+    const piece = this._chess.get(sq);
+    if (!piece || piece.type !== 'p' || piece.color !== 'w') return { error: 'no promotable pawn on that square' };
+    this._chess.remove(sq);
+    this._chess.put({ type: promoType, color: 'w' }, sq);
     return { ok: true };
   }
 
