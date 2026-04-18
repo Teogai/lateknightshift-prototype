@@ -53,6 +53,7 @@ class PlayMoveRequest(BaseModel):
     card_index: int
     from_sq: str
     to_sq: str
+    promotion: str | None = None
 
 
 @app.post("/game/play/move")
@@ -60,7 +61,7 @@ def play_move(req: PlayMoveRequest):
     state = _games.get("current")
     if state is None:
         raise HTTPException(status_code=404, detail="no active game")
-    result = state.play_move_card(req.card_index, req.from_sq, req.to_sq)
+    result = state.play_move_card(req.card_index, req.from_sq, req.to_sq, req.promotion)
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"])
     return state.to_dict()

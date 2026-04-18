@@ -19,6 +19,7 @@
 - One commit per passing feature, not per file
 - Run `pytest` before every commit
 - Update relevant md before commit
+- **Commit all changed files after every completed task**
 
 ## Log formats
 - `docs/TASKS.md`: `[YYYY-MM-DD] done: <x>` / `[YYYY-MM-DD] todo: <x>`

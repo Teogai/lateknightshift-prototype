@@ -89,6 +89,16 @@
     #btn-end-turn:hover:not(:disabled) { background: #2a4a2a; }
     #btn-end-turn:disabled { opacity: 0.4; cursor: not-allowed; }
     #action-hint { color: #aaa; font-size: 0.85rem; min-height: 1.2em; }
+
+    /* --- Promotion modal --- */
+    #promotion-modal { position:fixed; inset:0; background:rgba(0,0,0,.72); display:flex; align-items:center; justify-content:center; z-index:100; }
+    #promotion-modal.hidden { display:none !important; }
+    #promotion-box { background:#1e1e2e; border:2px solid #888; border-radius:8px; padding:1.25rem 1.5rem; text-align:center; }
+    #promotion-box p { margin:0 0 .75rem; color:#ccc; font-size:.9rem; }
+    #promotion-choices { display:flex; gap:.5rem; }
+    .promo-btn { width:60px; height:60px; background:#2a2a3a; border:2px solid #555; border-radius:6px; cursor:pointer; padding:4px; }
+    .promo-btn:hover { border-color:#f0e040; background:#3a3a1a; }
+    .promo-btn img { width:48px; height:48px; display:block; }
   </style>
 </head>
 <body>
@@ -118,6 +128,19 @@
         <div id="action-hint"></div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- Promotion picker modal -->
+  <div id="promotion-modal" class="hidden">
+    <div id="promotion-box">
+      <p>Choose promotion piece</p>
+      <div id="promotion-choices">
+        <button class="promo-btn" data-promo="q"><img src="/static/pieces/Chess_qlt60.png" alt="Queen"></button>
+        <button class="promo-btn" data-promo="r"><img src="/static/pieces/Chess_rlt60.png" alt="Rook"></button>
+        <button class="promo-btn" data-promo="b"><img src="/static/pieces/Chess_blt60.png" alt="Bishop"></button>
+        <button class="promo-btn" data-promo="n"><img src="/static/pieces/Chess_nlt60.png" alt="Knight"></button>
+      </div>
     </div>
   </div>
 
@@ -151,6 +174,8 @@
       selectedCardType: null,
       selectedPieceType: null,
       fromSq: null,
+      pendingPromoFrom: null,
+      pendingPromoTo: null,
       knightTargets: [],
       legalDests: [],
       summonTargets: [],
@@ -162,6 +187,8 @@
       uiState.selectedCardType = null;
       uiState.selectedPieceType = null;
       uiState.fromSq = null;
+      uiState.pendingPromoFrom = null;
+      uiState.pendingPromoTo = null;
       uiState.knightTargets = [];
       uiState.legalDests = [];
       uiState.summonTargets = [];
@@ -179,6 +206,11 @@
         .map(([df, dr]) => [file + df, rank + dr])
         .filter(([f, r]) => f >= 0 && f < 8 && r >= 0 && r < 8)
         .map(([f, r]) => 'abcdefgh'[f] + (r + 1));
+    }
+
+    function isPromotionMove(fromSq, toSq) {
+      const piece = gameState && gameState.board[fromSq];
+      return piece && piece.type === 'pawn' && piece.color === 'white' && toSq[1] === '8';
     }
 
     // --- API helpers ---
@@ -199,8 +231,10 @@
       gameState = await apiFetch('/game/new', 'POST', { character });
     }
 
-    async function apiPlayMove(cardIndex, fromSq, toSq) {
-      gameState = await apiFetch('/game/play/move', 'POST', { card_index: cardIndex, from_sq: fromSq, to_sq: toSq });
+    async function apiPlayMove(cardIndex, fromSq, toSq, promotion = null) {
+      const body = { card_index: cardIndex, from_sq: fromSq, to_sq: toSq };
+      if (promotion !== null) body.promotion = promotion;
+      gameState = await apiFetch('/game/play/move', 'POST', body);
     }
 
     async function apiPlaySummon(cardIndex, pieceType, toSq) {
@@ -414,6 +448,12 @@
           render();
           return;
         }
+        if (isPromotionMove(uiState.fromSq, sq)) {
+          uiState.pendingPromoFrom = uiState.fromSq;
+          uiState.pendingPromoTo = sq;
+          document.getElementById('promotion-modal').classList.remove('hidden');
+          return;
+        }
         try {
           await apiPlayMove(uiState.selectedCardIndex, uiState.fromSq, sq);
           resetUiState();
@@ -479,9 +519,28 @@
       }
     }
 
+    async function handlePromotionChoice(promoLetter) {
+      document.getElementById('promotion-modal').classList.add('hidden');
+      const cardIndex = uiState.selectedCardIndex;
+      const fromSq    = uiState.pendingPromoFrom;
+      const toSq      = uiState.pendingPromoTo;
+      resetUiState();
+      try {
+        await apiPlayMove(cardIndex, fromSq, toSq, promoLetter);
+        setHint('');
+        render();
+      } catch (e) {
+        setHint(e.message);
+        render();
+      }
+    }
+
     // --- Init ---
     document.getElementById('btn-knight').addEventListener('click', () => startGame('knight'));
     document.getElementById('btn-end-turn').addEventListener('click', handleEndTurn);
+    document.querySelectorAll('.promo-btn').forEach(btn => {
+      btn.addEventListener('click', () => handlePromotionChoice(btn.dataset.promo));
+    });
   </script>
 </body>
 </html>

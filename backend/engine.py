@@ -5,6 +5,7 @@ from typing import Literal
 
 STARTING_MANA = 3
 HAND_SIZE = 5
+VALID_PROMO = {"q", "r", "b", "n"}
 
 # Character starting setups: (piece_type, square) for white pieces
 CHARACTER_PIECES: dict[str, list[tuple[chess.PieceType, chess.Square]]] = {
@@ -91,7 +92,7 @@ class GameState:
         self.board.turn = original
         return moves
 
-    def play_move_card(self, card_index: int, from_sq: str, to_sq: str) -> dict:
+    def play_move_card(self, card_index: int, from_sq: str, to_sq: str, promotion: str | None = None) -> dict:
         hand = self.hand
         if card_index < 0 or card_index >= len(hand):
             return {"error": "invalid card index"}
@@ -111,7 +112,17 @@ class GameState:
         if from_square in self.moved_this_turn:
             return {"error": "piece already moved this turn"}
 
-        move = chess.Move(from_square, to_square)
+        is_promo = (
+            piece.piece_type == chess.PAWN
+            and chess.square_rank(to_square) == 7
+        )
+        if is_promo:
+            if promotion not in VALID_PROMO:
+                return {"error": "promotion piece required"}
+            promo_map = {"q": chess.QUEEN, "r": chess.ROOK, "b": chess.BISHOP, "n": chess.KNIGHT}
+            move = chess.Move(from_square, to_square, promotion=promo_map[promotion])
+        else:
+            move = chess.Move(from_square, to_square)
         # Use pseudo_legal_moves so king capture is a valid move
         self.board.turn = chess.WHITE
         if move not in self.board.pseudo_legal_moves:
