@@ -1,20 +1,29 @@
 import { Chess } from 'chess.js';
 import { buildStarterDeck, dealHand } from './cards.js';
-import { selectMove, PAWN_PUSHER } from './ai.js';
-import { STARTING_MANA, HAND_SIZE, VALID_PROMO, VALID_CHARACTERS } from './engine/constants.js';
+import { selectMove, PAWN_PUSHER, LONE_ROOK, KNIGHT_RIDER, BISHOP_PAIR } from './ai.js';
+import { STARTING_MANA, HAND_SIZE, VALID_PROMO, VALID_CHARACTERS, VALID_ENEMIES } from './engine/constants.js';
 import {
   makeBoard, boardToDict, knightAttacks,
   getMovesForSq, pseudoLegalMovesFor, allGeometricMovesFor,
   checkKingCaptured, checkInfo, executeKingCapture,
 } from './engine/board.js';
 
-export { STARTING_MANA, HAND_SIZE, VALID_PROMO, CHARACTER_PIECES, ENEMY_PIECES, VALID_CHARACTERS } from './engine/constants.js';
+export { STARTING_MANA, HAND_SIZE, VALID_PROMO, CHARACTER_PIECES, ENEMY_PIECES, VALID_CHARACTERS, VALID_ENEMIES } from './engine/constants.js';
 export { boardToDict, knightAttacks } from './engine/board.js';
 
+const PERSONALITIES = {
+  pawn_pusher:  PAWN_PUSHER,
+  lone_rook:    LONE_ROOK,
+  knight_rider: KNIGHT_RIDER,
+  bishop_pair:  BISHOP_PAIR,
+};
+
 export class GameState {
-  constructor(character) {
+  constructor(character, enemy = 'pawn_pusher') {
     if (!VALID_CHARACTERS.has(character)) throw new Error(`unknown character: ${character}`);
-    this._chess = makeBoard(character);
+    if (!VALID_ENEMIES.has(enemy)) throw new Error(`unknown enemy: ${enemy}`);
+    this._chess = makeBoard(character, enemy);
+    this._personality = PERSONALITIES[enemy];
     this.character = character;
     this.mana = STARTING_MANA;
     const dealt = dealHand(buildStarterDeck(character), HAND_SIZE);
@@ -178,7 +187,7 @@ export class GameState {
     let moves = pseudoLegalMovesFor(this._chess, 'b', this.enPassantTarget);
     if (!moves.length) moves = allGeometricMovesFor(this._chess, 'b');
     if (moves.length) {
-      const chosen = selectMove(this._chess, moves, PAWN_PUSHER, 2, this.enPassantTarget);
+      const chosen = selectMove(this._chess, moves, this._personality, 2, this.enPassantTarget);
 
       if (chosen) {
         this.lastMove = { from: chosen.from, to: chosen.to };

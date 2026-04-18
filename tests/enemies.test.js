@@ -1,0 +1,118 @@
+import { test, expect } from 'vitest';
+import { Chess } from 'chess.js';
+import { selectMove, generateMoves, LONE_ROOK, KNIGHT_RIDER, BISHOP_PAIR } from '../js/ai.js';
+import { GameState } from '../js/engine.js';
+
+function emptyChess() {
+  const c = new Chess();
+  c.clear();
+  return c;
+}
+
+// --- GameState construction ---
+
+test('GameState accepts lone_rook enemy without throwing', () => {
+  expect(() => new GameState('knight', 'lone_rook')).not.toThrow();
+});
+
+test('GameState accepts knight_rider enemy without throwing', () => {
+  expect(() => new GameState('knight', 'knight_rider')).not.toThrow();
+});
+
+test('GameState accepts bishop_pair enemy without throwing', () => {
+  expect(() => new GameState('knight', 'bishop_pair')).not.toThrow();
+});
+
+test('GameState rejects unknown enemy', () => {
+  expect(() => new GameState('knight', 'bogus_enemy')).toThrow();
+});
+
+// --- Board setup ---
+
+test('lone_rook board has king and rook', () => {
+  const gs = new GameState('knight', 'lone_rook');
+  const board = gs.toDict().board;
+  const blackPieces = Object.values(board).filter(p => p.color === 'black');
+  expect(blackPieces.some(p => p.type === 'king')).toBe(true);
+  expect(blackPieces.some(p => p.type === 'rook')).toBe(true);
+  expect(blackPieces.length).toBe(2);
+});
+
+test('knight_rider board has king and two knights', () => {
+  const gs = new GameState('knight', 'knight_rider');
+  const board = gs.toDict().board;
+  const blackPieces = Object.values(board).filter(p => p.color === 'black');
+  expect(blackPieces.some(p => p.type === 'king')).toBe(true);
+  expect(blackPieces.filter(p => p.type === 'knight').length).toBe(2);
+  expect(blackPieces.length).toBe(3);
+});
+
+test('bishop_pair board has king and two bishops', () => {
+  const gs = new GameState('knight', 'bishop_pair');
+  const board = gs.toDict().board;
+  const blackPieces = Object.values(board).filter(p => p.color === 'black');
+  expect(blackPieces.some(p => p.type === 'king')).toBe(true);
+  expect(blackPieces.filter(p => p.type === 'bishop').length).toBe(2);
+  expect(blackPieces.length).toBe(3);
+});
+
+// --- Personality behaviour ---
+
+// Lone Rook: high material weight — should prefer capturing a queen over any idle move
+test('LONE_ROOK prefers rook capture of queen over idle move', () => {
+  const chess = emptyChess();
+  // King cornered with limited moves; rook has a clear queen capture
+  chess.put({ type: 'k', color: 'b' }, 'h8');
+  chess.put({ type: 'r', color: 'b' }, 'e4');
+  chess.put({ type: 'k', color: 'w' }, 'a1');
+  chess.put({ type: 'q', color: 'w' }, 'e2'); // rook slides e4→e2, capturing the queen (9 pts)
+
+  const moves = generateMoves(chess, 'b');
+  const chosen = selectMove(chess, moves, LONE_ROOK, 2);
+  expect(chosen.to).toBe('e2');
+});
+
+// Knight Rider: high mobility — should capture adjacent king when available
+test('KNIGHT_RIDER captures enemy king when reachable by knight', () => {
+  const chess = emptyChess();
+  chess.put({ type: 'k', color: 'b' }, 'e8');
+  chess.put({ type: 'n', color: 'b' }, 'd6');
+  chess.put({ type: 'k', color: 'w' }, 'e4'); // knight on d6 can reach e4 via f5 or c4… actually d6→e4 is valid knight move (df=1, dr=-2)
+
+  const moves = generateMoves(chess, 'b');
+  const chosen = selectMove(chess, moves, KNIGHT_RIDER, 2);
+  expect(chosen.to).toBe('e4');
+});
+
+// Bishop Pair: material weight — should capture a pawn with bishop
+test('BISHOP_PAIR captures enemy pawn when bishop can reach it', () => {
+  const chess = emptyChess();
+  chess.put({ type: 'k', color: 'b' }, 'e8');
+  chess.put({ type: 'b', color: 'b' }, 'c6');
+  chess.put({ type: 'k', color: 'w' }, 'a1');
+  chess.put({ type: 'p', color: 'w' }, 'e4'); // bishop c6→e4 is diagonal (df=2, dr=-2)
+
+  const moves = generateMoves(chess, 'b');
+  const chosen = selectMove(chess, moves, BISHOP_PAIR, 2);
+  expect(chosen.to).toBe('e4');
+});
+
+// --- endTurn uses the correct personality ---
+
+test('GameState endTurn works for lone_rook enemy', () => {
+  const gs = new GameState('knight', 'lone_rook');
+  const result = gs.endTurn();
+  expect(result.ok).toBe(true);
+});
+
+test('GameState endTurn works for knight_rider enemy', () => {
+  const gs = new GameState('knight', 'knight_rider');
+  const result = gs.endTurn();
+  expect(result.ok).toBe(true);
+});
+
+test('GameState endTurn works for bishop_pair enemy', () => {
+  const gs = new GameState('knight', 'bishop_pair');
+  const result = gs.endTurn();
+  expect(result.ok).toBe(true);
+});

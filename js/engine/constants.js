@@ -23,6 +23,21 @@ export const ENEMY_PIECES = {
     { type: 'p', color: 'b', sq: 'e7' },
     { type: 'p', color: 'b', sq: 'g7' },
   ],
+  lone_rook: [
+    { type: 'k', color: 'b', sq: 'e8' },
+    { type: 'r', color: 'b', sq: 'a8' },
+  ],
+  knight_rider: [
+    { type: 'k', color: 'b', sq: 'e8' },
+    { type: 'n', color: 'b', sq: 'b8' },
+    { type: 'n', color: 'b', sq: 'g8' },
+  ],
+  bishop_pair: [
+    { type: 'k', color: 'b', sq: 'e8' },
+    { type: 'b', color: 'b', sq: 'c8' },
+    { type: 'b', color: 'b', sq: 'f8' },
+  ],
 };
 
 export const VALID_CHARACTERS = new Set(Object.keys(CHARACTER_PIECES));
+export const VALID_ENEMIES = new Set(Object.keys(ENEMY_PIECES));

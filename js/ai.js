@@ -13,12 +13,28 @@ export const PAWN_PUSHER = {
   mobility:     0.1,
 };
 
+export const LONE_ROOK = {
+  material:    1.5,
+  king_safety: 1.0,
+  mobility:    1.2,
+};
+
+export const KNIGHT_RIDER = {
+  material:     1.0,
+  king_safety:  0.6,
+  mobility:     2.0,
+  pawn_advance: 0.2,
+};
+
+export const BISHOP_PAIR = {
+  material:    1.2,
+  king_safety: 0.9,
+  mobility:    1.5,
+};
+
 // Future personalities (not yet active):
-// LONE_ROOK:    { material: 1.5, king_safety: 1.0, mobility: 1.2 }
-// KNIGHT_RIDER: { material: 1.0, king_safety: 0.6, mobility: 2.0, pawn_advance: 0.2 }
-// BISHOP_PAIR:  { material: 1.2, king_safety: 0.9, mobility: 1.5 }
-// DUELIST:      { material: 0.8, mobility: 2.5, aggression: 2.0 }
-// CASTELLAN:    { material: 1.0, king_safety: 2.0, castle_urgency: 3.0 }
+// DUELIST:   { material: 0.8, mobility: 2.5, aggression: 2.0 }
+// CASTELLAN: { material: 1.0, king_safety: 2.0, castle_urgency: 3.0 }
 
 // --- Geometry helpers ---
 
