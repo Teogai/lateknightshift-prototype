@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/d/Projects/lateknightshift-prototype/.venv/Scripts/python -m pytest *)"
+    ]
+  }
+}
