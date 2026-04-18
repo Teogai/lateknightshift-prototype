@@ -36,3 +36,16 @@ test('new game deals 5 cards', () => {
 test('invalid character throws', () => {
   expect(() => new GameState('wizard')).toThrow();
 });
+
+test('_allGeometricMovesFor does not generate illegal pawn diagonal to empty square', () => {
+  const state = freshGame();
+  // Position where black pawn on c4 could illegally move to empty d3
+  state._chess.clear();
+  state._chess.put({ type: 'k', color: 'w' }, 'e2');
+  state._chess.put({ type: 'k', color: 'b' }, 'h5');
+  state._chess.put({ type: 'p', color: 'b' }, 'c4');
+  state._chess.put({ type: 'p', color: 'w' }, 'c3');
+  const moves = state._allGeometricMovesFor('b');
+  const illegal = moves.find(m => m.from === 'c4' && m.to === 'd3');
+  expect(illegal).toBeUndefined();
+});

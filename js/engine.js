@@ -267,8 +267,13 @@ export class GameState {
             const target = board[tr][tf];
             if (target?.color === color) continue;
             const to = FILES[tf] + (8 - tr);
-            if (this._pieceAttacks(from, piece.type, color, to))
-              moves.push({ from, to });
+            if (this._pieceAttacks(from, piece.type, color, to)) {
+              if (piece.type === 'p') {
+                if (target && target.color !== color) moves.push({ from, to });
+              } else {
+                moves.push({ from, to });
+              }
+            }
           }
         }
       }
