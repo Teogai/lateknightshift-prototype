@@ -51,7 +51,7 @@ function _pieceAttacks(chess, fromSq, type, color, toSq) {
 // --- Move generation ---
 
 // Returns [{from, to}] for color. Captures first (better alpha-beta pruning).
-export function generateMoves(chess, color) {
+export function generateMoves(chess, color, enPassantTarget = null) {
   const captures = [], quiets = [];
   const board = chess.board();
   for (let r = 0; r < 8; r++) {
@@ -97,6 +97,21 @@ export function generateMoves(chess, color) {
       }
     }
   }
+  if (enPassantTarget) {
+    const epFile = enPassantTarget.charCodeAt(0) - 97;
+    const epRank = parseInt(enPassantTarget[1]) - 1;
+    const fwd = color === 'w' ? 1 : -1;
+    const fromRank = epRank - fwd;
+    for (const df of [-1, 1]) {
+      const fromFile = epFile + df;
+      if (fromFile < 0 || fromFile > 7) continue;
+      const fromSq = FILES[fromFile] + (fromRank + 1);
+      const piece = chess.get(fromSq);
+      if (piece?.type === 'p' && piece.color === color) {
+        captures.push({ from: fromSq, to: enPassantTarget, enPassant: true });
+      }
+    }
+  }
   return [...captures, ...quiets];
 }
 
@@ -108,13 +123,31 @@ export function makeMove(chess, move) {
   chess.remove(move.from);
   chess.remove(move.to);
   chess.put(movingPiece, move.to);
-  return { movingPiece, capturedPiece };
+
+  let epCapturedSq = null;
+  if (move.enPassant) {
+    epCapturedSq = move.to[0] + move.from[1];
+    chess.remove(epCapturedSq);
+  }
+
+  const fromRank = parseInt(move.from[1]);
+  const toRank = parseInt(move.to[1]);
+  const newEnPassantTarget =
+    movingPiece.type === 'p' && Math.abs(toRank - fromRank) === 2
+      ? move.from[0] + String((fromRank + toRank) / 2)
+      : null;
+
+  return { movingPiece, capturedPiece, epCapturedSq, newEnPassantTarget };
 }
 
 export function unmakeMove(chess, move, saved) {
   chess.remove(move.to);
   chess.put(saved.movingPiece, move.from);
   if (saved.capturedPiece) chess.put(saved.capturedPiece, move.to);
+  if (saved.epCapturedSq) {
+    const epColor = saved.movingPiece.color === 'w' ? 'b' : 'w';
+    chess.put({ type: 'p', color: epColor }, saved.epCapturedSq);
+  }
 }
 
 // --- Evaluation (score from black's perspective; positive = good for enemy) ---
@@ -207,11 +240,11 @@ function adaptiveDepth(chess, baseDepth) {
 
 // --- Minimax with alpha-beta ---
 
-function minimax(chess, depth, alpha, beta, maximizing, personality) {
+function minimax(chess, depth, alpha, beta, maximizing, personality, enPassantTarget = null) {
   if (depth === 0) return evaluate(chess, personality);
 
   const color = maximizing ? 'b' : 'w';
-  const moves = generateMoves(chess, color);
+  const moves = generateMoves(chess, color, enPassantTarget);
 
   if (!moves.length) return evaluate(chess, personality);
 
@@ -224,7 +257,7 @@ function minimax(chess, depth, alpha, beta, maximizing, personality) {
         unmakeMove(chess, move, saved);
         return Infinity;
       }
-      const score = minimax(chess, depth - 1, alpha, beta, false, personality);
+      const score = minimax(chess, depth - 1, alpha, beta, false, personality, saved.newEnPassantTarget);
       unmakeMove(chess, move, saved);
       best = Math.max(best, score);
       alpha = Math.max(alpha, score);
@@ -240,7 +273,7 @@ function minimax(chess, depth, alpha, beta, maximizing, personality) {
         unmakeMove(chess, move, saved);
         return -Infinity;
       }
-      const score = minimax(chess, depth - 1, alpha, beta, true, personality);
+      const score = minimax(chess, depth - 1, alpha, beta, true, personality, saved.newEnPassantTarget);
       unmakeMove(chess, move, saved);
       best = Math.min(best, score);
       beta = Math.min(beta, score);
@@ -266,7 +299,7 @@ function _findKing(chess, color) {
 // the one whose post-move position already scores higher (achieve the goal now,
 // not via a detour). Without this, "move king, then advance pawn" ties with
 // "advance pawn now" and order-of-iteration picks arbitrarily.
-export function selectMove(chess, moves, personality, depth) {
+export function selectMove(chess, moves, personality, depth, enPassantTarget = null) {
   const d = adaptiveDepth(chess, depth);
   let bestMove = moves[0];
   let bestScore = -Infinity;
@@ -279,7 +312,7 @@ export function selectMove(chess, moves, personality, depth) {
     if (!_findKing(chess, 'w')) {
       score = Infinity;
     } else {
-      score = minimax(chess, d - 1, -Infinity, Infinity, false, personality);
+      score = minimax(chess, d - 1, -Infinity, Infinity, false, personality, saved.newEnPassantTarget);
     }
     unmakeMove(chess, move, saved);
     if (score > bestScore || (score === bestScore && immediate > bestImmediate)) {

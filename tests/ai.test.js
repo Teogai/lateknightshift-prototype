@@ -1,6 +1,6 @@
 import { test, expect } from 'vitest';
 import { Chess } from 'chess.js';
-import { selectMove, generateMoves, PAWN_PUSHER } from '../js/ai.js';
+import { selectMove, generateMoves, makeMove, unmakeMove, PAWN_PUSHER } from '../js/ai.js';
 
 function emptyChess() {
   const c = new Chess();
@@ -91,4 +91,33 @@ test('generateMoves: advanced pawn has push move to lower rank', () => {
   const moves = generateMoves(chess, 'b');
   const pawnMoves = moves.filter(m => m.from === 'e3');
   expect(pawnMoves.some(m => m.to === 'e2')).toBe(true);
+});
+
+test('generateMoves includes en passant capture when enPassantTarget provided', () => {
+  const chess = emptyChess();
+  chess.put({ type: 'k', color: 'b' }, 'e8');
+  chess.put({ type: 'k', color: 'w' }, 'a1');
+  chess.put({ type: 'p', color: 'b' }, 'e4');
+  chess.put({ type: 'p', color: 'w' }, 'd4');
+  // White just pushed d2-d4, en passant target is d3
+  const moves = generateMoves(chess, 'b', 'd3');
+  const ep = moves.find(m => m.from === 'e4' && m.to === 'd3' && m.enPassant);
+  expect(ep).toBeDefined();
+});
+
+test('makeMove en passant removes the captured pawn', () => {
+  const chess = emptyChess();
+  chess.put({ type: 'k', color: 'b' }, 'e8');
+  chess.put({ type: 'k', color: 'w' }, 'a1');
+  chess.put({ type: 'p', color: 'b' }, 'e4');
+  chess.put({ type: 'p', color: 'w' }, 'd4');
+
+  const move = { from: 'e4', to: 'd3', enPassant: true };
+  const saved = makeMove(chess, move);
+  expect(chess.get('d3')?.type).toBe('p');  // black pawn landed
+  expect(chess.get('e4')).toBeFalsy();       // black pawn moved
+  expect(chess.get('d4')).toBeFalsy();       // white pawn captured
+  unmakeMove(chess, move, saved);
+  expect(chess.get('d4')?.type).toBe('p');  // white pawn restored
+  expect(chess.get('e4')?.type).toBe('p');  // black pawn restored
 });

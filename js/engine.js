@@ -87,6 +87,7 @@ export class GameState {
     this.summonedThisTurn = new Set();
     this.movedThisTurn = new Set();
     this.lastMove = { from: null, to: null };
+    this.enPassantTarget = null;
   }
 
   toDict() {
@@ -136,7 +137,7 @@ export class GameState {
       const parts = fen.split(' ');
       parts[1] = color;
       parts[2] = '-';
-      parts[3] = '-';
+      parts[3] = this.enPassantTarget ?? '-';
       this._chess.load(parts.join(' '));
       return this._chess.moves({ square: sq, verbose: true });
     } catch {
@@ -339,10 +340,13 @@ export class GameState {
 
       const fen = this._chess.fen();
       const parts = fen.split(' ');
-      parts[1] = 'w'; parts[2] = '-'; parts[3] = '-';
+      parts[1] = 'w'; parts[2] = '-'; parts[3] = this.enPassantTarget ?? '-';
       this._chess.load(parts.join(' '));
       this._chess.move({ from: fromSq, to: toSq, promotion: isPromo ? promotion : undefined });
     }
+
+    const isPawnDoublePush = piece.type === 'p' && fromSq[1] === '2' && toSq[1] === '4';
+    this.enPassantTarget = isPawnDoublePush ? (toSq[0] + '3') : null;
 
     this.mana -= card.cost;
     this.discard.push(this.hand.splice(cardIndex, 1)[0]);
@@ -414,7 +418,7 @@ export class GameState {
     let moves = this.pseudoLegalMovesFor('b');
     if (!moves.length) moves = this._allGeometricMovesFor('b');
     if (moves.length) {
-      const chosen = selectMove(this._chess, moves, PAWN_PUSHER, 2);
+      const chosen = selectMove(this._chess, moves, PAWN_PUSHER, 2, this.enPassantTarget);
 
       if (chosen) {
         this.lastMove = { from: chosen.from, to: chosen.to };
@@ -425,9 +429,18 @@ export class GameState {
         const movingPiece = this._chess.get(chosen.from);
         const targetRank = parseInt(chosen.to[1]);
         const isPromo = movingPiece?.type === 'p' && targetRank === 1;
+        const isDiagonal = chosen.from[0] !== chosen.to[0];
+        const destinationWasEmpty = !this._chess.get(chosen.to);
+        const isEnPassantCapture = movingPiece?.type === 'p' && isDiagonal && destinationWasEmpty;
         this._chess.remove(chosen.from);
         this._chess.remove(chosen.to);
         this._chess.put(isPromo ? { type: 'q', color: 'b' } : movingPiece, chosen.to);
+        if (isEnPassantCapture) {
+          this._chess.remove(chosen.to[0] + chosen.from[1]);
+        }
+
+        const isEnemyDoublePush = movingPiece?.type === 'p' && chosen.from[1] === '7' && chosen.to[1] === '5';
+        this.enPassantTarget = isEnemyDoublePush ? (chosen.to[0] + '6') : null;
 
         this._checkKingCaptured();
       }
