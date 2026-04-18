@@ -15,13 +15,6 @@ CHARACTER_PIECES: dict[str, list[tuple[chess.PieceType, chess.Square]]] = {
         (chess.PAWN,   chess.D2),
         (chess.PAWN,   chess.E2),
     ],
-    "bishop": [
-        (chess.KING,   chess.E1),
-        (chess.BISHOP, chess.C1),
-        (chess.BISHOP, chess.F1),
-        (chess.PAWN,   chess.D2),
-        (chess.PAWN,   chess.E2),
-    ],
 }
 
 # Enemy starting setups: (piece_type, square) for black pieces
@@ -71,6 +64,7 @@ class GameState:
         )
         self.turn: Literal["player", "enemy", "player_won", "enemy_won"] = "player"
         self.summoned_this_turn: set[chess.Square] = set()
+        self.moved_this_turn: set[chess.Square] = set()
 
     def to_dict(self) -> dict:
         return {
@@ -80,6 +74,7 @@ class GameState:
             "turn": self.turn,
             "deck_size": len(self.deck),
             "discard_size": len(self.discard),
+            "moved_this_turn": [chess.square_name(sq) for sq in self.moved_this_turn],
         }
 
     def legal_moves_for(self, color: chess.Color) -> list[chess.Move]:
@@ -107,6 +102,8 @@ class GameState:
             return {"error": "no friendly piece on that square"}
         if from_square in self.summoned_this_turn:
             return {"error": "summoned pieces cannot move this turn"}
+        if from_square in self.moved_this_turn:
+            return {"error": "piece already moved this turn"}
 
         move = chess.Move(from_square, to_square)
         # Use pseudo_legal_moves so king capture is a valid move
@@ -119,6 +116,44 @@ class GameState:
         self.board.turn = chess.WHITE  # don't advance turn normally
         self.mana -= card["cost"]
         self.discard.append(hand.pop(card_index))
+        self.moved_this_turn.add(to_square)
+        self._check_king_captured()
+        return {"ok": True}
+
+    def play_knight_move_card(self, card_index: int, from_sq: str, to_sq: str) -> dict:
+        hand = self.hand
+        if card_index < 0 or card_index >= len(hand):
+            return {"error": "invalid card index"}
+        card = hand[card_index]
+        if card["type"] != "knight_move":
+            return {"error": "not a knight_move card"}
+        if self.mana < card["cost"]:
+            return {"error": "not enough mana"}
+
+        from_square = chess.parse_square(from_sq)
+        to_square = chess.parse_square(to_sq)
+        piece = self.board.piece_at(from_square)
+        if piece is None or piece.color != chess.WHITE:
+            return {"error": "no friendly piece on that square"}
+        if from_square in self.moved_this_turn:
+            return {"error": "piece already moved this turn"}
+
+        # Valid destinations: knight-jump squares from from_square
+        knight_targets = chess.SquareSet(chess.BB_KNIGHT_ATTACKS[from_square])
+        if to_square not in knight_targets:
+            return {"error": "invalid knight move destination"}
+
+        target = self.board.piece_at(to_square)
+        if target is not None and target.color == chess.WHITE:
+            return {"error": "square occupied by friendly piece"}
+
+        # Execute: manually move the piece (bypasses chess legality)
+        self.board.remove_piece_at(from_square)
+        self.board.set_piece_at(to_square, piece)
+
+        self.mana -= card["cost"]
+        self.discard.append(hand.pop(card_index))
+        self.moved_this_turn.add(to_square)
         self._check_king_captured()
         return {"ok": True}
 
@@ -166,17 +201,53 @@ class GameState:
             return {"error": "not player turn"}
         self.turn = "enemy"
         self.summoned_this_turn.clear()
+        self.moved_this_turn.clear()
 
-        # Enemy makes one legal move; prefer king captures
+        # Pattern-based Pawn Pusher AI
+        # Priority: king capture > any capture > advance most-forward pawn > random
         moves = self.legal_moves_for(chess.BLACK)
         if moves:
             king_captures = [
                 m for m in moves
                 if self.board.piece_at(m.to_square) == chess.Piece(chess.KING, chess.WHITE)
             ]
-            move = king_captures[0] if king_captures else random.choice(moves)
-            self.board.turn = chess.BLACK
-            self.board.push(move)
+            captures = [
+                m for m in moves
+                if self.board.piece_at(m.to_square) is not None
+            ]
+
+            if king_captures:
+                chosen = king_captures[0]
+                self.board.turn = chess.BLACK
+                self.board.push(chosen)
+            elif captures:
+                chosen = captures[0]
+                self.board.turn = chess.BLACK
+                self.board.push(chosen)
+            else:
+                # Advance most-forward black pawn (lowest rank index = closest to rank 1)
+                black_pawns = [
+                    sq for sq in chess.SQUARES
+                    if self.board.piece_at(sq) == chess.Piece(chess.PAWN, chess.BLACK)
+                ]
+                moved = False
+                if black_pawns:
+                    most_forward = min(black_pawns, key=lambda sq: chess.square_rank(sq))
+                    target_rank = chess.square_rank(most_forward) - 1
+                    target_file = chess.square_file(most_forward)
+                    target_sq = chess.square(target_file, target_rank)
+                    if self.board.piece_at(target_sq) is None:
+                        uci = chess.square_name(most_forward) + chess.square_name(target_sq)
+                        if target_rank == 0:
+                            uci += "q"  # promote to queen
+                        self.board.turn = chess.BLACK
+                        self.board.push_uci(uci)
+                        moved = True
+                if not moved:
+                    chosen = random.choice(moves)
+                    self.board.turn = chess.BLACK
+                    self.board.push(chosen)
+
             self.board.turn = chess.WHITE
             self._check_king_captured()
 
