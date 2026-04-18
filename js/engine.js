@@ -137,7 +137,9 @@ export class GameState {
       const parts = fen.split(' ');
       parts[1] = color;
       parts[2] = '-';
-      parts[3] = this.enPassantTarget ?? '-';
+      // En passant rank 6 = black just pushed (white can capture); rank 3 = white just pushed (black can capture)
+      const ep = this.enPassantTarget;
+      parts[3] = (ep && ((color === 'w' && ep[1] === '6') || (color === 'b' && ep[1] === '3'))) ? ep : '-';
       this._chess.load(parts.join(' '));
       return this._chess.moves({ square: sq, verbose: true });
     } catch {
@@ -340,7 +342,8 @@ export class GameState {
 
       const fen = this._chess.fen();
       const parts = fen.split(' ');
-      parts[1] = 'w'; parts[2] = '-'; parts[3] = this.enPassantTarget ?? '-';
+      const epW = this.enPassantTarget;
+      parts[1] = 'w'; parts[2] = '-'; parts[3] = (epW && epW[1] === '6') ? epW : '-';
       this._chess.load(parts.join(' '));
       this._chess.move({ from: fromSq, to: toSq, promotion: isPromo ? promotion : undefined });
     }
