@@ -1,4 +1,4 @@
-import { GameState, knightAttacks } from './engine.js';
+import { GameState, knightAttacks, VALID_ENEMIES } from './engine.js';
 
 const PIECES = {
   white: {
@@ -292,7 +292,9 @@ export function handlePromotionChoice(promoLetter) {
 export function startGame(character) {
   document.getElementById('select-error').textContent = '';
   try {
-    gameState = new GameState(character);
+    const enemies = [...VALID_ENEMIES];
+    const enemy = enemies[Math.floor(Math.random() * enemies.length)];
+    gameState = new GameState(character, enemy);
     document.getElementById('screen-select').classList.add('hidden');
     document.getElementById('screen-game').classList.remove('hidden');
     resetUiState();
