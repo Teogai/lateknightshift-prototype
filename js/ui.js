@@ -157,6 +157,7 @@ export function handleCardClick(index, card) {
   }
   const d = gameState.toDict();
   if (card.cost > d.mana) return;
+  resetUiState();
   uiState.phase = 'card_selected';
   uiState.selectedCardIndex = index;
   uiState.selectedCardType = card.type;
