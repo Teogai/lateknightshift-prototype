@@ -49,6 +49,9 @@
 - Use `preview_eval` with JS selectors to inspect state — not `preview_screenshot`
 - e.g. `document.getElementById('deck-info').textContent` or `gameState.discard_size`
 - Screenshots are slow and unreliable; JS queries are fast and exact
+- Before starting backend for tests: check if it's already running (e.g. `netstat -ano | grep :8000`)
+  - If running: ask user whether to kill it or skip testing
+- After tests complete: always stop the backend (`preview_stop`)
 
 ## Run (devcontainer)
 - No venv needed inside container

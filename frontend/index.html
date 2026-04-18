@@ -38,15 +38,13 @@
     .sq {
       width: 52px; height: 52px;
       position: relative; cursor: pointer;
-      font-size: 30px;
       display: flex; align-items: center; justify-content: center;
       user-select: none;
     }
     .light { background: #d9c9a3; }
     .dark  { background: #6b4a2b; }
     .sq.selected-from { outline: 3px solid #f0e040; outline-offset: -3px; }
-    .piece-white { color: #f5f0e0; text-shadow: 0 0 3px #000, 0 0 1px #000; }
-    .piece-black { color: #1a1a1a; text-shadow: 0 0 3px #888; }
+    .piece-img { width: 46px; height: 46px; display: block; pointer-events: none; }
 
     /* --- Controls column --- */
     #controls-col {
@@ -120,8 +118,22 @@
     const API = '';
 
     const PIECES = {
-      white: { king:'♔', queen:'♕', rook:'♖', bishop:'♗', knight:'♘', pawn:'♙' },
-      black: { king:'♚', queen:'♛', rook:'♜', bishop:'♝', knight:'♞', pawn:'♟' },
+      white: {
+        king:   '/static/pieces/Chess_klt60.png',
+        queen:  '/static/pieces/Chess_qlt60.png',
+        rook:   '/static/pieces/Chess_rlt60.png',
+        bishop: '/static/pieces/Chess_blt60.png',
+        knight: '/static/pieces/Chess_nlt60.png',
+        pawn:   '/static/pieces/Chess_plt60.png',
+      },
+      black: {
+        king:   '/static/pieces/Chess_kdt60.png',
+        queen:  '/static/pieces/Chess_qdt60.png',
+        rook:   '/static/pieces/Chess_rdt60.png',
+        bishop: '/static/pieces/Chess_bdt60.png',
+        knight: '/static/pieces/Chess_ndt60.png',
+        pawn:   '/static/pieces/Chess_pdt60.png',
+      },
     };
 
     let gameState = null;
@@ -195,10 +207,11 @@
           }
           const piece = gameState && gameState.board[sqName];
           if (piece) {
-            const span = document.createElement('span');
-            span.className = piece.color === 'white' ? 'piece-white' : 'piece-black';
-            span.textContent = PIECES[piece.color][piece.type] || '?';
-            div.appendChild(span);
+            const img = document.createElement('img');
+            img.src = PIECES[piece.color][piece.type];
+            img.className = 'piece-img';
+            img.alt = piece.color + ' ' + piece.type;
+            div.appendChild(img);
           }
           div.addEventListener('click', () => handleSquareClick(sqName));
           boardEl.appendChild(div);
