@@ -133,3 +133,19 @@ test('enemy wins on white king capture', () => {
   state.endTurn();
   expect(state.toDict().turn).toBe('enemy_won');
 });
+
+test('enemy moves when all chess.js legal moves are filtered out by check constraints', () => {
+  // Black king is "checkmated" by chess.js rules but can still geometrically move.
+  // White controls d7, e7, f7, d8, f8 - chess.js would say no legal moves for black king.
+  // The enemy must still make a move (our game has no check rule).
+  const state = freshGame();
+  state._chess.clear();
+  state._chess.put({ type: 'k', color: 'w' }, 'e1');
+  state._chess.put({ type: 'q', color: 'w' }, 'a8'); // covers d8, f8 via queen diagonal not needed
+  state._chess.put({ type: 'r', color: 'w' }, 'h7'); // covers all of rank 7
+  state._chess.put({ type: 'r', color: 'w' }, 'h6'); // covers all of rank 6
+  state._chess.put({ type: 'k', color: 'b' }, 'e8');
+  const boardBefore = JSON.stringify(state.toDict().board);
+  state.endTurn();
+  expect(JSON.stringify(state.toDict().board)).not.toBe(boardBefore);
+});

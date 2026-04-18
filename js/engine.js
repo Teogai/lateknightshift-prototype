@@ -234,6 +234,47 @@ export class GameState {
     return attackers;
   }
 
+  // Generate all geometric moves for a color, ignoring check constraints.
+  // Used as fallback when chess.js filters all moves due to "leaving king in check".
+  _allGeometricMovesFor(color) {
+    const moves = [];
+    const board = this._chess.board();
+    for (let r = 0; r < 8; r++) {
+      for (let f = 0; f < 8; f++) {
+        const piece = board[r][f];
+        if (!piece || piece.color !== color) continue;
+        const from = FILES[f] + (8 - r);
+        const rank = 8 - r;
+        if (piece.type === 'p') {
+          const nextRank = color === 'w' ? rank + 1 : rank - 1;
+          if (nextRank >= 1 && nextRank <= 8) {
+            const step1 = FILES[f] + nextRank;
+            if (!this._chess.get(step1)) {
+              moves.push({ from, to: step1 });
+              const startRank = color === 'w' ? 2 : 7;
+              if (rank === startRank) {
+                const step2Rank = color === 'w' ? rank + 2 : rank - 2;
+                if (!this._chess.get(FILES[f] + step2Rank))
+                  moves.push({ from, to: FILES[f] + step2Rank });
+              }
+            }
+          }
+        }
+        for (let tr = 0; tr < 8; tr++) {
+          for (let tf = 0; tf < 8; tf++) {
+            if (r === tr && f === tf) continue;
+            const target = board[tr][tf];
+            if (target?.color === color) continue;
+            const to = FILES[tf] + (8 - tr);
+            if (this._pieceAttacks(from, piece.type, color, to))
+              moves.push({ from, to });
+          }
+        }
+      }
+    }
+    return moves;
+  }
+
   _checkKingCaptured() {
     let whiteKing = false, blackKing = false;
     const board = this._chess.board();
@@ -364,7 +405,8 @@ export class GameState {
     this.summonedThisTurn.clear();
     this.movedThisTurn.clear();
 
-    const moves = this.pseudoLegalMovesFor('b');
+    let moves = this.pseudoLegalMovesFor('b');
+    if (!moves.length) moves = this._allGeometricMovesFor('b');
     if (moves.length) {
       // Priority 1: king capture
       const kingCaptures = moves.filter(m => {
