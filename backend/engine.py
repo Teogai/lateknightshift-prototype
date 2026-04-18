@@ -183,6 +183,8 @@ class GameState:
         if self.turn not in ("player_won", "enemy_won"):
             self.turn = "player"
             self.mana = STARTING_MANA
+            self.discard.extend(self.hand)
+            self.hand = []
             # Deal new hand (reshuffle if needed)
             if len(self.deck) < HAND_SIZE:
                 self.deck.extend(self.discard)

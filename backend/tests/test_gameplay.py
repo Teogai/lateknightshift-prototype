@@ -132,6 +132,14 @@ def test_end_turn_deals_new_hand():
     assert len(data["hand"]) == 5
 
 
+def test_end_turn_discards_hand():
+    fresh_game()
+    hand_size_before = len(_games["current"].hand)  # 5
+    r = client.post("/game/end-turn")
+    data = r.json()
+    assert data["discard_size"] >= hand_size_before
+
+
 # --- Win condition ---
 
 def test_player_wins_on_king_capture():
