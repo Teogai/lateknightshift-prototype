@@ -1,9 +1,9 @@
 # CHARACTERS
 
 - See `GAME_DESIGN.md` for character system
-- Fill detail as each character is implemented
 - Format: name | pieces | deck | relic | signature
 
 ## Prototype roster
-- The Knight — K + 2P + N + R | deck TBD | relic TBD | signature TBD
-- The Bishop — K + 2P + 2B | deck TBD | relic TBD | signature TBD
+
+- The Knight — K(e1) + R(a1) + N(b1) + 2P(d2,e2) | deck: see CARDS.md | relic TBD | signature TBD
+- The Bishop — K(e1) + 2B(c1,f1) + 2P(d2,e2) | deck: see CARDS.md | relic TBD | signature TBD
