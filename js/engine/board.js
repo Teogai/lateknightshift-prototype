@@ -1,5 +1,6 @@
 import { Chess } from 'chess.js';
-import { FILES, PIECE_NAMES, CHARACTER_PIECES, ENEMY_PIECES } from './constants.js';
+import { FILES, PIECE_NAMES, CHARACTER_PIECES } from './constants.js';
+import { ENEMIES } from '../enemies.js';
 
 export function boardToDict(chess) {
   const result = {};
@@ -34,7 +35,7 @@ export function makeBoard(character, enemy = 'pawn_pusher') {
   for (const { type, color, sq } of CHARACTER_PIECES[character]) {
     chess.put({ type, color }, sq);
   }
-  for (const { type, color, sq } of ENEMY_PIECES[enemy]) {
+  for (const { type, color, sq } of ENEMIES[enemy].pieces) {
     chess.put({ type, color }, sq);
   }
   return chess;

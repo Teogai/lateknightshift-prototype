@@ -1,29 +1,24 @@
 import { Chess } from 'chess.js';
 import { buildStarterDeck, dealHand } from './cards.js';
-import { selectMove, PAWN_PUSHER, LONE_ROOK, KNIGHT_RIDER, BISHOP_PAIR } from './ai.js';
-import { STARTING_MANA, HAND_SIZE, VALID_PROMO, VALID_CHARACTERS, VALID_ENEMIES } from './engine/constants.js';
+import { selectMove } from './ai.js';
+import { STARTING_MANA, HAND_SIZE, VALID_PROMO, VALID_CHARACTERS } from './engine/constants.js';
+import { ENEMIES, VALID_ENEMIES } from './enemies.js';
 import {
   makeBoard, boardToDict, knightAttacks,
   getMovesForSq, pseudoLegalMovesFor, allGeometricMovesFor,
   checkKingCaptured, checkInfo, executeKingCapture,
 } from './engine/board.js';
 
-export { STARTING_MANA, HAND_SIZE, VALID_PROMO, CHARACTER_PIECES, ENEMY_PIECES, VALID_CHARACTERS, VALID_ENEMIES } from './engine/constants.js';
+export { STARTING_MANA, HAND_SIZE, VALID_PROMO, CHARACTER_PIECES, VALID_CHARACTERS } from './engine/constants.js';
+export { ENEMIES, VALID_ENEMIES } from './enemies.js';
 export { boardToDict, knightAttacks } from './engine/board.js';
-
-const PERSONALITIES = {
-  pawn_pusher:  PAWN_PUSHER,
-  lone_rook:    LONE_ROOK,
-  knight_rider: KNIGHT_RIDER,
-  bishop_pair:  BISHOP_PAIR,
-};
 
 export class GameState {
   constructor(character, enemy = 'pawn_pusher') {
     if (!VALID_CHARACTERS.has(character)) throw new Error(`unknown character: ${character}`);
     if (!VALID_ENEMIES.has(enemy)) throw new Error(`unknown enemy: ${enemy}`);
     this._chess = makeBoard(character, enemy);
-    this._personality = PERSONALITIES[enemy];
+    this._personality = ENEMIES[enemy].personality;
     this.character = character;
     this.mana = STARTING_MANA;
     const dealt = dealHand(buildStarterDeck(character), HAND_SIZE);

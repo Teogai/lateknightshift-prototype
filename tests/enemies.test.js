@@ -1,7 +1,11 @@
 import { test, expect } from 'vitest';
 import { Chess } from 'chess.js';
-import { selectMove, generateMoves, LONE_ROOK, KNIGHT_RIDER, BISHOP_PAIR } from '../js/ai.js';
+import { selectMove, generateMoves } from '../js/ai.js';
 import { GameState } from '../js/engine.js';
+import { ENEMIES } from '../js/enemies.js';
+const LONE_ROOK    = ENEMIES.lone_rook.personality;
+const KNIGHT_RIDER = ENEMIES.knight_rider.personality;
+const BISHOP_PAIR  = ENEMIES.bishop_pair.personality;
 
 function emptyChess() {
   const c = new Chess();

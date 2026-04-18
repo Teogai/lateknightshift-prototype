@@ -1,6 +1,8 @@
 import { test, expect } from 'vitest';
 import { Chess } from 'chess.js';
-import { selectMove, generateMoves, makeMove, unmakeMove, PAWN_PUSHER } from '../js/ai.js';
+import { selectMove, generateMoves, makeMove, unmakeMove } from '../js/ai.js';
+import { ENEMIES } from '../js/enemies.js';
+const PAWN_PUSHER = ENEMIES.pawn_pusher.personality;
 
 function emptyChess() {
   const c = new Chess();
