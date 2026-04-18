@@ -2,7 +2,7 @@
   "name": "lateknightshift-prototype",
   "type": "module",
   "scripts": {
-    "dev": "vite frontend",
+    "dev": "vite",
     "test": "vitest run",
     "test:watch": "vitest"
   },
