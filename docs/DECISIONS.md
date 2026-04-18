@@ -8,3 +8,8 @@
 - [2026-04-18] pseudo_legal_moves for enemy AI - enables king-capture win condition
 - [2026-04-18] enemy always prefers king capture - consistent with no-checkmate rule
 - [2026-04-18] single in-memory game dict - no auth needed for prototype
+- [2026-04-18] migrate to frontend-only JS - single language, lower token cost per task
+- [2026-04-18] chess.js over python-chess - browser-compatible, same semantics
+- [2026-04-18] Vitest over pytest - same test coverage, no server overhead
+- [2026-04-18] manual put/remove for AI moves - avoids FEN validation on custom boards
+- [2026-04-18] piece-map save/restore in _getMovesForSq - FEN invalid when king missing

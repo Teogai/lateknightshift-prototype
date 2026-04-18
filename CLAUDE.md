@@ -6,7 +6,7 @@
 - Never dump full context into every doc
 
 ## TDD loop
-1. Write failing test in `backend/tests/`
+1. Write failing test in `tests/`
 2. Run test, confirm fails
 3. Write minimal code to pass
 4. Run test, confirm passes
@@ -17,7 +17,7 @@
 ## Commits
 - Lowercase imperative, <50 chars
 - One commit per passing feature, not per file
-- Run `pytest` before every commit
+- Run `npm test` before every commit
 - Update relevant md before commit
 - **Commit all changed files after every completed task**
 
@@ -35,26 +35,19 @@
 - Report done per task, one line
 
 ## Stack
-- Python 3.11+, FastAPI, python-chess, pytest, httpx
-- Frontend: single `frontend/index.html`, vanilla JS, CSS grid
-- No build tools, no bundler
-- HTTP first, WebSocket later
+- Frontend-only: vanilla JS ES modules, chess.js, Vite (dev server), Vitest (tests)
+- No backend server, no HTTP, no bundler
+- Direct function calls — no fetch, no API
 
-## Run (local)
-- Activate venv first: `source .venv/bin/activate` (Linux/Mac) or `.venv\Scripts\activate` (Windows)
-- Tests: `.venv/Scripts/python -m pytest backend/tests/ -v`
-- Server: `bash backend/run.sh` or `.venv/Scripts/python -m uvicorn backend.server:app --reload`
-- Windows PowerShell: `.venv\Scripts\python.exe -m pytest backend/tests/ -v`
+## Run
+- Install deps: `npm install`
+- Tests: `npm test`
+- Dev server: `npm run dev` → http://localhost:5173
 
 ## Frontend testing
 - Use `preview_eval` with JS selectors to inspect state — not `preview_screenshot`
-- e.g. `document.getElementById('deck-info').textContent` or `gameState.discard_size`
+- e.g. `document.getElementById('deck-info').textContent` or `gameState.toDict()`
 - Screenshots are slow and unreliable; JS queries are fast and exact
-- Before starting backend for tests: check if it's already running (e.g. `netstat -ano | grep :8000`)
+- Before starting dev server for tests: check if already running (`netstat -ano | grep :5173`)
   - If running: ask user whether to kill it or skip testing
 - **ALWAYS call `preview_stop` after every test session — no exceptions, do not skip**
-
-## Run (devcontainer)
-- No venv needed inside container
-- Tests: `python -m pytest backend/tests/ -v`
-- Server: `bash backend/run.sh`

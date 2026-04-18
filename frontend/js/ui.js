@@ -1,0 +1,292 @@
+import { GameState, knightAttacks } from './engine.js';
+
+const PIECES = {
+  white: {
+    king:   './pieces/Chess_klt60.png',
+    queen:  './pieces/Chess_qlt60.png',
+    rook:   './pieces/Chess_rlt60.png',
+    bishop: './pieces/Chess_blt60.png',
+    knight: './pieces/Chess_nlt60.png',
+    pawn:   './pieces/Chess_plt60.png',
+  },
+  black: {
+    king:   './pieces/Chess_kdt60.png',
+    queen:  './pieces/Chess_qdt60.png',
+    rook:   './pieces/Chess_rdt60.png',
+    bishop: './pieces/Chess_bdt60.png',
+    knight: './pieces/Chess_ndt60.png',
+    pawn:   './pieces/Chess_pdt60.png',
+  },
+};
+
+export let gameState = null;
+
+export const uiState = {
+  phase: 'idle',
+  selectedCardIndex: null,
+  selectedCardType: null,
+  selectedPieceType: null,
+  fromSq: null,
+  pendingPromoFrom: null,
+  pendingPromoTo: null,
+  knightTargets: [],
+  legalDests: [],
+  summonTargets: [],
+};
+
+export function resetUiState() {
+  uiState.phase = 'idle';
+  uiState.selectedCardIndex = null;
+  uiState.selectedCardType = null;
+  uiState.selectedPieceType = null;
+  uiState.fromSq = null;
+  uiState.pendingPromoFrom = null;
+  uiState.pendingPromoTo = null;
+  uiState.knightTargets = [];
+  uiState.legalDests = [];
+  uiState.summonTargets = [];
+}
+
+export function setHint(text) {
+  document.getElementById('action-hint').textContent = text;
+}
+
+export function render() {
+  renderBoard();
+  renderHand();
+  renderStatus();
+}
+
+export function renderBoard() {
+  const boardEl = document.getElementById('board');
+  boardEl.innerHTML = '';
+  const d = gameState ? gameState.toDict() : null;
+  const movedSet = new Set(d ? (d.moved_this_turn || []) : []);
+  const summonedSet = new Set(d ? (d.summoned_this_turn || []) : []);
+  const lastFrom = d?.last_move?.from;
+  const lastTo   = d?.last_move?.to;
+  const inCheck  = d?.in_check;
+  const attackerSq = d?.check_attacker_sq;
+  const board = d?.board || {};
+
+  for (let rank = 7; rank >= 0; rank--) {
+    for (let file = 0; file < 8; file++) {
+      const sqName = 'abcdefgh'[file] + (rank + 1);
+      const isLight = (rank + file) % 2 === 0;
+      const div = document.createElement('div');
+      div.className = 'sq ' + (isLight ? 'light' : 'dark');
+      div.dataset.sq = sqName;
+
+      if (sqName === lastFrom) div.classList.add('last-move-from');
+      if (sqName === lastTo)   div.classList.add('last-move-to');
+
+      if (inCheck) {
+        const p = board[sqName];
+        if (p && p.type === 'king' && p.color === 'white') div.classList.add('in-check');
+        if (sqName === attackerSq) div.classList.add('check-attacker');
+      }
+
+      if ((uiState.phase === 'from_selected' || uiState.phase === 'knight_from_selected') && uiState.fromSq === sqName) {
+        div.classList.add('selected-from');
+      }
+      if (uiState.knightTargets.includes(sqName)) div.classList.add('knight-target');
+      if (uiState.legalDests.includes(sqName))    div.classList.add('legal-dest');
+      if (uiState.summonTargets.includes(sqName)) div.classList.add('summon-target');
+
+      const piece = board[sqName];
+      if (piece) {
+        const img = document.createElement('img');
+        img.src = PIECES[piece.color][piece.type];
+        img.className = 'piece-img';
+        img.alt = piece.color + ' ' + piece.type;
+        if (piece.color === 'white' && (movedSet.has(sqName) || summonedSet.has(sqName))) {
+          div.classList.add('already-moved');
+        }
+        div.appendChild(img);
+      }
+      div.addEventListener('click', () => handleSquareClick(sqName));
+      boardEl.appendChild(div);
+    }
+  }
+}
+
+export function renderHand() {
+  const handEl = document.getElementById('hand');
+  handEl.innerHTML = '';
+  if (!gameState) return;
+  const d = gameState.toDict();
+  d.hand.forEach((card, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'card-btn';
+    btn.textContent = `${card.name}  (${card.cost})`;
+    if (idx === uiState.selectedCardIndex) btn.classList.add('selected');
+    if (card.cost > d.mana) {
+      btn.classList.add('unaffordable');
+      btn.disabled = true;
+    }
+    btn.addEventListener('click', () => handleCardClick(idx, card));
+    handEl.appendChild(btn);
+  });
+}
+
+export function renderStatus() {
+  if (!gameState) return;
+  const d = gameState.toDict();
+  const statusEl = document.getElementById('status-bar');
+  statusEl.className = '';
+  if (d.turn === 'player') {
+    statusEl.textContent = d.in_check ? 'Your turn — CHECK!' : 'Your turn';
+    statusEl.classList.add('your-turn');
+  } else if (d.turn === 'enemy') {
+    statusEl.textContent = 'Enemy thinking…';
+    statusEl.classList.add('enemy-turn');
+  } else if (d.turn === 'player_won') {
+    statusEl.textContent = 'You win!';
+    statusEl.classList.add('game-over');
+  } else if (d.turn === 'enemy_won') {
+    statusEl.textContent = 'Game over.';
+    statusEl.classList.add('game-over');
+  }
+  document.getElementById('mana-display').textContent = `Mana: ${d.mana} / 3`;
+  document.getElementById('deck-info').textContent = `Deck: ${d.deck_size}  |  Discard: ${d.discard_size}`;
+  document.getElementById('btn-end-turn').disabled = d.turn !== 'player';
+}
+
+export function handleCardClick(index, card) {
+  if (!gameState || gameState.toDict().turn !== 'player') return;
+  if (uiState.phase !== 'idle' && uiState.selectedCardIndex === index) {
+    resetUiState(); setHint(''); render(); return;
+  }
+  const d = gameState.toDict();
+  if (card.cost > d.mana) return;
+  uiState.phase = 'card_selected';
+  uiState.selectedCardIndex = index;
+  uiState.selectedCardType = card.type;
+  uiState.selectedPieceType = card.piece || null;
+  if (card.type === 'move') {
+    setHint('Click a friendly piece to move');
+  } else if (card.type === 'knight_move') {
+    setHint('Knight Move: click a friendly piece to teleport');
+  } else if (card.type === 'summon') {
+    const isPawn = card.piece === 'pawn';
+    const validRanks = isPawn ? ['1', '2'] : ['1'];
+    uiState.summonTargets = 'abcdefgh'.split('').flatMap(f =>
+      validRanks.map(r => f + r)
+    ).filter(sq => !d.board[sq]);
+    setHint(`Click a highlighted square to summon ${card.piece}`);
+  }
+  render();
+}
+
+export function handleSquareClick(sq) {
+  if (uiState.phase === 'idle') return;
+  const d = gameState.toDict();
+
+  if (uiState.phase === 'card_selected') {
+    if (uiState.selectedCardType === 'move') {
+      const piece = d.board[sq];
+      if (piece && piece.color === 'white') {
+        uiState.legalDests = gameState.legalDestinationsFor(sq);
+        uiState.phase = 'from_selected';
+        uiState.fromSq = sq;
+        setHint('Click a highlighted square to move to');
+        render();
+      } else {
+        setHint('Pick a friendly piece');
+      }
+    } else if (uiState.selectedCardType === 'knight_move') {
+      const piece = d.board[sq];
+      if (piece && piece.color === 'white') {
+        uiState.phase = 'knight_from_selected';
+        uiState.fromSq = sq;
+        uiState.knightTargets = knightAttacks(sq).filter(t => {
+          const p = d.board[t];
+          return !p || p.color === 'black';
+        });
+        setHint('Click a highlighted square to teleport');
+        render();
+      } else {
+        setHint('Pick a friendly piece');
+      }
+    } else if (uiState.selectedCardType === 'summon') {
+      if (uiState.summonTargets.length && !uiState.summonTargets.includes(sq)) {
+        setHint('Invalid placement square'); return;
+      }
+      if (d.board[sq]) { setHint('Square is occupied'); return; }
+      const result = gameState.playSummonCard(uiState.selectedCardIndex, uiState.selectedPieceType, sq);
+      if (result.error) { setHint(result.error); }
+      resetUiState(); setHint(''); render();
+    }
+    return;
+  }
+
+  if (uiState.phase === 'from_selected') {
+    if (sq === uiState.fromSq) {
+      uiState.phase = 'card_selected';
+      uiState.fromSq = null;
+      uiState.legalDests = [];
+      setHint('Click a friendly piece to move');
+      render(); return;
+    }
+    const piece = d.board[uiState.fromSq];
+    const isPromo = piece && piece.type === 'pawn' && piece.color === 'white' && sq[1] === '8';
+    if (isPromo) {
+      uiState.pendingPromoFrom = uiState.fromSq;
+      uiState.pendingPromoTo = sq;
+      document.getElementById('promotion-modal').classList.remove('hidden');
+      return;
+    }
+    const result = gameState.playMoveCard(uiState.selectedCardIndex, uiState.fromSq, sq);
+    if (result.error) { setHint(result.error); }
+    resetUiState(); setHint(''); render();
+    return;
+  }
+
+  if (uiState.phase === 'knight_from_selected') {
+    if (sq === uiState.fromSq) {
+      uiState.phase = 'card_selected';
+      uiState.fromSq = null;
+      uiState.knightTargets = [];
+      setHint('Knight Move: click a friendly piece to teleport');
+      render(); return;
+    }
+    if (!uiState.knightTargets.includes(sq)) {
+      setHint('Not a valid knight-jump square'); return;
+    }
+    const result = gameState.playKnightMoveCard(uiState.selectedCardIndex, uiState.fromSq, sq);
+    if (result.error) { setHint(result.error); }
+    resetUiState(); setHint(''); render();
+  }
+}
+
+export function handleEndTurn() {
+  document.getElementById('btn-end-turn').disabled = true;
+  resetUiState(); setHint('');
+  const result = gameState.endTurn();
+  if (result.error) setHint(result.error);
+  render();
+}
+
+export function handlePromotionChoice(promoLetter) {
+  document.getElementById('promotion-modal').classList.add('hidden');
+  const cardIndex = uiState.selectedCardIndex;
+  const fromSq    = uiState.pendingPromoFrom;
+  const toSq      = uiState.pendingPromoTo;
+  resetUiState();
+  const result = gameState.playMoveCard(cardIndex, fromSq, toSq, promoLetter);
+  if (result.error) setHint(result.error);
+  setHint(''); render();
+}
+
+export function startGame(character) {
+  document.getElementById('select-error').textContent = '';
+  try {
+    gameState = new GameState(character);
+    document.getElementById('screen-select').classList.add('hidden');
+    document.getElementById('screen-game').classList.remove('hidden');
+    resetUiState();
+    render();
+  } catch (e) {
+    document.getElementById('select-error').textContent = e.message;
+  }
+}

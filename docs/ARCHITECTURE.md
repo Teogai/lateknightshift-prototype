@@ -1,17 +1,16 @@
 # ARCHITECTURE
 
-## Backend
-- `backend/server.py` — FastAPI app, HTTP routes, entry point
-- `backend/engine.py` — board state, turn resolution, python-chess wrapper
-- `backend/cards.py` — card definitions, effect resolution
-- `backend/encounters.py` — enemy configs, AI, encounter flow
-- `backend/tests/` — pytest suite
-- `backend/requirements.txt` — Python deps
-- `backend/run.sh` — uvicorn dev server launcher
+## Frontend JS modules
+- `frontend/js/cards.js` — card factories, STARTER_DECKS, buildStarterDeck, dealHand
+- `frontend/js/engine.js` — GameState class, board logic, chess.js wrapper, all card-play methods, endTurn AI
+- `frontend/js/ui.js` — DOM render functions, interaction handlers, uiState
+- `frontend/js/main.js` — entry point, event listener wiring
+- `frontend/style.css` — all styles (extracted from old index.html)
+- `frontend/index.html` — HTML shell only; loads style.css + main.js
 
-## Frontend
-- `frontend/index.html` — single-page UI, 8x8 grid, hand/mana UI, fetches backend
-- No bundler, no build step
+## Tests
+- `tests/` — Vitest suite (58 tests, 1-1 port of former pytest suite)
+- Run: `npm test`
 
 ## Docs
 - `docs/GAME_DESIGN.md` — rules, mechanics
@@ -22,12 +21,19 @@
 - `docs/DECISIONS.md` — design decisions log
 
 ## Stack
-- Python 3.11+
-- FastAPI, uvicorn
-- python-chess (move validation, board)
-- pytest, httpx (tests)
-- Vanilla JS / HTML / CSS grid
-- Local env: `.venv/` in repo root (gitignored); activate before running any python/pytest command
+- chess.js v1 (move validation, board, attack detection)
+- Vite v5 (dev server, serves frontend/)
+- Vitest v2 (test runner)
+- Vanilla JS ES modules — no React, no bundler output
+- No backend server, no HTTP
 
-## Transport
-- HTTP first; WebSocket later if needed
+## Key design notes
+- `chess.js get()` returns `false` (not `null`) for empty squares — use truthiness checks
+- King-capture is the win condition (not checkmate); chess.js never generates king-capture moves so they are handled manually via `remove()`+`put()`
+- FEN trick in `_getMovesForSq`: temporarily loads FEN with altered turn to get moves for either color; save/restore via piece map (not FEN) to handle positions missing a king
+- AI move execution uses manual `remove()`+`put()` to avoid FEN validation issues
+- `pseudoLegalMovesFor(color)` also finds king-capture moves using `isAttacked()` + direct geometry (`_pieceAttacks`)
+
+## Former backend (removed)
+- Was: Python/FastAPI + python-chess + pytest + httpx
+- Removed in favour of frontend-only architecture (no multi-user need, simpler context for Claude Code)
