@@ -107,21 +107,39 @@ test('generateMoves includes en passant capture when enPassantTarget provided', 
   expect(ep).toBeDefined();
 });
 
-// 9. Aggression personality moves rook to attack white king
-test('aggression personality moves rook to attack white king', () => {
-  const chess = emptyChess();
-  chess.put({ type: 'k', color: 'b' }, 'h8');
-  chess.put({ type: 'r', color: 'b' }, 'a6');
-  chess.put({ type: 'k', color: 'w' }, 'e2');
+// 9. Aggression: rook captures king when adjacent (depth 2, 3, 4)
+for (const depth of [2, 3, 4]) {
+  test(`aggression captures white king in one move at depth ${depth}`, () => {
+    // Black rook on e5, white king on e1 — rook can capture king directly
+    const chess = emptyChess();
+    chess.put({ type: 'k', color: 'b' }, 'h8');
+    chess.put({ type: 'r', color: 'b' }, 'e5');
+    chess.put({ type: 'k', color: 'w' }, 'e1');
 
-  const moves = generateMoves(chess, 'b');
-  const chosen = selectMove(chess, moves, { aggression: 2.0 }, 2);
+    const moves = generateMoves(chess, 'b');
+    const chosen = selectMove(chess, moves, { aggression: 2.0, material: 1.0 }, depth);
+    expect(chosen.to).toBe('e1');
+  });
+}
 
-  const saved = makeMove(chess, chosen);
-  const attacksKing = chess.isAttacked('e2', 'b');
-  unmakeMove(chess, chosen, saved);
-  expect(attacksKing).toBe(true);
-});
+// 10. Aggression: AI finds king capture in two moves (depth ≥ 3)
+for (const depth of [3, 4]) {
+  test(`aggression finds king in two moves at depth ${depth}`, () => {
+    // Black rook on a5, white king on e5 — rook must move to e-file then capture
+    // Rook a5 → a1 is not king capture; rook must go to e-file (e.g. e5 blocked by king)
+    // Setup: rook on a3, king on e1 — rook→e3 then →e1
+    const chess = emptyChess();
+    chess.put({ type: 'k', color: 'b' }, 'h8');
+    chess.put({ type: 'r', color: 'b' }, 'a3');
+    chess.put({ type: 'k', color: 'w' }, 'e1');
+
+    const moves = generateMoves(chess, 'b');
+    const chosen = selectMove(chess, moves, { aggression: 2.0, material: 1.0 }, depth);
+    // First move should set up the capture: rook to e3 (same file as king)
+    // or directly to e3/a1 aligning for e1
+    expect(chosen.to).toBe('e3');
+  });
+}
 
 test('makeMove en passant removes the captured pawn', () => {
   const chess = emptyChess();

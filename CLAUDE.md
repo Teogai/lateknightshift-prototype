@@ -76,3 +76,10 @@
 - Before starting dev server for tests: check if already running (`netstat -ano | grep :5173`)
   - If running: ask user whether to kill it or skip testing
 - **ALWAYS call `preview_stop` after every test session — no exceptions, do not skip**
+- **Only use preview for things that cannot be tested in code** (visual layout, click interactions, screen transitions)
+- Game logic changes (AI, engine, rules) must be tested via Vitest unit tests, not preview
+
+## AI testing
+- Test AI behavior at multiple depths (2, 3, 4) — shallow depth hides bugs
+- For aggression/king-hunt tests: verify the AI actually selects king-capture moves when available, not just advances toward the king
+- A good AI test: set up a position where king capture is reachable in N moves, confirm `selectMove` finds it at depth ≥ N
