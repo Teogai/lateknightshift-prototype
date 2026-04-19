@@ -1,27 +1,66 @@
 import { Chess } from 'chess.js';
 import { buildStarterDeck, dealHand } from './cards.js';
-import { selectMove } from './ai.js';
 import { STARTING_MANA, HAND_SIZE, VALID_PROMO, VALID_CHARACTERS } from './engine/constants.js';
 import { ENEMIES, VALID_ENEMIES } from './enemies.js';
 import {
   makeBoard, boardToDict, knightAttacks,
   getMovesForSq, pseudoLegalMovesFor, allGeometricMovesFor,
-  checkKingCaptured, checkInfo, executeKingCapture,
+  checkKingCaptured, checkInfo, executeKingCapture, clearPath,
 } from './engine/board.js';
 
 export { STARTING_MANA, HAND_SIZE, VALID_PROMO, CHARACTER_PIECES, VALID_CHARACTERS } from './engine/constants.js';
 export { ENEMIES, VALID_ENEMIES } from './enemies.js';
 export { boardToDict, knightAttacks } from './engine/board.js';
 
+// Validate that a move matches a geometric pattern (ignoring actual piece type).
+// patternPiece: 'b' (diagonal), 'r' (straight), 'q' (both)
+function matchesPattern(chess, fromSq, toSq, patternPiece) {
+  const ff = fromSq.charCodeAt(0) - 97;
+  const fr = parseInt(fromSq[1]) - 1;
+  const tf = toSq.charCodeAt(0) - 97;
+  const tr = parseInt(toSq[1]) - 1;
+  const df = tf - ff, dr = tr - fr;
+  if (df === 0 && dr === 0) return false;
+  // re-use clearPath for path-clear check
+  const diag = Math.abs(df) === Math.abs(dr);
+  const straight = df === 0 || dr === 0;
+  let matches = false;
+  if (patternPiece === 'b') matches = diag;
+  else if (patternPiece === 'r') matches = straight;
+  else if (patternPiece === 'q') matches = diag || straight;
+  if (!matches) return false;
+  return clearPath(chess, ff, fr, tf, tr);
+}
+
 export class GameState {
-  constructor(character, enemy = 'pawn_pusher') {
+  constructor(character, enemy = 'pawn_pusher', persistentDeck = null, startingPieces = []) {
     if (!VALID_CHARACTERS.has(character)) throw new Error(`unknown character: ${character}`);
     if (!VALID_ENEMIES.has(enemy)) throw new Error(`unknown enemy: ${enemy}`);
     this._chess = makeBoard(character, enemy);
-    this._personality = ENEMIES[enemy].personality;
+
+    // Place any extra starting pieces from a run
+    for (const { piece, square } of startingPieces) {
+      if (!this._chess.get(square)) {
+        this._chess.put(piece, square);
+      }
+    }
+
+    const enemyDef = ENEMIES[enemy];
+    this._personality = enemyDef.personality;
+    this._enemyAI = enemyDef.createAI ? enemyDef.createAI() : null;
     this.character = character;
     this.mana = STARTING_MANA;
-    const dealt = dealHand(buildStarterDeck(character), HAND_SIZE);
+    this.enemyWillDoubleMove = false;
+
+    const rawDeck = persistentDeck
+      ? persistentDeck.map(c => ({ ...c }))
+      : buildStarterDeck(character);
+    // shuffle
+    for (let i = rawDeck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [rawDeck[i], rawDeck[j]] = [rawDeck[j], rawDeck[i]];
+    }
+    const dealt = dealHand(rawDeck, HAND_SIZE);
     this.deck = dealt.deck;
     this.hand = dealt.hand;
     this.discard = dealt.discard;
@@ -46,6 +85,7 @@ export class GameState {
       last_move: { from: this.lastMove.from, to: this.lastMove.to },
       in_check: check.in_check,
       check_attacker_sq: check.check_attacker_sq,
+      enemy_will_double_move: this.enemyWillDoubleMove,
     };
   }
 
@@ -54,6 +94,23 @@ export class GameState {
     if (!piece || piece.color !== 'w') return [];
     if (this.summonedThisTurn.has(sq) || this.movedThisTurn.has(sq)) return [];
     return getMovesForSq(this._chess, sq, 'w', this.enPassantTarget).map(m => m.to);
+  }
+
+  geometricDestsFor(sq, pattern) {
+    const piece = this._chess.get(sq);
+    if (!piece || piece.color !== 'w') return [];
+    if (this.movedThisTurn.has(sq)) return [];
+    const dests = [];
+    for (let rank = 1; rank <= 8; rank++) {
+      for (let file = 0; file < 8; file++) {
+        const to = 'abcdefgh'[file] + rank;
+        if (to === sq) continue;
+        const target = this._chess.get(to);
+        if (target?.color === 'w') continue;
+        if (matchesPattern(this._chess, sq, to, pattern)) dests.push(to);
+      }
+    }
+    return dests;
   }
 
   pseudoLegalMovesFor(color) {
@@ -68,6 +125,7 @@ export class GameState {
     if (cardIndex < 0 || cardIndex >= this.hand.length) return { error: 'invalid card index' };
     const card = this.hand[cardIndex];
     if (card.type !== 'move') return { error: 'not a move card' };
+    if (card.unplayable) return { error: 'card is unplayable' };
     if (this.mana < card.cost) return { error: 'not enough mana' };
 
     const piece = this._chess.get(fromSq);
@@ -137,6 +195,51 @@ export class GameState {
     return { ok: true };
   }
 
+  _playPatternMoveCard(cardIndex, expectedType, pattern, fromSq, toSq) {
+    if (cardIndex < 0 || cardIndex >= this.hand.length) return { error: 'invalid card index' };
+    const card = this.hand[cardIndex];
+    if (card.type !== expectedType) return { error: `not a ${expectedType} card` };
+    if (this.mana < card.cost) return { error: 'not enough mana' };
+
+    const piece = this._chess.get(fromSq);
+    if (!piece || piece.color !== 'w') return { error: 'no friendly piece on that square' };
+    if (this.movedThisTurn.has(fromSq)) return { error: 'piece already moved this turn' };
+
+    const target = this._chess.get(toSq);
+    if (target?.color === 'w') return { error: 'square occupied by friendly piece' };
+    if (!matchesPattern(this._chess, fromSq, toSq, pattern)) return { error: 'invalid destination for this card' };
+
+    const isKingCapture = target?.type === 'k' && target?.color === 'b';
+    if (isKingCapture) {
+      executeKingCapture(this._chess, fromSq, toSq, piece);
+    } else {
+      this._chess.remove(fromSq);
+      this._chess.put(piece, toSq);
+    }
+
+    this.mana -= card.cost;
+    this.discard.push(this.hand.splice(cardIndex, 1)[0]);
+    this.movedThisTurn.add(toSq);
+    this.lastMove = { from: fromSq, to: toSq };
+    const winner = checkKingCaptured(this._chess);
+    if (winner) this.turn = winner;
+
+    if (piece.type === 'p' && toSq[1] === '8') return { ok: true, needs_promotion: [toSq] };
+    return { ok: true };
+  }
+
+  playBishopMoveCard(cardIndex, fromSq, toSq) {
+    return this._playPatternMoveCard(cardIndex, 'bishop_move', 'b', fromSq, toSq);
+  }
+
+  playRookMoveCard(cardIndex, fromSq, toSq) {
+    return this._playPatternMoveCard(cardIndex, 'rook_move', 'r', fromSq, toSq);
+  }
+
+  playQueenMoveCard(cardIndex, fromSq, toSq) {
+    return this._playPatternMoveCard(cardIndex, 'queen_move', 'q', fromSq, toSq);
+  }
+
   applyPromotion(sq, promoType) {
     if (!VALID_PROMO.has(promoType)) return { error: 'invalid promotion piece' };
     const piece = this._chess.get(sq);
@@ -173,38 +276,43 @@ export class GameState {
     return { ok: true };
   }
 
+  _executeEnemyMoveObj(chosen) {
+    if (!chosen) return;
+    this.lastMove = { from: chosen.from, to: chosen.to };
+    const movingPiece = this._chess.get(chosen.from);
+    const targetRank = parseInt(chosen.to[1]);
+    const isPromo = movingPiece?.type === 'p' && targetRank === 1;
+    const isDiagonal = chosen.from[0] !== chosen.to[0];
+    const destinationWasEmpty = !this._chess.get(chosen.to);
+    const isEnPassantCapture = movingPiece?.type === 'p' && isDiagonal && destinationWasEmpty;
+    this._chess.remove(chosen.from);
+    this._chess.remove(chosen.to);
+    this._chess.put(isPromo ? { type: 'q', color: 'b' } : movingPiece, chosen.to);
+    if (isEnPassantCapture) {
+      this._chess.remove(chosen.to[0] + chosen.from[1]);
+    }
+    const isEnemyDoublePush = movingPiece?.type === 'p' && chosen.from[1] === '7' && chosen.to[1] === '5';
+    if (isEnemyDoublePush) this.enPassantTarget = chosen.to[0] + '6';
+  }
+
   endTurn() {
     if (this.turn !== 'player') return { error: 'not player turn' };
     this.turn = 'enemy';
     this.summonedThisTurn.clear();
     this.movedThisTurn.clear();
 
-    let moves = pseudoLegalMovesFor(this._chess, 'b', this.enPassantTarget);
-    if (!moves.length) moves = allGeometricMovesFor(this._chess, 'b');
-    if (moves.length) {
-      const chosen = selectMove(this._chess, moves, this._personality, 2, this.enPassantTarget);
-
-      if (chosen) {
-        this.lastMove = { from: chosen.from, to: chosen.to };
-        const movingPiece = this._chess.get(chosen.from);
-        const targetRank = parseInt(chosen.to[1]);
-        const isPromo = movingPiece?.type === 'p' && targetRank === 1;
-        const isDiagonal = chosen.from[0] !== chosen.to[0];
-        const destinationWasEmpty = !this._chess.get(chosen.to);
-        const isEnPassantCapture = movingPiece?.type === 'p' && isDiagonal && destinationWasEmpty;
-        this._chess.remove(chosen.from);
-        this._chess.remove(chosen.to);
-        this._chess.put(isPromo ? { type: 'q', color: 'b' } : movingPiece, chosen.to);
-        if (isEnPassantCapture) {
-          this._chess.remove(chosen.to[0] + chosen.from[1]);
-        }
-
-        const isEnemyDoublePush = movingPiece?.type === 'p' && chosen.from[1] === '7' && chosen.to[1] === '5';
-        this.enPassantTarget = isEnemyDoublePush ? (chosen.to[0] + '6') : null;
-
+    if (this._enemyAI) {
+      const result = this._enemyAI.takeTurn(this._chess, this._personality, this.enPassantTarget);
+      this.enPassantTarget = null;
+      for (const move of result.moves) {
+        this._executeEnemyMoveObj(move);
         const winner = checkKingCaptured(this._chess);
-        if (winner) this.turn = winner;
+        if (winner) { this.turn = winner; break; }
       }
+      this.enemyWillDoubleMove = result.warnNext || false;
+    } else {
+      // No AI defined — enemy skips turn (should not happen in practice)
+      this.enPassantTarget = null;
     }
 
     if (this.turn !== 'player_won' && this.turn !== 'enemy_won') {

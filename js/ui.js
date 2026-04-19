@@ -1,4 +1,13 @@
 import { GameState, knightAttacks, VALID_ENEMIES } from './engine.js';
+import { RunState } from './run.js';
+import { renderMapScreen } from './map.js';
+import {
+  renderCardRewardScreen, renderPieceRewardScreen, renderUpgradeScreen,
+  renderTransformScreen, renderShopScreen, renderDefeatScreen,
+  pickCardChoices, pickPieceChoices,
+} from './rewards.js';
+import { REGULAR_ENEMIES, ELITE_ENEMY, BOSS_ENEMY } from './enemies.js';
+import { curseCard, bishopMoveCard, rookMoveCard, queenMoveCard } from './cards.js';
 
 const PIECES = {
   white: {
@@ -19,7 +28,10 @@ const PIECES = {
   },
 };
 
+const ALL_SCREENS = ['screen-select', 'screen-map', 'screen-game', 'screen-room', 'screen-defeat', 'screen-complete'];
+
 export let gameState = null;
+export let runState = null;
 
 export const uiState = {
   phase: 'idle',
@@ -31,6 +43,8 @@ export const uiState = {
   knightTargets: [],
   legalDests: [],
   summonTargets: [],
+  geometricTargets: [],
+  gameOverHandled: false,
 };
 
 export function resetUiState() {
@@ -43,6 +57,18 @@ export function resetUiState() {
   uiState.knightTargets = [];
   uiState.legalDests = [];
   uiState.summonTargets = [];
+  uiState.geometricTargets = [];
+  uiState.gameOverHandled = false;
+}
+
+export function showScreen(id) {
+  ALL_SCREENS.forEach(s => {
+    const el = document.getElementById(s);
+    if (el) {
+      if (s === id) el.classList.remove('hidden');
+      else el.classList.add('hidden');
+    }
+  });
 }
 
 export function setHint(text) {
@@ -53,6 +79,7 @@ export function render() {
   renderBoard();
   renderHand();
   renderStatus();
+  checkGameOver();
 }
 
 export function renderBoard() {
@@ -84,12 +111,13 @@ export function renderBoard() {
         if (sqName === attackerSq) div.classList.add('check-attacker');
       }
 
-      if ((uiState.phase === 'from_selected' || uiState.phase === 'knight_from_selected') && uiState.fromSq === sqName) {
+      if ((uiState.phase === 'from_selected' || uiState.phase === 'knight_from_selected' || uiState.phase === 'geometric_from_selected') && uiState.fromSq === sqName) {
         div.classList.add('selected-from');
       }
-      if (uiState.knightTargets.includes(sqName)) div.classList.add('knight-target');
-      if (uiState.legalDests.includes(sqName))    div.classList.add('legal-dest');
-      if (uiState.summonTargets.includes(sqName)) div.classList.add('summon-target');
+      if (uiState.knightTargets.includes(sqName))   div.classList.add('knight-target');
+      if (uiState.legalDests.includes(sqName))      div.classList.add('legal-dest');
+      if (uiState.summonTargets.includes(sqName))   div.classList.add('summon-target');
+      if (uiState.geometricTargets.includes(sqName)) div.classList.add('legal-dest');
 
       const piece = board[sqName];
       if (piece) {
@@ -116,7 +144,14 @@ export function renderHand() {
   d.hand.forEach((card, idx) => {
     const btn = document.createElement('button');
     btn.className = 'card-btn';
-    btn.textContent = `${card.name}  (${card.cost})`;
+    if (card.type === 'curse') {
+      btn.textContent = `${card.name}  [unplayable]`;
+      btn.classList.add('curse-card');
+      btn.disabled = true;
+      handEl.appendChild(btn);
+      return;
+    }
+    btn.textContent = `${card.name}  (${card.cost})${card.upgraded ? ' *' : ''}`;
     if (idx === uiState.selectedCardIndex) btn.classList.add('selected');
     if (card.cost > d.mana) {
       btn.classList.add('unaffordable');
@@ -133,7 +168,9 @@ export function renderStatus() {
   const statusEl = document.getElementById('status-bar');
   statusEl.className = '';
   if (d.turn === 'player') {
-    statusEl.textContent = d.in_check ? 'Your turn — CHECK!' : 'Your turn';
+    let msg = d.in_check ? 'Your turn — CHECK!' : 'Your turn';
+    if (d.enemy_will_double_move) msg += '  ⚠ The Duelist is preparing a double move!';
+    statusEl.textContent = msg;
     statusEl.classList.add('your-turn');
   } else if (d.turn === 'enemy') {
     statusEl.textContent = 'Enemy thinking…';
@@ -146,8 +183,132 @@ export function renderStatus() {
     statusEl.classList.add('game-over');
   }
   document.getElementById('mana-display').textContent = `Mana: ${d.mana} / 3`;
-  document.getElementById('deck-info').textContent = `Deck: ${d.deck_size}  |  Discard: ${d.discard_size}`;
+  document.getElementById('deck-info').textContent = `Deck: ${d.deck_size}  |  Discard: ${d.discard_size}  |  Lives: ${runState?.lives ?? '—'}`;
   document.getElementById('btn-end-turn').disabled = d.turn !== 'player';
+}
+
+function checkGameOver() {
+  if (!gameState || uiState.gameOverHandled) return;
+  const d = gameState.toDict();
+  if (d.turn !== 'player_won' && d.turn !== 'enemy_won') return;
+  uiState.gameOverHandled = true;
+  setTimeout(() => {
+    if (d.turn === 'player_won') handleBattleWon();
+    else handleBattleDefeated();
+  }, 600);
+}
+
+function pickEnemy(nodeType) {
+  if (nodeType === 'elite') return ELITE_ENEMY;
+  if (nodeType === 'boss')  return BOSS_ENEMY;
+  return REGULAR_ENEMIES[Math.floor(Math.random() * REGULAR_ENEMIES.length)];
+}
+
+export function handleBattleWon() {
+  if (!runState) return;
+  const nodeType = runState.pendingNode?.type;
+
+  if (nodeType === 'elite' || nodeType === 'treasure') {
+    // Show piece reward
+    const choices = pickPieceChoices(3);
+    runState.phase = 'room';
+    showScreen('screen-room');
+    renderPieceRewardScreen(choices, runState, () => advanceAfterRoom());
+  } else {
+    // Show card reward then advance
+    const choices = pickCardChoices(3, runState.character);
+    runState.phase = 'room';
+    showScreen('screen-room');
+    renderCardRewardScreen(choices, (i, card) => {
+      runState.addRewardCard(card);
+      advanceAfterRoom();
+    });
+  }
+}
+
+export function handleBattleDefeated() {
+  if (!runState) return;
+  runState.recordDefeat();
+  if (runState.isDefeated()) {
+    showScreen('screen-select');
+    return;
+  }
+  showScreen('screen-defeat');
+  renderDefeatScreen(
+    () => {
+      // Add curse card
+      runState.addRewardCard(curseCard());
+      startBattle(runState.pendingNode?.type || 'monster');
+    },
+    () => {
+      // Retry — use a life (already recorded above)
+      startBattle(runState.pendingNode?.type || 'monster');
+    },
+  );
+}
+
+function startBattle(nodeType) {
+  const enemy = pickEnemy(nodeType);
+  gameState = new GameState(
+    runState.character,
+    enemy,
+    runState.deck,
+    runState.startingPieces,
+  );
+  resetUiState();
+  showScreen('screen-game');
+  render();
+}
+
+function advanceAfterRoom() {
+  const nextFloor = runState.currentFloor + 1;
+  if (nextFloor > 16) {
+    runState.phase = 'complete';
+    showScreen('screen-complete');
+    document.getElementById('complete-message').textContent =
+      `You defeated the Boss Duelist and completed the run on floor ${runState.currentFloor}!`;
+    return;
+  }
+  runState.advanceToFloor(nextFloor);
+  runState.phase = 'map';
+  showScreen('screen-map');
+  renderMapScreen(runState, handleNodeChosen);
+}
+
+export function handleNodeChosen(index) {
+  runState.enterRoom(index);
+  const node = runState.pendingNode;
+
+  if (runState.phase === 'battle') {
+    startBattle(node.type);
+  } else {
+    handleRoomEntered(node);
+  }
+}
+
+export function handleRoomEntered(node) {
+  showScreen('screen-room');
+  if (node.type === 'event') {
+    const choices = pickCardChoices(1, runState.character);
+    if (!choices.length) { advanceAfterRoom(); return; }
+    renderTransformScreen(runState.deck, runState.character, (deckIdx) => {
+      runState.transformCard(deckIdx, choices[0].card);
+      advanceAfterRoom();
+    });
+  } else if (node.type === 'shop') {
+    renderShopScreen(runState.deck, (deckIdx) => {
+      runState.removeCard(deckIdx);
+      advanceAfterRoom();
+    });
+  } else if (node.type === 'upgrade') {
+    renderUpgradeScreen(runState.deck, (deckIdx) => {
+      runState.upgradeCard(deckIdx);
+      advanceAfterRoom();
+    });
+  } else if (node.type === 'treasure') {
+    const choices = pickPieceChoices(3);
+    renderPieceRewardScreen(choices, runState, () => advanceAfterRoom());
+  }
 }
 
 export function handleCardClick(index, card) {
@@ -166,6 +327,12 @@ export function handleCardClick(index, card) {
     setHint('Click a friendly piece to move');
   } else if (card.type === 'knight_move') {
     setHint('Knight Move: click a friendly piece to teleport');
+  } else if (card.type === 'bishop_move') {
+    setHint('Bishop Move: click a friendly piece to move diagonally');
+  } else if (card.type === 'rook_move') {
+    setHint('Rook Move: click a friendly piece to move in a straight line');
+  } else if (card.type === 'queen_move') {
+    setHint('Queen Move: click a friendly piece to move diagonally or straight');
   } else if (card.type === 'summon') {
     const isPawn = card.piece === 'pawn';
     const validRanks = isPawn ? ['1', '2'] : ['1'];
@@ -210,6 +377,18 @@ export function handleSquareClick(sq) {
           return !p || p.color === 'black';
         });
         setHint('Click a highlighted square to teleport');
+        render();
+      } else {
+        setHint('Pick a friendly piece');
+      }
+    } else if (['bishop_move', 'rook_move', 'queen_move'].includes(uiState.selectedCardType)) {
+      const piece = d.board[sq];
+      if (piece && piece.color === 'white') {
+        const patternMap = { bishop_move: 'b', rook_move: 'r', queen_move: 'q' };
+        uiState.phase = 'geometric_from_selected';
+        uiState.fromSq = sq;
+        uiState.geometricTargets = gameState.geometricDestsFor(sq, patternMap[uiState.selectedCardType]);
+        setHint('Click a highlighted square to move to');
         render();
       } else {
         setHint('Pick a friendly piece');
@@ -266,6 +445,32 @@ export function handleSquareClick(sq) {
       resetUiState(); setHint(''); render();
     }
   }
+
+  if (uiState.phase === 'geometric_from_selected') {
+    if (sq === uiState.fromSq) {
+      uiState.phase = 'card_selected';
+      uiState.fromSq = null;
+      uiState.geometricTargets = [];
+      setHint('Click a friendly piece');
+      render(); return;
+    }
+    if (!uiState.geometricTargets.includes(sq)) {
+      setHint('Not a valid destination for this card'); return;
+    }
+    const playFn = {
+      bishop_move: () => gameState.playBishopMoveCard(uiState.selectedCardIndex, uiState.fromSq, sq),
+      rook_move:   () => gameState.playRookMoveCard(uiState.selectedCardIndex, uiState.fromSq, sq),
+      queen_move:  () => gameState.playQueenMoveCard(uiState.selectedCardIndex, uiState.fromSq, sq),
+    }[uiState.selectedCardType];
+    const result = playFn();
+    if (result.error) { setHint(result.error); return; }
+    if (result.needs_promotion) {
+      uiState.pendingPromos = result.needs_promotion.map(s => ({ sq: s, cardType: null }));
+      showNextPromo();
+    } else {
+      resetUiState(); setHint(''); render();
+    }
+  }
 }
 
 export function handleEndTurn() {
@@ -292,13 +497,9 @@ export function handlePromotionChoice(promoLetter) {
 export function startGame(character) {
   document.getElementById('select-error').textContent = '';
   try {
-    const enemies = [...VALID_ENEMIES];
-    const enemy = enemies[Math.floor(Math.random() * enemies.length)];
-    gameState = new GameState(character, enemy);
-    document.getElementById('screen-select').classList.add('hidden');
-    document.getElementById('screen-game').classList.remove('hidden');
-    resetUiState();
-    render();
+    runState = new RunState(character);
+    showScreen('screen-map');
+    renderMapScreen(runState, handleNodeChosen);
   } catch (e) {
     document.getElementById('select-error').textContent = e.message;
   }

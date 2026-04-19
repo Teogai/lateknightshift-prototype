@@ -13,3 +13,6 @@
 - [2026-04-19] r^2 pawn_advance scoring - breaks ties toward most-advanced pawn
 - [2026-04-19] immediate-eval tie-break in selectMove - prefer sooner win over detour
 - [2026-04-19] ~300 line module limit, barrel re-exports - Claude Code loads only relevant files per task
+- [2026-04-19] createAI() factory per enemy - stateful double-move AI without polluting GameState
+- [2026-04-19] piece reward placement in room screen (square picker) - avoids switching to game board mid-reward
+- [2026-04-19] geometric move cards validate destination by pattern not piece type - any piece can use bishop/rook/queen movement

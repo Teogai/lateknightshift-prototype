@@ -1,13 +1,17 @@
 # ARCHITECTURE
 
 ## Source files (project root)
-- `js/cards.js` — card factories, STARTER_DECKS, buildStarterDeck, dealHand
+- `js/config.js` — MAP_CONFIG, CARD_RARITY_WEIGHTS, PIECE_RARITY_WEIGHTS, LIVES constants
+- `js/cards.js` — card factories, STARTER_DECKS, CARD_CATALOG, upgradeCard, buildStarterDeck, dealHand
+- `js/run.js` — RunState class: deck/pieces/lives/floor/phase lifecycle; re-exports generateNodes
+- `js/map.js` — generateNodes, getFixedType, rollRoomTypes, renderMapScreen
+- `js/rewards.js` — pickCardChoices, pickPieceChoices, render* screen functions for all room types
 - `js/engine.js` — GameState class + barrel re-exports; import from here for public API
 - `js/engine/constants.js` — game constants (STARTING_MANA, HAND_SIZE, VALID_PROMO, CHARACTER_PIECES, VALID_CHARACTERS)
 - `js/engine/board.js` — standalone board helpers: boardToDict, knightAttacks, makeBoard, move generation, attack geometry, pseudoLegal/geometric move enumeration
-- `js/enemies.js` — enemy definitions: pieces + personality per enemy (ENEMIES, VALID_ENEMIES); single source of truth
+- `js/enemies.js` — enemy definitions: pieces + personality + createAI() per enemy (ENEMIES, VALID_ENEMIES, REGULAR_ENEMIES, ELITE_ENEMY, BOSS_ENEMY)
 - `js/ai.js` — minimax+alpha-beta enemy engine: generateMoves, makeMove/unmakeMove, evaluate, selectMove
-- `js/ui.js` — DOM render functions, interaction handlers, uiState
+- `js/ui.js` — DOM render functions, interaction handlers, uiState, screen flow
 - `js/main.js` — entry point, event listener wiring
 - `style.css` — all styles
 - `index.html` — HTML shell only; loads style.css + main.js
