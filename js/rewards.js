@@ -2,6 +2,7 @@ import { CARD_CATALOG, curseCard } from './cards.js';
 import { CARD_RARITY_WEIGHTS, PIECE_RARITY_WEIGHTS, REWARD_CHOICES, PIECE_REWARD_CHOICES } from './config.js';
 import { STARTER_DECKS } from './cards.js';
 import { makeCardEl } from './ui.js';
+import { CHARACTER_PIECES } from './engine/constants.js';
 
 const WHITE_PIECES = {
   king:   './pieces/Chess_klt60.png',
@@ -127,7 +128,13 @@ function renderSquarePicker(piece, rarity, runState, onPlaced) {
   const label = piece.charAt(0).toUpperCase() + piece.slice(1);
   content.innerHTML = `<h2>Place your ${label} — click a rank 1–2 square</h2>`;
 
-  const occupied = new Map(runState.startingPieces.map(sp => [sp.square, sp.piece]));
+  const occupied = new Map();
+  for (const { type, color, sq } of CHARACTER_PIECES[runState.character]) {
+    if (color === 'w') occupied.set(sq, { type, color });
+  }
+  for (const { piece, square } of runState.startingPieces) {
+    occupied.set(square, piece);
+  }
 
   const boardEl = document.createElement('div');
   boardEl.className = 'placement-board';
