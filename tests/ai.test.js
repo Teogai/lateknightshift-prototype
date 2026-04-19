@@ -1,8 +1,9 @@
 import { test, expect } from 'vitest';
 import { Chess } from 'chess.js';
-import { selectMove, generateMoves, makeMove, unmakeMove } from '../js/ai.js';
+import { selectMove, selectMoveIterative, generateMoves, makeMove, unmakeMove } from '../js/ai.js';
 import { ENEMIES } from '../js/enemies.js';
 const PAWN_PUSHER = ENEMIES.pawn_pusher.personality;
+const KNIGHT_RIDER = ENEMIES.knight_rider.personality;
 
 function emptyChess() {
   const c = new Chess();
@@ -135,9 +136,8 @@ for (const depth of [3, 4]) {
 
     const moves = generateMoves(chess, 'b');
     const chosen = selectMove(chess, moves, { aggression: 2.0, material: 1.0 }, depth);
-    // First move should set up the capture: rook to e3 (same file as king)
-    // or directly to e3/a1 aligning for e1
-    expect(chosen.to).toBe('e3');
+    // First move should set up the capture: rook aligned with king (e-file or rank 1)
+    expect(['e3', 'a1']).toContain(chosen.to);
   });
 }
 
@@ -156,4 +156,105 @@ test('makeMove en passant removes the captured pawn', () => {
   unmakeMove(chess, move, saved);
   expect(chess.get('d4')?.type).toBe('p');  // white pawn restored
   expect(chess.get('e4')?.type).toBe('p');  // black pawn restored
+});
+
+// Shuffle regression: knight_rider vs player starting position, 15 passes
+test('knight_rider does not shuffle in 15 turns vs starting position', () => {
+  const chess = new Chess();
+  chess.clear();
+
+  // Player starting position (white) — CHARACTER_PIECES.knight
+  chess.put({ type: 'k', color: 'w' }, 'e1');
+  chess.put({ type: 'r', color: 'w' }, 'a1');
+  chess.put({ type: 'n', color: 'w' }, 'b1');
+  chess.put({ type: 'p', color: 'w' }, 'a2');
+  chess.put({ type: 'p', color: 'w' }, 'd2');
+  chess.put({ type: 'p', color: 'w' }, 'e2');
+
+  // Knight rider enemy (black) — ENEMIES.knight_rider.pieces
+  chess.put({ type: 'k', color: 'b' }, 'e8');
+  chess.put({ type: 'n', color: 'b' }, 'b8');
+  chess.put({ type: 'n', color: 'b' }, 'g8');
+  chess.put({ type: 'p', color: 'b' }, 'b7');
+  chess.put({ type: 'p', color: 'b' }, 'e7');
+  chess.put({ type: 'p', color: 'b' }, 'g7');
+
+  const history = [];
+
+  for (let turn = 0; turn < 15; turn++) {
+    const moves = generateMoves(chess, 'b');
+    if (!moves.length) break;
+    const chosen = selectMove(chess, moves, KNIGHT_RIDER, 2);
+    history.push({ from: chosen.from, to: chosen.to });
+    makeMove(chess, chosen);
+    if (!chess.board().flat().find(p => p?.type === 'k' && p?.color === 'w')) break;
+  }
+
+  // No consecutive back-and-forth (A→B then B→A)
+  for (let i = 1; i < history.length; i++) {
+    const prev = history[i - 1];
+    const cur  = history[i];
+    expect(
+      prev.from === cur.to && prev.to === cur.from,
+      `Shuffle on turn ${i + 1}: ${prev.from}→${prev.to} then ${cur.from}→${cur.to}`
+    ).toBe(false);
+  }
+
+  // No exact move repeated anywhere in the sequence
+  const seen = new Set();
+  for (const m of history) {
+    const key = `${m.from}-${m.to}`;
+    expect(seen.has(key), `Repeated move: ${m.from}→${m.to}`).toBe(false);
+    seen.add(key);
+  }
+});
+
+// Shuffle regression using iterative deepening — user-reported endgame FEN
+test('no shuffle on endgame FEN (user report) over 15 turns', () => {
+  const chess = new Chess();
+  chess.load('8/7k/p2pp3/1r6/8/8/P2PP3/RN2K3 w - - 0 1');
+  const history = [];
+
+  for (let turn = 0; turn < 15; turn++) {
+    const moves = generateMoves(chess, 'b');
+    if (!moves.length) break;
+    const chosen = selectMoveIterative(chess, moves, KNIGHT_RIDER, {
+      maxDepth: 6,
+      timeBudgetMs: 1000,
+    });
+    history.push({ from: chosen.from, to: chosen.to });
+    makeMove(chess, chosen);
+    if (!chess.board().flat().find(p => p?.type === 'k' && p?.color === 'w')) break;
+  }
+
+  for (let i = 1; i < history.length; i++) {
+    const prev = history[i - 1], cur = history[i];
+    expect(
+      prev.from === cur.to && prev.to === cur.from,
+      `Shuffle on turn ${i + 1}: ${prev.from}→${prev.to} then ${cur.from}→${cur.to}`
+    ).toBe(false);
+  }
+
+  const seen = new Set();
+  for (const m of history) {
+    const key = `${m.from}-${m.to}`;
+    expect(seen.has(key), `Repeated move: ${m.from}→${m.to}`).toBe(false);
+    seen.add(key);
+  }
+});
+
+// Smoke test: iterative deepening still finds 1-move king capture
+test('selectMoveIterative finds king capture in one move', () => {
+  const chess = new Chess();
+  chess.clear();
+  chess.put({ type: 'k', color: 'b' }, 'e8');
+  chess.put({ type: 'r', color: 'b' }, 'e2');
+  chess.put({ type: 'k', color: 'w' }, 'e1');
+
+  const moves = generateMoves(chess, 'b');
+  const chosen = selectMoveIterative(chess, moves, PAWN_PUSHER, {
+    maxDepth: 6,
+    timeBudgetMs: 1000,
+  });
+  expect(chosen.to).toBe('e1');
 });

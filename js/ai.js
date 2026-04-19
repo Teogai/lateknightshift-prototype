@@ -38,9 +38,11 @@ function _pieceAttacks(chess, fromSq, type, color, toSq) {
 
 // --- Move generation ---
 
-// Returns [{from, to}] for color. Captures first (better alpha-beta pruning).
+// Returns [{from, to}] for color.
+// Order: captures first (better alpha-beta pruning), then non-king quiets,
+// then king quiets last. King-last avoids zero-gradient king shuffling on ties.
 export function generateMoves(chess, color, enPassantTarget = null) {
-  const captures = [], quiets = [];
+  const captures = [], quiets = [], kingQuiets = [];
   const board = chess.board();
   for (let r = 0; r < 8; r++) {
     for (let f = 0; f < 8; f++) {
@@ -79,6 +81,7 @@ export function generateMoves(chess, color, enPassantTarget = null) {
             if (target && target.color !== color) captures.push({ from, to });
           } else {
             if (target) captures.push({ from, to });
+            else if (piece.type === 'k') kingQuiets.push({ from, to });
             else quiets.push({ from, to });
           }
         }
@@ -100,7 +103,7 @@ export function generateMoves(chess, color, enPassantTarget = null) {
       }
     }
   }
-  return [...captures, ...quiets];
+  return [...captures, ...quiets, ...kingQuiets];
 }
 
 // --- Make / unmake (no cloning, in-place for search tree) ---
@@ -195,31 +198,37 @@ function kingSafetyScore(chess) {
 }
 
 function mobilityScore(chess) {
-  return generateMoves(chess, 'b').length;
+  // Exclude king moves — king wandering shouldn't be rewarded as "activity"
+  // (without this, the king oscillates on equal-mobility squares)
+  const kingSq = _findKing(chess, 'b');
+  return generateMoves(chess, 'b').filter(m => m.from !== kingSq).length;
 }
 
 function aggressionScore(chess) {
   const board = chess.board();
-  let kingSq = null;
-  outer: for (let r = 0; r < 8; r++) {
-    for (let f = 0; f < 8; f++) {
-      if (board[r][f]?.type === 'k' && board[r][f]?.color === 'w') {
-        kingSq = FILES[f] + (8 - r);
-        break outer;
-      }
-    }
-  }
+  const kingSq = _findKing(chess, 'w');
   if (!kingSq) return 0;
+  const kf = kingSq.charCodeAt(0) - 97;
+  const kr = parseInt(kingSq[1]) - 1;
+
+  const PROXIMITY_WEIGHT = { q: 4, r: 3, b: 2, n: 2, p: 1, k: 0 };
   let attackers = 0;
+  let tropism = 0;
+
   for (let r = 0; r < 8; r++) {
     for (let f = 0; f < 8; f++) {
       const p = board[r][f];
       if (!p || p.color !== 'b') continue;
       const sq = FILES[f] + (8 - r);
       if (_pieceAttacks(chess, sq, p.type, p.color, kingSq)) attackers++;
+      // Chebyshev distance 0..7; closer = higher score
+      const dist = Math.max(Math.abs(f - kf), Math.abs((7 - r) - kr));
+      tropism += (PROXIMITY_WEIGHT[p.type] ?? 0) * (7 - dist);
     }
   }
-  return attackers;
+  // Tropism pulls pieces toward the king when no attack is available;
+  // direct attackers still dominate via the ×10 weight.
+  return attackers * 10 + tropism * 1.0;
 }
 function castleUrgencyScore(_chess) { return 0; }
 
@@ -330,6 +339,25 @@ export function selectMove(chess, moves, personality, depth, enPassantTarget = n
       bestImmediate = immediate;
       bestMove = move;
     }
+  }
+  return bestMove;
+}
+
+// Iterative deepening with time budget. Runs fixed-depth search at depth 1,
+// 2, ..., maxDepth, returning the best move from the deepest completed iteration.
+// Stops once elapsed exceeds half the budget — the next iteration is ~10× more
+// expensive so starting it would blow the budget. Always completes depth 1.
+export function selectMoveIterative(chess, moves, personality, {
+  maxDepth = 6,
+  timeBudgetMs = 200,
+  enPassantTarget = null,
+} = {}) {
+  const start = Date.now();
+  let bestMove = moves[0];
+
+  for (let depth = 1; depth <= maxDepth; depth++) {
+    bestMove = selectMove(chess, moves, personality, depth, enPassantTarget);
+    if (Date.now() - start > timeBudgetMs / 2) break;
   }
   return bestMove;
 }

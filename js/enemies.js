@@ -3,7 +3,7 @@
 // Optional createAI(): returns a stateful AI with takeTurn(chess, personality, ep)
 //   → { moves: [{from,to}], warnNext: boolean }
 
-import { selectMove } from './ai.js';
+import { selectMoveIterative } from './ai.js';
 import { pseudoLegalMovesFor, allGeometricMovesFor, savePieces, restorePieces } from './engine/board.js';
 
 function defaultAI() {
@@ -12,7 +12,9 @@ function defaultAI() {
       let moves = pseudoLegalMovesFor(chess, 'b', enPassantTarget);
       if (!moves.length) moves = allGeometricMovesFor(chess, 'b');
       if (!moves.length) return { moves: [], warnNext: false };
-      const chosen = selectMove(chess, moves, personality, 2, enPassantTarget);
+      const chosen = selectMoveIterative(chess, moves, personality, {
+        maxDepth: 6, timeBudgetMs: 200, enPassantTarget,
+      });
       return { moves: chosen ? [chosen] : [], warnNext: false };
     },
   };
@@ -28,7 +30,9 @@ function doubleMoveAI() {
         let moves = pseudoLegalMovesFor(chess, 'b', enPassantTarget);
         if (!moves.length) moves = allGeometricMovesFor(chess, 'b');
         if (!moves.length) return { moves: [], warnNext: false };
-        const first = selectMove(chess, moves, personality, 2, enPassantTarget);
+        const first = selectMoveIterative(chess, moves, personality, {
+          maxDepth: 6, timeBudgetMs: 200, enPassantTarget,
+        });
         if (!first) return { moves: [], warnNext: false };
 
         // Temporarily apply first move to pick second from updated board
@@ -41,7 +45,9 @@ function doubleMoveAI() {
         let moves2 = pseudoLegalMovesFor(chess, 'b', null);
         if (!moves2.length) moves2 = allGeometricMovesFor(chess, 'b');
         const second = moves2.length
-          ? selectMove(chess, moves2, personality, 2, null)
+          ? selectMoveIterative(chess, moves2, personality, {
+              maxDepth: 6, timeBudgetMs: 200, enPassantTarget: null,
+            })
           : null;
 
         restorePieces(chess, saved);
@@ -51,7 +57,9 @@ function doubleMoveAI() {
         let moves = pseudoLegalMovesFor(chess, 'b', enPassantTarget);
         if (!moves.length) moves = allGeometricMovesFor(chess, 'b');
         if (!moves.length) return { moves: [], warnNext: true };
-        const chosen = selectMove(chess, moves, personality, 2, enPassantTarget);
+        const chosen = selectMoveIterative(chess, moves, personality, {
+          maxDepth: 6, timeBudgetMs: 200, enPassantTarget,
+        });
         return { moves: chosen ? [chosen] : [], warnNext: true };
       }
     },
