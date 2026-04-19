@@ -198,7 +198,29 @@ function mobilityScore(chess) {
   return generateMoves(chess, 'b').length;
 }
 
-function aggressionScore(_chess) { return 0; }
+function aggressionScore(chess) {
+  const board = chess.board();
+  let kingSq = null;
+  outer: for (let r = 0; r < 8; r++) {
+    for (let f = 0; f < 8; f++) {
+      if (board[r][f]?.type === 'k' && board[r][f]?.color === 'w') {
+        kingSq = FILES[f] + (8 - r);
+        break outer;
+      }
+    }
+  }
+  if (!kingSq) return 0;
+  let attackers = 0;
+  for (let r = 0; r < 8; r++) {
+    for (let f = 0; f < 8; f++) {
+      const p = board[r][f];
+      if (!p || p.color !== 'b') continue;
+      const sq = FILES[f] + (8 - r);
+      if (_pieceAttacks(chess, sq, p.type, p.color, kingSq)) attackers++;
+    }
+  }
+  return attackers;
+}
 function castleUrgencyScore(_chess) { return 0; }
 
 function evaluate(chess, personality) {

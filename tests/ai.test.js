@@ -107,6 +107,22 @@ test('generateMoves includes en passant capture when enPassantTarget provided', 
   expect(ep).toBeDefined();
 });
 
+// 9. Aggression personality moves rook to attack white king
+test('aggression personality moves rook to attack white king', () => {
+  const chess = emptyChess();
+  chess.put({ type: 'k', color: 'b' }, 'h8');
+  chess.put({ type: 'r', color: 'b' }, 'a6');
+  chess.put({ type: 'k', color: 'w' }, 'e2');
+
+  const moves = generateMoves(chess, 'b');
+  const chosen = selectMove(chess, moves, { aggression: 2.0 }, 2);
+
+  const saved = makeMove(chess, chosen);
+  const attacksKing = chess.isAttacked('e2', 'b');
+  unmakeMove(chess, chosen, saved);
+  expect(attacksKing).toBe(true);
+});
+
 test('makeMove en passant removes the captured pawn', () => {
   const chess = emptyChess();
   chess.put({ type: 'k', color: 'b' }, 'e8');
