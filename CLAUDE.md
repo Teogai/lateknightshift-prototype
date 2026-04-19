@@ -23,7 +23,25 @@
 
 ## Log formats
 - `docs/TASKS.md`: `[YYYY-MM-DD] done: <x>` / `[YYYY-MM-DD] todo: <x>`
-- `docs/DECISIONS.md`: `[YYYY-MM-DD] <decision> - <reason <10 words>`
+
+## Decisions
+- single-file vanilla frontend - no bundler, fast iteration
+- modular docs by concern - read only what task needs
+- pseudo_legal_moves for enemy AI - enables king-capture win condition
+- enemy always prefers king capture - consistent with no-checkmate rule
+- migrate to frontend-only JS - single language, lower token cost per task
+- chess.js over python-chess - browser-compatible, same semantics
+- Vitest over pytest - same test coverage, no server overhead
+- manual put/remove for AI moves - avoids FEN validation on custom boards
+- piece-map save/restore in _getMovesForSq - FEN invalid when king missing
+- minimax+alpha-beta AI - personality via eval weights, difficulty via depth
+- r^2 pawn_advance scoring - breaks ties toward most-advanced pawn
+- immediate-eval tie-break in selectMove - prefer sooner win over detour
+- ~300 line module limit, barrel re-exports - Claude Code loads only relevant files per task
+- createAI() factory per enemy - stateful double-move AI without polluting GameState
+- piece reward placement in room screen (square picker) - avoids switching to game board mid-reward
+- geometric move cards validate destination by pattern not piece type - any piece can use bishop/rook/queen movement
+- TDD order enforced: write failing test before production code - avoids stashing changes to verify pre-existing failures
 
 ## Modules
 - One clear responsibility per file

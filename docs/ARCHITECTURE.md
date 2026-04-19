@@ -27,7 +27,6 @@
 - `docs/CHARACTERS.md` — characters, starting decks/pieces
 - `docs/ENEMIES.md` — enemy configs, AI
 - `docs/TASKS.md` — task log
-- `docs/DECISIONS.md` — design decisions log
 
 ## Stack
 - chess.js v1 (move validation, board, attack detection)
