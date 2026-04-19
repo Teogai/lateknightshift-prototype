@@ -1,5 +1,5 @@
 *, *::before, *::after { box-sizing: border-box; }
-body { font-family: system-ui, sans-serif; background: #111; color: #eee; margin: 0; padding: 2rem; min-height: 100vh; }
+body { font-family: system-ui, sans-serif; background: #111; color: #eee; margin: 0; padding: 2rem; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 
 /* --- Screens --- */
@@ -18,10 +18,7 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 #select-error { color: #e05555; font-size: 0.85rem; min-height: 1.2em; }
 
 /* --- Game layout --- */
-#screen-game {
-  display: flex; justify-content: center; align-items: flex-start;
-  min-height: 100vh; padding: 2rem 0;
-}
+#screen-game { display: flex; }
 #layout { display: flex; gap: 2rem; align-items: stretch; }
 #sidebar {
   display: flex; flex-direction: column; gap: 0.75rem;
@@ -59,12 +56,12 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 .sq.check-attacker { background-color: rgba(140, 30, 10, 0.75); }
 
 /* --- Sidebar / status --- */
-#status-bar { font-weight: bold; font-size: 1rem; min-height: 1.4em; }
+#status-bar { font-weight: bold; font-size: 1rem; min-height: 1.4em; text-align: center; }
 .your-turn  { color: #7fc97f; }
 .enemy-turn { color: #f4a460; }
 .game-over  { color: #e05555; font-size: 1.2rem; }
 #mana-display { color: #88ccff; font-size: 0.95rem; margin-top: auto; }
-#deck-info { color: #888; font-size: 0.8rem; }
+#deck-info { color: #888; font-size: 0.8rem; text-align: center; }
 
 /* --- Hand --- */
 #hand { display: flex; flex-direction: row; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
@@ -109,13 +106,15 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 #action-hint { color: #aaa; font-size: 0.85rem; min-height: 1.2em; }
 
 /* --- Map screen --- */
-#screen-map { max-width: 480px; }
-#map-header { color: #aaa; font-size: 0.9rem; margin-bottom: 1rem; }
-#map-content { display: flex; flex-direction: column; gap: 0.6rem; }
+#screen-map { max-width: none; }
+#map-header { color: #aaa; font-size: 0.9rem; margin-bottom: 1rem; text-align: center; }
+#map-content { display: flex; flex-direction: row; flex-wrap: wrap; gap: 0.75rem; justify-content: center; }
 .map-node-btn {
-  padding: 0.7rem 1.2rem; font-size: 1rem;
+  width: 110px; min-height: 100px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 0.75rem 0.5rem; font-size: 0.95rem;
   background: #1e2a1e; color: #eee;
-  border: 1px solid #4a7a4a; border-radius: 6px; cursor: pointer; text-align: left;
+  border: 1px solid #4a7a4a; border-radius: 6px; cursor: pointer;
 }
 .map-node-btn:hover { background: #2a3d2a; }
 .map-node-btn.elite { border-color: #c0a000; background: #2a2a00; }
@@ -125,8 +124,9 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 .lives-display { color: #e07070; font-weight: bold; }
 
 /* --- Room screen --- */
-#screen-room { max-width: 480px; }
-#room-content { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.5rem; }
+#screen-room { max-width: none; }
+#room-content { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; margin-top: 0.5rem; }
+#room-content h2 { margin: 0; font-size: 1rem; }
 .reward-card-btn {
   padding: 0.6rem 1rem; font-size: 0.95rem;
   background: #1e1e2e; color: #eee;
@@ -135,10 +135,30 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 .reward-card-btn:hover { border-color: #aaa; }
 .reward-card-btn.rarity-uncommon { border-color: #5599cc; }
 .reward-card-btn.rarity-rare { border-color: #cc88ff; }
+
+/* Card reward and piece reward horizontal rows */
+.card-choices { display: flex; flex-direction: row; gap: 0.75rem; flex-wrap: wrap; justify-content: center; }
+.piece-choices { display: flex; flex-direction: row; gap: 0.75rem; flex-wrap: wrap; justify-content: center; }
+
+/* Scrollable card grid for deck-view screens */
+.card-scroll-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.5rem;
+  overflow-y: auto;
+  max-height: 480px;
+  width: min(700px, 90vw);
+  padding-right: 0.25rem;
+}
+
+/* Piece reward buttons */
 .piece-reward-btn {
-  padding: 0.6rem 1rem; font-size: 0.95rem;
+  width: 110px; min-height: 100px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; white-space: pre-line;
+  padding: 0.75rem 0.5rem; font-size: 0.95rem;
   background: #1e2a1e; color: #eee;
-  border: 1px solid #4a7a4a; border-radius: 4px; cursor: pointer; text-align: left;
+  border: 1px solid #4a7a4a; border-radius: 6px; cursor: pointer;
 }
 .piece-reward-btn:hover { border-color: #aaa; }
 .piece-reward-btn.selected { border-color: #f0e040; background: #3a3a1a; }

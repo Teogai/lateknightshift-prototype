@@ -92,6 +92,8 @@ export function renderBoard() {
   const lastTo   = d?.last_move?.to;
   const inCheck  = d?.in_check;
   const attackerSq = d?.check_attacker_sq;
+  const enemyInCheck = d?.enemy_in_check;
+  const enemyAttackerSq = d?.enemy_check_attacker_sq;
   const board = d?.board || {};
 
   for (let rank = 7; rank >= 0; rank--) {
@@ -109,6 +111,11 @@ export function renderBoard() {
         const p = board[sqName];
         if (p && p.type === 'king' && p.color === 'white') div.classList.add('in-check');
         if (sqName === attackerSq) div.classList.add('check-attacker');
+      }
+      if (enemyInCheck) {
+        const p = board[sqName];
+        if (p && p.type === 'king' && p.color === 'black') div.classList.add('in-check');
+        if (sqName === enemyAttackerSq) div.classList.add('check-attacker');
       }
 
       if ((uiState.phase === 'from_selected' || uiState.phase === 'knight_from_selected' || uiState.phase === 'geometric_from_selected') && uiState.fromSq === sqName) {
@@ -152,41 +159,47 @@ function cardArtColor(card) {
   return CARD_ART_COLORS[card.type] || '#3a3a3a';
 }
 
+export function makeCardEl(card, { onClick } = {}) {
+  const div = document.createElement('div');
+  div.className = 'card';
+  if (card.type === 'curse') {
+    div.classList.add('curse-card');
+    div.setAttribute('aria-disabled', 'true');
+  } else {
+    const rarityMap = { uncommon: 'rarity-uncommon', rare: 'rarity-rare' };
+    if (card.rarity && rarityMap[card.rarity]) div.classList.add(rarityMap[card.rarity]);
+    if (onClick) div.addEventListener('click', onClick);
+  }
+  const art = document.createElement('div');
+  art.className = 'card-art';
+  art.style.background = cardArtColor(card);
+  div.appendChild(art);
+  const name = document.createElement('div');
+  name.className = 'card-name' + (card.upgraded ? ' upgraded' : '');
+  name.textContent = card.name;
+  div.appendChild(name);
+  const cost = document.createElement('div');
+  cost.className = 'card-cost' + (card.upgraded ? ' upgraded' : '');
+  cost.textContent = card.type === 'curse' ? 'Unplayable' : `Cost: ${card.cost}`;
+  div.appendChild(cost);
+  return div;
+}
+
 export function renderHand() {
   const handEl = document.getElementById('hand');
   handEl.innerHTML = '';
   if (!gameState) return;
   const d = gameState.toDict();
   d.hand.forEach((card, idx) => {
-    const div = document.createElement('div');
-    div.className = 'card';
-    if (card.type === 'curse') {
-      div.classList.add('curse-card');
-      div.setAttribute('aria-disabled', 'true');
-    } else {
+    const isAffordable = card.cost <= d.mana;
+    const onClick = (card.type !== 'curse' && isAffordable)
+      ? () => handleCardClick(idx, card)
+      : undefined;
+    const div = makeCardEl(card, { onClick });
+    if (card.type !== 'curse') {
       if (idx === uiState.selectedCardIndex) div.classList.add('selected');
-      if (card.cost > d.mana) div.classList.add('unaffordable');
-      else div.addEventListener('click', () => handleCardClick(idx, card));
+      if (!isAffordable) div.classList.add('unaffordable');
     }
-    // rarity border
-    const rarityMap = { uncommon: 'rarity-uncommon', rare: 'rarity-rare' };
-    if (card.rarity && rarityMap[card.rarity]) div.classList.add(rarityMap[card.rarity]);
-
-    const art = document.createElement('div');
-    art.className = 'card-art';
-    art.style.background = cardArtColor(card);
-    div.appendChild(art);
-
-    const name = document.createElement('div');
-    name.className = 'card-name' + (card.upgraded ? ' upgraded' : '');
-    name.textContent = card.name;
-    div.appendChild(name);
-
-    const cost = document.createElement('div');
-    cost.className = 'card-cost' + (card.upgraded ? ' upgraded' : '');
-    cost.textContent = card.type === 'curse' ? 'Unplayable' : `Cost: ${card.cost}`;
-    div.appendChild(cost);
-
     handEl.appendChild(div);
   });
 }

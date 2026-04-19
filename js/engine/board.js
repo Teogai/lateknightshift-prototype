@@ -200,6 +200,15 @@ export function checkInfo(chess) {
   return { in_check: true, check_attacker_sq: attackers[0] ?? null };
 }
 
+export function enemyCheckInfo(chess) {
+  const blackKingSq = findKing(chess, 'b');
+  if (!blackKingSq) return { enemy_in_check: false, enemy_check_attacker_sq: null };
+  const inCheck = chess.isAttacked(blackKingSq, 'w');
+  if (!inCheck) return { enemy_in_check: false, enemy_check_attacker_sq: null };
+  const attackers = findAttackersOf(chess, blackKingSq, 'w');
+  return { enemy_in_check: true, enemy_check_attacker_sq: attackers[0] ?? null };
+}
+
 export function executeKingCapture(chess, fromSq, toSq, piece) {
   chess.remove(fromSq);
   chess.remove(toSq);

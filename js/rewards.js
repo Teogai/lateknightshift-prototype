@@ -1,6 +1,7 @@
 import { CARD_CATALOG, curseCard } from './cards.js';
 import { CARD_RARITY_WEIGHTS, PIECE_RARITY_WEIGHTS, REWARD_CHOICES, PIECE_REWARD_CHOICES } from './config.js';
 import { STARTER_DECKS } from './cards.js';
+import { makeCardEl } from './ui.js';
 
 const WHITE_PIECES = {
   king:   './pieces/Chess_klt60.png',
@@ -92,28 +93,31 @@ export function renderCardRewardScreen(choices, onChosen) {
   const content = document.getElementById('room-content');
   if (!content) return;
   content.innerHTML = '<h2>Choose a card reward</h2>';
+  const row = document.createElement('div');
+  row.className = 'card-choices';
   choices.forEach(({ card, rarity }, i) => {
-    const btn = document.createElement('button');
-    btn.className = `reward-card-btn rarity-${rarity}`;
-    btn.textContent = `${card.name}  (${card.cost})  [${rarity}]`;
-    btn.addEventListener('click', () => onChosen(i, card));
-    content.appendChild(btn);
+    const el = makeCardEl({ ...card, rarity }, { onClick: () => onChosen(i, card) });
+    row.appendChild(el);
   });
+  content.appendChild(row);
 }
 
 export function renderPieceRewardScreen(choices, runState, onPlaced) {
   const content = document.getElementById('room-content');
   if (!content) return;
   content.innerHTML = '<h2>Choose a piece reward</h2>';
+  const row = document.createElement('div');
+  row.className = 'piece-choices';
   choices.forEach(({ piece, rarity, label }) => {
     const btn = document.createElement('button');
     btn.className = `piece-reward-btn rarity-${rarity}`;
-    btn.textContent = `${label}  [${rarity}]`;
+    btn.textContent = `${label}\n[${rarity}]`;
     btn.addEventListener('click', () => {
       renderSquarePicker(piece, rarity, runState, onPlaced);
     });
-    content.appendChild(btn);
+    row.appendChild(btn);
   });
+  content.appendChild(row);
 }
 
 function renderSquarePicker(piece, rarity, runState, onPlaced) {
@@ -165,27 +169,28 @@ export function renderUpgradeScreen(deck, onChosen) {
   const content = document.getElementById('room-content');
   if (!content) return;
   content.innerHTML = '<h2>Choose a card to upgrade</h2>';
+  const grid = document.createElement('div');
+  grid.className = 'card-scroll-grid';
   deck.forEach((card, i) => {
     if (card.type === 'curse') return;
-    const btn = document.createElement('button');
-    btn.className = 'reward-card-btn';
-    btn.textContent = `${card.name}  (${card.cost})${card.upgraded ? '  [upgraded]' : ''}`;
-    btn.addEventListener('click', () => onChosen(i, card));
-    content.appendChild(btn);
+    const el = makeCardEl(card, { onClick: () => onChosen(i, card) });
+    if (card.upgraded) el.classList.add('already-upgraded');
+    grid.appendChild(el);
   });
+  content.appendChild(grid);
 }
 
 export function renderTransformScreen(deck, character, onChosen) {
   const content = document.getElementById('room-content');
   if (!content) return;
   content.innerHTML = '<h2>Choose a card to transform</h2>';
+  const grid = document.createElement('div');
+  grid.className = 'card-scroll-grid';
   deck.forEach((card, i) => {
-    const btn = document.createElement('button');
-    btn.className = 'reward-card-btn';
-    btn.textContent = `${card.name}  (${card.cost})`;
-    btn.addEventListener('click', () => onChosen(i, card));
-    content.appendChild(btn);
+    const el = makeCardEl(card, { onClick: () => onChosen(i, card) });
+    grid.appendChild(el);
   });
+  content.appendChild(grid);
 }
 
 export function renderTransformResultScreen(oldCard, newCard, onContinue) {
@@ -208,13 +213,13 @@ export function renderShopScreen(deck, onChosen) {
   const content = document.getElementById('room-content');
   if (!content) return;
   content.innerHTML = '<h2>Remove a card from your deck</h2>';
+  const grid = document.createElement('div');
+  grid.className = 'card-scroll-grid';
   deck.forEach((card, i) => {
-    const btn = document.createElement('button');
-    btn.className = 'reward-card-btn';
-    btn.textContent = `${card.name}  (${card.cost})  — Remove`;
-    btn.addEventListener('click', () => onChosen(i, card));
-    content.appendChild(btn);
+    const el = makeCardEl(card, { onClick: () => onChosen(i, card) });
+    grid.appendChild(el);
   });
+  content.appendChild(grid);
 }
 
 export function renderDefeatScreen(onAddCurse, onRetry) {

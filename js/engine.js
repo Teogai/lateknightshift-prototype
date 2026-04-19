@@ -5,12 +5,12 @@ import { ENEMIES, VALID_ENEMIES } from './enemies.js';
 import {
   makeBoard, boardToDict, knightAttacks,
   getMovesForSq, pseudoLegalMovesFor, allGeometricMovesFor,
-  checkKingCaptured, checkInfo, executeKingCapture, clearPath,
+  checkKingCaptured, checkInfo, enemyCheckInfo, executeKingCapture, clearPath,
 } from './engine/board.js';
 
 export { STARTING_MANA, HAND_SIZE, VALID_PROMO, CHARACTER_PIECES, VALID_CHARACTERS } from './engine/constants.js';
 export { ENEMIES, VALID_ENEMIES } from './enemies.js';
-export { boardToDict, knightAttacks } from './engine/board.js';
+export { boardToDict, knightAttacks, enemyCheckInfo } from './engine/board.js';
 
 // Validate that a move matches a geometric pattern (ignoring actual piece type).
 // patternPiece: 'b' (diagonal), 'r' (straight), 'q' (both)
@@ -73,6 +73,7 @@ export class GameState {
 
   toDict() {
     const check = checkInfo(this._chess);
+    const enemyCheck = enemyCheckInfo(this._chess);
     return {
       board: boardToDict(this._chess),
       mana: this.mana,
@@ -85,6 +86,8 @@ export class GameState {
       last_move: { from: this.lastMove.from, to: this.lastMove.to },
       in_check: check.in_check,
       check_attacker_sq: check.check_attacker_sq,
+      enemy_in_check: enemyCheck.enemy_in_check,
+      enemy_check_attacker_sq: enemyCheck.enemy_check_attacker_sq,
       enemy_will_double_move: this.enemyWillDoubleMove,
     };
   }
