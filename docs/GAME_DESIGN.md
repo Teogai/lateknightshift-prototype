@@ -30,6 +30,7 @@
 - Move card: move any piece legally; cost 1 mana; each piece once per turn
 - Summon card: place piece on back rank (pawns: first 2 ranks); summoned piece cannot move same turn
 - Signature card: character-unique ability; cost 2+ mana
+- See `CARDS.md`
 
 ## Characters
 - Character = starting pieces + starting deck + signature card
