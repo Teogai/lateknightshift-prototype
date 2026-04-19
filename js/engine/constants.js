@@ -1,5 +1,5 @@
-export const STARTING_MANA = 3;
-export const HAND_SIZE = 5;
+export const HAND_SIZE = 6;
+export const REDRAW_COUNTDOWN_START = 4;
 export const VALID_PROMO = new Set(['q', 'r', 'b', 'n']);
 
 export const FILES = 'abcdefgh';

@@ -74,17 +74,3 @@ test('pawn not on rank 7 does not promote', () => {
   expect(state._chess.get('e7').type).toBe('p');
 });
 
-test('promoted piece appears in moved_this_turn', () => {
-  const state = setupPawnOnE7();
-  state.playMoveCard(0, 'e7', 'e8', 'q');
-  expect(state.toDict().moved_this_turn).toContain('e8');
-});
-
-test('promoted piece cannot move again same turn', () => {
-  const state = setupPawnOnE7();
-  state.playMoveCard(0, 'e7', 'e8', 'q');
-  state.hand = [{ type: 'move', cost: 1 }];
-  state.mana = 3;
-  const result = state.playMoveCard(0, 'e8', 'e7');
-  expect(result.error).toMatch(/already moved/);
-});

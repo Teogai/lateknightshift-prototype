@@ -1,6 +1,6 @@
 import { Chess } from 'chess.js';
 import { buildStarterDeck, dealHand } from './cards.js';
-import { STARTING_MANA, HAND_SIZE, VALID_PROMO, VALID_CHARACTERS } from './engine/constants.js';
+import { HAND_SIZE, REDRAW_COUNTDOWN_START, VALID_PROMO, VALID_CHARACTERS } from './engine/constants.js';
 import { ENEMIES, VALID_ENEMIES } from './enemies.js';
 import {
   makeBoard, boardToDict, knightAttacks,
@@ -8,7 +8,7 @@ import {
   checkKingCaptured, checkInfo, enemyCheckInfo, executeKingCapture, clearPath,
 } from './engine/board.js';
 
-export { STARTING_MANA, HAND_SIZE, VALID_PROMO, CHARACTER_PIECES, VALID_CHARACTERS } from './engine/constants.js';
+export { HAND_SIZE, REDRAW_COUNTDOWN_START, VALID_PROMO, CHARACTER_PIECES, VALID_CHARACTERS } from './engine/constants.js';
 export { ENEMIES, VALID_ENEMIES } from './enemies.js';
 export { boardToDict, knightAttacks, enemyCheckInfo } from './engine/board.js';
 
@@ -49,7 +49,7 @@ export class GameState {
     this._personality = enemyDef.personality;
     this._enemyAI = enemyDef.createAI ? enemyDef.createAI() : null;
     this.character = character;
-    this.mana = STARTING_MANA;
+    this.redrawCountdown = REDRAW_COUNTDOWN_START;
     this.enemyWillDoubleMove = false;
 
     const rawDeck = persistentDeck
@@ -91,7 +91,7 @@ export class GameState {
     const enemyCheck = enemyCheckInfo(this._chess);
     return {
       board: boardToDict(this._chess),
-      mana: this.mana,
+      redraw_countdown: this.redrawCountdown,
       hand: this.hand,
       turn: this.turn,
       deck_size: this.deck.length,
@@ -144,7 +144,6 @@ export class GameState {
     const card = this.hand[cardIndex];
     if (card.type !== 'move') return { error: 'not a move card' };
     if (card.unplayable) return { error: 'card is unplayable' };
-    if (this.mana < card.cost) return { error: 'not enough mana' };
 
     const piece = this._chess.get(fromSq);
     if (!piece || piece.color !== 'w') return { error: 'no friendly piece on that square' };
@@ -175,13 +174,14 @@ export class GameState {
     const isPawnDoublePush = piece.type === 'p' && fromSq[1] === '2' && toSq[1] === '4';
     this.enPassantTarget = isPawnDoublePush ? (toSq[0] + '3') : null;
 
-    this.mana -= card.cost;
     this.discard.push(this.hand.splice(cardIndex, 1)[0]);
     this.movedThisTurn.add(toSq);
     this.lastMove = { from: fromSq, to: toSq };
     this._pushPositionHistory();
     const winner = checkKingCaptured(this._chess);
     if (winner) this.turn = winner;
+    const { pendingMoves: pm1, warnNext: wn1, error: e1 } = this.startEnemyTurn();
+    if (!e1) this.finishEnemyTurn(pm1, wn1);
     return { ok: true };
   }
 
@@ -189,7 +189,6 @@ export class GameState {
     if (cardIndex < 0 || cardIndex >= this.hand.length) return { error: 'invalid card index' };
     const card = this.hand[cardIndex];
     if (card.type !== 'knight_move') return { error: 'not a knight_move card' };
-    if (this.mana < card.cost) return { error: 'not enough mana' };
 
     const piece = this._chess.get(fromSq);
     if (!piece || piece.color !== 'w') return { error: 'no friendly piece on that square' };
@@ -203,13 +202,14 @@ export class GameState {
     this._chess.remove(fromSq);
     this._chess.put(piece, toSq);
 
-    this.mana -= card.cost;
     this.discard.push(this.hand.splice(cardIndex, 1)[0]);
     this.movedThisTurn.add(toSq);
     this.lastMove = { from: fromSq, to: toSq };
     this._pushPositionHistory();
     const winner = checkKingCaptured(this._chess);
     if (winner) this.turn = winner;
+    const { pendingMoves: pm2, warnNext: wn2, error: e2 } = this.startEnemyTurn();
+    if (!e2) this.finishEnemyTurn(pm2, wn2);
 
     if (piece.type === 'p' && toSq[1] === '8') return { ok: true, needs_promotion: [toSq] };
     return { ok: true };
@@ -219,7 +219,6 @@ export class GameState {
     if (cardIndex < 0 || cardIndex >= this.hand.length) return { error: 'invalid card index' };
     const card = this.hand[cardIndex];
     if (card.type !== expectedType) return { error: `not a ${expectedType} card` };
-    if (this.mana < card.cost) return { error: 'not enough mana' };
 
     const piece = this._chess.get(fromSq);
     if (!piece || piece.color !== 'w') return { error: 'no friendly piece on that square' };
@@ -237,13 +236,14 @@ export class GameState {
       this._chess.put(piece, toSq);
     }
 
-    this.mana -= card.cost;
     this.discard.push(this.hand.splice(cardIndex, 1)[0]);
     this.movedThisTurn.add(toSq);
     this.lastMove = { from: fromSq, to: toSq };
     this._pushPositionHistory();
     const winner = checkKingCaptured(this._chess);
     if (winner) this.turn = winner;
+    const { pendingMoves: pm3, warnNext: wn3, error: e3 } = this.startEnemyTurn();
+    if (!e3) this.finishEnemyTurn(pm3, wn3);
 
     if (piece.type === 'p' && toSq[1] === '8') return { ok: true, needs_promotion: [toSq] };
     return { ok: true };
@@ -274,7 +274,6 @@ export class GameState {
     if (cardIndex < 0 || cardIndex >= this.hand.length) return { error: 'invalid card index' };
     const card = this.hand[cardIndex];
     if (card.type !== 'summon') return { error: 'not a summon card' };
-    if (this.mana < card.cost) return { error: 'not enough mana' };
     if (card.piece && card.piece !== pieceType) return { error: 'card summons a different piece type' };
 
     const typeMap = { pawn: 'p', knight: 'n', bishop: 'b', rook: 'r', queen: 'q' };
@@ -291,10 +290,11 @@ export class GameState {
 
     this._chess.put({ type: typeMap[pieceType], color: 'w' }, toSq);
     this.summonedThisTurn.add(toSq);
-    this.mana -= card.cost;
     this.discard.push(this.hand.splice(cardIndex, 1)[0]);
     this.lastMove = { from: null, to: toSq };
     this._pushPositionHistory();
+    const { pendingMoves: pm4, warnNext: wn4, error: e4 } = this.startEnemyTurn();
+    if (!e4) this.finishEnemyTurn(pm4, wn4);
     return { ok: true };
   }
 
@@ -358,24 +358,35 @@ export class GameState {
 
     if (this.turn !== 'player_won' && this.turn !== 'enemy_won') {
       this.turn = 'player';
-      this.mana = STARTING_MANA;
-      this.discard.push(...this.hand);
-      this.hand = [];
-      if (this.deck.length < HAND_SIZE) {
-        this.deck.push(...this.discard);
-        this.discard = [];
-        for (let i = this.deck.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [this.deck[i], this.deck[j]] = [this.deck[j], this.deck[i]];
-        }
-      }
-      const dealt = dealHand(this.deck, HAND_SIZE, this.discard);
-      this.deck = dealt.deck;
-      this.hand = dealt.hand;
-      this.discard = dealt.discard;
+      this.redrawCountdown = Math.max(0, this.redrawCountdown - 1);
     }
 
     return { ok: true };
+  }
+
+  redrawHand() {
+    this.discard.push(...this.hand);
+    this.hand = [];
+    if (this.deck.length < HAND_SIZE) {
+      this.deck.push(...this.discard);
+      this.discard = [];
+      for (let i = this.deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [this.deck[i], this.deck[j]] = [this.deck[j], this.deck[i]];
+      }
+    }
+    const dealt = dealHand(this.deck, HAND_SIZE, this.discard);
+    this.deck = dealt.deck;
+    this.hand = dealt.hand;
+    this.discard = dealt.discard;
+    console.log(`[redraw] countdown=${this.redrawCountdown} free=${this.redrawCountdown === 0}`);
+    if (this.redrawCountdown === 0) {
+      this.redrawCountdown = REDRAW_COUNTDOWN_START;
+      return { ok: true, free: true };
+    }
+    const { pendingMoves, warnNext } = this.startEnemyTurn();
+    this.finishEnemyTurn(pendingMoves, warnNext);
+    return { ok: true, free: false };
   }
 
   endTurn() {

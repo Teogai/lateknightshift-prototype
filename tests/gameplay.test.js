@@ -10,13 +10,11 @@ function freshGame() {
 test('move card moves a piece', () => {
   const state = freshGame();
   state.hand = [{ name: 'Move', type: 'move', cost: 1 }];
-  state.mana = 3;
   const result = state.playMoveCard(0, 'b1', 'a3');
   expect(result.ok).toBe(true);
   const d = state.toDict();
   expect(d.board['a3']).toBeDefined();
   expect(d.board['a3'].type).toBe('knight');
-  expect(d.mana).toBe(2);
 });
 
 test('illegal move is rejected', () => {
@@ -28,12 +26,11 @@ test('illegal move is rejected', () => {
   expect(result.error).toBeDefined();
 });
 
-test('move with no mana is rejected', () => {
+test('move card plays regardless of card cost (no mana system)', () => {
   const state = freshGame();
-  state.hand = [{ name: 'Move', type: 'move', cost: 2 }];
-  state.mana = 1;
+  state.hand = [{ name: 'Move', type: 'move', cost: 9 }]; // arbitrarily high cost
   const result = state.playMoveCard(0, 'b1', 'a3');
-  expect(result.error).toMatch(/mana/);
+  expect(result.ok).toBe(true);
 });
 
 test('moving enemy piece is rejected', () => {
@@ -63,16 +60,19 @@ test('summon pawn on invalid rank is rejected', () => {
   expect(result.error).toBeDefined();
 });
 
-test('summoned piece cannot move same turn', () => {
-  const state = freshGame();
-  state.hand = [
-    { name: 'Summon Pawn', type: 'summon', piece: 'pawn', cost: 1 },
-    { name: 'Move', type: 'move', cost: 1 },
-  ];
+test('summoned piece can move next turn (no same-turn restriction)', () => {
+  // Wildfrost: 1 card/turn; auto-turn runs after summon so next player turn starts fresh
+  const state = new GameState('knight');
+  state._chess.clear();
+  state._chess.put({ type: 'k', color: 'w' }, 'e1');
+  state._chess.put({ type: 'k', color: 'b' }, 'h8');
+  state.hand = [{ name: 'Summon Pawn', type: 'summon', piece: 'pawn', cost: 1 }];
   state.mana = 3;
   state.playSummonCard(0, 'pawn', 'c2');
+  // Now it's a new player turn — summonedThisTurn is cleared
+  state.hand = [{ name: 'Move', type: 'move', cost: 1 }];
   const result = state.playMoveCard(0, 'c2', 'c3');
-  expect(result.error).toMatch(/summon/);
+  expect(result.ok).toBe(true);
 });
 
 // --- End turn ---
@@ -86,26 +86,31 @@ test('end turn triggers enemy move and resets turn to player', () => {
   expect(JSON.stringify(state.toDict().board)).not.toBe(boardBefore);
 });
 
-test('end turn resets mana to 3', () => {
+test('end turn decrements redraw countdown', () => {
   const state = freshGame();
-  state.hand = [{ name: 'Move', type: 'move', cost: 1 }];
-  state.mana = 1;
-  state.playMoveCard(0, 'b1', 'a3');
+  const before = state.toDict().redraw_countdown;
   state.endTurn();
-  expect(state.toDict().mana).toBe(3);
+  expect(state.toDict().redraw_countdown).toBe(before - 1);
 });
 
-test('end turn deals 5 new cards', () => {
+test('hand persists after end turn (no auto-refill)', () => {
   const state = freshGame();
+  const handBefore = state.toDict().hand.slice();
   state.endTurn();
-  expect(state.toDict().hand).toHaveLength(5);
+  const handAfter = state.toDict().hand;
+  expect(handAfter).toHaveLength(handBefore.length);
+  expect(handAfter.map(c => c.name)).toEqual(handBefore.map(c => c.name));
 });
 
-test('end turn discards old hand', () => {
+test('redrawHand replaces hand with new cards', () => {
   const state = freshGame();
-  const discardBefore = state.toDict().discard_size;
-  state.endTurn();
-  expect(state.toDict().discard_size).toBeGreaterThanOrEqual(discardBefore + 5);
+  const firstCard = state.hand[0].name;
+  state.redrawCountdown = 0; // free redraw so we can observe hand without enemy-move side effects
+  state.redrawHand();
+  expect(state.hand).toHaveLength(6);
+  // After a full reshuffle the hand is re-dealt — it will be a different sequence
+  // (at minimum the card order changes because we discard then reshuffle)
+  expect(state.deck.length + state.hand.length + state.discard.length).toBe(10);
 });
 
 // --- Win conditions ---

@@ -13,3 +13,4 @@
 - [2026-04-19] done: en passant for player and enemy (track enPassantTarget, fix FEN, fix execution)
 - [2026-04-19] done: modularize engine.js — split into engine/constants.js + engine/board.js; add module-size rule to CLAUDE.md
 - [2026-04-19] done: AI auto-promotes pawns in search (makeMove) + queen credited in pawnAdvanceScore; direct king capture preempts tiebreak so AI can't pick a deferred forced mate
+- [2026-04-20] done: Wildfrost battle rework — 1 card/turn auto-ends turn, hand persists, no mana, redraw countdown (4→0→free), hand size 6

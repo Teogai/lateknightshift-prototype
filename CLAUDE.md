@@ -44,6 +44,7 @@
 - TDD order enforced: write failing test before production code - avoids stashing changes to verify pre-existing failures
 - AI auto-promotes pawns to queen in makeMove; pawnAdvanceScore credits queens with r=7 pawn value so pawn-push personality doesn't lose score by promoting
 - direct king capture preempts tiebreak in selectMove - prevents AI picking a mate-in-N with higher immediate eval over a mate-in-1
+- Wildfrost turn model: 1 card/turn auto-ends turn, hand persists, no mana, redraw countdown starts at 4 — deliberate tempo decisions over resource management
 
 ## Modules
 - One clear responsibility per file

@@ -14,12 +14,16 @@
 - Both sides start with small armies (~5 pieces); grow via summons/rewards
 - Target combat length: 5–8 turns
 
-## Player turn
-- 3 mana
-- Draw 5 cards
-- Play multiple cards per turn
-- Each piece may only be moved once per turn (no repeat moves on same piece)
-- Discard hand at end of turn
+## Player turn (Wildfrost-style)
+- No mana; all cards are free
+- 1 card per turn — playing a card auto-ends the player turn (enemy moves immediately)
+- Hand persists between turns (unused cards stay; no auto-discard)
+- Hand size: 6 cards
+- Redraw button: discard all cards, draw 6 new ones
+  - Costs a turn (enemy moves) if `redraw_countdown > 0`
+  - Free (no turn cost) if `redraw_countdown === 0`; resets countdown to 4
+- `redraw_countdown`: starts at 4, decrements each time player turn ends
+- Player cannot pass; must play a card or use Redraw
 
 ## Enemy turn
 - Pattern-based AI (see ENEMIES.md)
@@ -27,9 +31,9 @@
 
 ## Cards
 - Starter deck 10 cards: mostly Move + Summons + 1 Signature
-- Move card: move any piece legally; cost 1 mana; each piece once per turn
-- Summon card: place piece on back rank (pawns: first 2 ranks); summoned piece cannot move same turn
-- Signature card: character-unique ability; cost 2+ mana
+- Move card: move any piece legally; costs no mana; auto-ends turn
+- Summon card: place piece on back rank (pawns: first 2 ranks); auto-ends turn
+- Signature card: character-unique ability; auto-ends turn
 
 ## Characters
 - Character = starting pieces + starting deck + signature card
