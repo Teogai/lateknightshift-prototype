@@ -61,6 +61,10 @@
 - One-line question when blocked
 - Report done per task, one line
 
+## Debug prints
+- Never remove debug prints (console.log/warn/error) after a task — keep for future debugging
+- Format: minimal text, all key values on one line (e.g. `console.log('[ai] depth=%d move=%s score=%d', d, m, s)`)
+
 ## Stack
 - Frontend-only: vanilla JS ES modules, chess.js, Vite (dev server), Vitest (tests)
 - No backend server, no HTTP, no bundler

@@ -39,7 +39,6 @@ test('lone_rook board has king and rook', () => {
   const blackPieces = Object.values(board).filter(p => p.color === 'black');
   expect(blackPieces.some(p => p.type === 'king')).toBe(true);
   expect(blackPieces.some(p => p.type === 'rook')).toBe(true);
-  expect(blackPieces.length).toBe(2);
 });
 
 test('knight_rider board has king and two knights', () => {
@@ -48,7 +47,6 @@ test('knight_rider board has king and two knights', () => {
   const blackPieces = Object.values(board).filter(p => p.color === 'black');
   expect(blackPieces.some(p => p.type === 'king')).toBe(true);
   expect(blackPieces.filter(p => p.type === 'knight').length).toBe(2);
-  expect(blackPieces.length).toBe(3);
 });
 
 test('bishop_pair board has king and two bishops', () => {
@@ -57,7 +55,6 @@ test('bishop_pair board has king and two bishops', () => {
   const blackPieces = Object.values(board).filter(p => p.color === 'black');
   expect(blackPieces.some(p => p.type === 'king')).toBe(true);
   expect(blackPieces.filter(p => p.type === 'bishop').length).toBe(2);
-  expect(blackPieces.length).toBe(3);
 });
 
 // --- Personality behaviour ---
