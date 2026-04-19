@@ -16,3 +16,4 @@
 - [2026-04-19] createAI() factory per enemy - stateful double-move AI without polluting GameState
 - [2026-04-19] piece reward placement in room screen (square picker) - avoids switching to game board mid-reward
 - [2026-04-19] geometric move cards validate destination by pattern not piece type - any piece can use bishop/rook/queen movement
+- [2026-04-19] TDD order enforced: write failing test before production code - avoids stashing changes to verify pre-existing failures
