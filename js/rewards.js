@@ -2,6 +2,16 @@ import { CARD_CATALOG, curseCard } from './cards.js';
 import { CARD_RARITY_WEIGHTS, PIECE_RARITY_WEIGHTS, REWARD_CHOICES, PIECE_REWARD_CHOICES } from './config.js';
 import { STARTER_DECKS } from './cards.js';
 
+const WHITE_PIECES = {
+  king:   './pieces/Chess_klt60.png',
+  queen:  './pieces/Chess_qlt60.png',
+  rook:   './pieces/Chess_rlt60.png',
+  bishop: './pieces/Chess_blt60.png',
+  knight: './pieces/Chess_nlt60.png',
+  pawn:   './pieces/Chess_plt60.png',
+};
+const PIECE_FULL_NAME = { k: 'king', q: 'queen', r: 'rook', b: 'bishop', n: 'knight', p: 'pawn' };
+
 const PIECE_NAMES = { p: 'Pawn', n: 'Knight', b: 'Bishop', r: 'Rook', q: 'Queen' };
 
 function weightedSample(items) {
@@ -111,24 +121,44 @@ function renderSquarePicker(piece, rarity, runState, onPlaced) {
   if (!content) return;
   const typeMap = { pawn: 'p', knight: 'n', bishop: 'b', rook: 'r', queen: 'q' };
   const label = piece.charAt(0).toUpperCase() + piece.slice(1);
-  content.innerHTML = `<h2>Place your ${label} — choose a rank 1-2 square</h2>`;
+  content.innerHTML = `<h2>Place your ${label} — click a rank 1–2 square</h2>`;
 
-  // Build available squares (ranks 1-2, any file)
-  const occupied = new Set(runState.startingPieces.map(sp => sp.square));
-  for (let rank = 1; rank <= 2; rank++) {
-    for (const file of 'abcdefgh') {
+  const occupied = new Map(runState.startingPieces.map(sp => [sp.square, sp.piece]));
+
+  const boardEl = document.createElement('div');
+  boardEl.className = 'placement-board';
+
+  for (let rank = 8; rank >= 1; rank--) {
+    for (let fileIdx = 0; fileIdx < 8; fileIdx++) {
+      const file = 'abcdefgh'[fileIdx];
       const sq = file + rank;
-      if (occupied.has(sq)) continue;
-      const btn = document.createElement('button');
-      btn.className = 'reward-card-btn';
-      btn.textContent = sq;
-      btn.addEventListener('click', () => {
-        runState.addStartingPiece({ type: typeMap[piece], color: 'w' }, sq);
-        if (onPlaced) onPlaced({ piece, rarity }, sq);
-      });
-      content.appendChild(btn);
+      const isLight = (rank + fileIdx) % 2 === 0;
+      const div = document.createElement('div');
+      div.className = 'sq ' + (isLight ? 'light' : 'dark');
+
+      const placedPiece = occupied.get(sq);
+      if (placedPiece) {
+        const img = document.createElement('img');
+        img.src = WHITE_PIECES[PIECE_FULL_NAME[placedPiece.type] || placedPiece.type];
+        img.className = 'piece-img';
+        div.appendChild(img);
+      }
+
+      if (rank <= 2 && !placedPiece) {
+        div.classList.add('summon-target');
+        div.addEventListener('click', () => {
+          runState.addStartingPiece({ type: typeMap[piece], color: 'w' }, sq);
+          if (onPlaced) onPlaced({ piece, rarity }, sq);
+        });
+      } else if (rank > 2) {
+        div.classList.add('sq-disabled');
+      }
+
+      boardEl.appendChild(div);
     }
   }
+
+  content.appendChild(boardEl);
 }
 
 export function renderUpgradeScreen(deck, onChosen) {
@@ -156,6 +186,22 @@ export function renderTransformScreen(deck, character, onChosen) {
     btn.addEventListener('click', () => onChosen(i, card));
     content.appendChild(btn);
   });
+}
+
+export function renderTransformResultScreen(oldCard, newCard, onContinue) {
+  const content = document.getElementById('room-content');
+  if (!content) return;
+  content.innerHTML = '<h2>Card Transformed</h2>';
+  const msg = document.createElement('p');
+  msg.textContent = `${oldCard.name} (${oldCard.cost}) → ${newCard.name} (${newCard.cost})`;
+  msg.style.fontSize = '1.1rem';
+  msg.style.margin = '0.75rem 0';
+  content.appendChild(msg);
+  const btn = document.createElement('button');
+  btn.className = 'reward-card-btn';
+  btn.textContent = 'Continue';
+  btn.addEventListener('click', onContinue);
+  content.appendChild(btn);
 }
 
 export function renderShopScreen(deck, onChosen) {

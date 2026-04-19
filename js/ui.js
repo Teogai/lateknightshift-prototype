@@ -3,7 +3,7 @@ import { RunState } from './run.js';
 import { renderMapScreen } from './map.js';
 import {
   renderCardRewardScreen, renderPieceRewardScreen, renderUpgradeScreen,
-  renderTransformScreen, renderShopScreen, renderDefeatScreen,
+  renderTransformScreen, renderTransformResultScreen, renderShopScreen, renderDefeatScreen,
   pickCardChoices, pickPieceChoices,
 } from './rewards.js';
 import { REGULAR_ENEMIES, ELITE_ENEMY, BOSS_ENEMY } from './enemies.js';
@@ -136,29 +136,58 @@ export function renderBoard() {
   }
 }
 
+const CARD_ART_COLORS = {
+  move: '#3a5a8a',
+  knight_move: '#5a3a8a',
+  bishop_move: '#3a6a5a',
+  rook_move: '#2a6a6a',
+  queen_move: '#7a3a7a',
+  curse: '#5a1a1a',
+};
+function cardArtColor(card) {
+  if (card.type === 'summon') {
+    const colors = { pawn: '#3a5a3a', knight: '#2a4a2a', bishop: '#2a5a4a', rook: '#1a4a4a', queen: '#6a5a1a' };
+    return colors[card.piece] || '#3a3a3a';
+  }
+  return CARD_ART_COLORS[card.type] || '#3a3a3a';
+}
+
 export function renderHand() {
   const handEl = document.getElementById('hand');
   handEl.innerHTML = '';
   if (!gameState) return;
   const d = gameState.toDict();
   d.hand.forEach((card, idx) => {
-    const btn = document.createElement('button');
-    btn.className = 'card-btn';
+    const div = document.createElement('div');
+    div.className = 'card';
     if (card.type === 'curse') {
-      btn.textContent = `${card.name}  [unplayable]`;
-      btn.classList.add('curse-card');
-      btn.disabled = true;
-      handEl.appendChild(btn);
-      return;
+      div.classList.add('curse-card');
+      div.setAttribute('aria-disabled', 'true');
+    } else {
+      if (idx === uiState.selectedCardIndex) div.classList.add('selected');
+      if (card.cost > d.mana) div.classList.add('unaffordable');
+      else div.addEventListener('click', () => handleCardClick(idx, card));
     }
-    btn.textContent = `${card.name}  (${card.cost})${card.upgraded ? ' *' : ''}`;
-    if (idx === uiState.selectedCardIndex) btn.classList.add('selected');
-    if (card.cost > d.mana) {
-      btn.classList.add('unaffordable');
-      btn.disabled = true;
-    }
-    btn.addEventListener('click', () => handleCardClick(idx, card));
-    handEl.appendChild(btn);
+    // rarity border
+    const rarityMap = { uncommon: 'rarity-uncommon', rare: 'rarity-rare' };
+    if (card.rarity && rarityMap[card.rarity]) div.classList.add(rarityMap[card.rarity]);
+
+    const art = document.createElement('div');
+    art.className = 'card-art';
+    art.style.background = cardArtColor(card);
+    div.appendChild(art);
+
+    const name = document.createElement('div');
+    name.className = 'card-name' + (card.upgraded ? ' upgraded' : '');
+    name.textContent = card.name;
+    div.appendChild(name);
+
+    const cost = document.createElement('div');
+    cost.className = 'card-cost' + (card.upgraded ? ' upgraded' : '');
+    cost.textContent = card.type === 'curse' ? 'Unplayable' : `Cost: ${card.cost}`;
+    div.appendChild(cost);
+
+    handEl.appendChild(div);
   });
 }
 
@@ -292,8 +321,10 @@ export function handleRoomEntered(node) {
     const choices = pickCardChoices(1, runState.character);
     if (!choices.length) { advanceAfterRoom(); return; }
     renderTransformScreen(runState.deck, runState.character, (deckIdx) => {
-      runState.transformCard(deckIdx, choices[0].card);
-      advanceAfterRoom();
+      const oldCard = runState.deck[deckIdx];
+      const newCard = choices[0].card;
+      runState.transformCard(deckIdx, newCard);
+      renderTransformResultScreen(oldCard, newCard, advanceAfterRoom);
     });
   } else if (node.type === 'shop') {
     renderShopScreen(runState.deck, (deckIdx) => {
@@ -473,11 +504,16 @@ export function handleSquareClick(sq) {
   }
 }
 
-export function handleEndTurn() {
+export async function handleEndTurn() {
   document.getElementById('btn-end-turn').disabled = true;
   resetUiState(); setHint('');
-  const result = gameState.endTurn();
-  if (result.error) setHint(result.error);
+  const { pendingMoves, warnNext, error } = gameState.startEnemyTurn();
+  if (error) { setHint(error); return; }
+  render();
+  if (pendingMoves.length > 0) {
+    await new Promise(r => setTimeout(r, 600));
+  }
+  gameState.finishEnemyTurn(pendingMoves, warnNext);
   render();
 }
 

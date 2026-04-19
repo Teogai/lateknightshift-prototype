@@ -1,5 +1,5 @@
 *, *::before, *::after { box-sizing: border-box; }
-body { font-family: system-ui, sans-serif; background: #111; color: #eee; margin: 2rem; }
+body { font-family: system-ui, sans-serif; background: #111; color: #eee; margin: 0; padding: 2rem; min-height: 100vh; }
 h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 
 /* --- Screens --- */
@@ -18,7 +18,17 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 #select-error { color: #e05555; font-size: 0.85rem; min-height: 1.2em; }
 
 /* --- Game layout --- */
-#layout { display: flex; gap: 2rem; align-items: flex-start; }
+#screen-game {
+  display: flex; justify-content: center; align-items: flex-start;
+  min-height: 100vh; padding: 2rem 0;
+}
+#layout { display: flex; gap: 2rem; align-items: stretch; }
+#sidebar {
+  display: flex; flex-direction: column; gap: 0.75rem;
+  width: 180px; padding-top: 0.25rem; flex-shrink: 0;
+}
+#board-col { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+#bottom-bar { display: flex; gap: 1rem; align-items: center; margin-top: 0.25rem; }
 
 /* --- Board --- */
 #board {
@@ -48,30 +58,44 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 .sq.in-check       { background-color: rgba(180, 40, 20, 0.85); }
 .sq.check-attacker { background-color: rgba(140, 30, 10, 0.75); }
 
-/* --- Controls column --- */
-#controls-col {
-  display: flex; flex-direction: column; gap: 0.75rem;
-  min-width: 210px;
-}
+/* --- Sidebar / status --- */
 #status-bar { font-weight: bold; font-size: 1rem; min-height: 1.4em; }
 .your-turn  { color: #7fc97f; }
 .enemy-turn { color: #f4a460; }
 .game-over  { color: #e05555; font-size: 1.2rem; }
-#mana-display { color: #88ccff; font-size: 0.95rem; }
+#mana-display { color: #88ccff; font-size: 0.95rem; margin-top: auto; }
 #deck-info { color: #888; font-size: 0.8rem; }
 
 /* --- Hand --- */
-#hand { display: flex; flex-direction: column; gap: 0.4rem; }
-.card-btn {
-  padding: 0.45rem 0.7rem;
-  background: #2a2a3a; color: #eee;
-  border: 1px solid #555; border-radius: 4px;
-  cursor: pointer; text-align: left; width: 100%;
-  font-size: 0.9rem;
+#hand { display: flex; flex-direction: row; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
+.card {
+  width: 110px; min-height: 150px;
+  background: #2a2a3a;
+  border: 2px solid #555; border-radius: 6px;
+  cursor: pointer; display: flex; flex-direction: column;
+  overflow: hidden; user-select: none;
+  transition: border-color 0.1s;
 }
-.card-btn:hover:not(:disabled) { border-color: #aaa; }
-.card-btn.selected { border-color: #f0e040; background: #3a3a1a; }
-.card-btn.unaffordable { opacity: 0.45; cursor: not-allowed; }
+.card:hover:not(.unaffordable):not(.curse-card):not([aria-disabled]) { border-color: #aaa; }
+.card.selected { border-color: #f0e040; background: #3a3a1a; }
+.card.unaffordable { opacity: 0.45; cursor: not-allowed; }
+.card.curse-card { opacity: 0.55; cursor: not-allowed; }
+.card.rarity-uncommon { border-color: #5599cc; }
+.card.rarity-rare { border-color: #cc88ff; }
+.card.selected.rarity-uncommon { border-color: #f0e040; }
+.card.selected.rarity-rare { border-color: #f0e040; }
+.card-art { height: 65px; width: 100%; flex-shrink: 0; }
+.card-name {
+  padding: 0.3rem 0.4rem 0.1rem;
+  font-size: 0.78rem; font-weight: bold; color: #eee;
+  line-height: 1.2;
+}
+.card-name.upgraded { color: #6ddc6d; }
+.card-cost {
+  padding: 0.1rem 0.4rem 0.4rem;
+  font-size: 0.75rem; color: #aaa;
+}
+.card-cost.upgraded { color: #6ddc6d; }
 
 /* --- End turn button --- */
 #btn-end-turn {
@@ -122,6 +146,17 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 .piece-reward-btn.rarity-rare { border-color: #cc88ff; }
 .piece-reward-btn.rarity-legendary { border-color: #ffaa00; }
 .curse-card { color: #e05555; opacity: 0.6; }
+
+/* --- Piece placement board --- */
+.placement-board {
+  display: grid;
+  grid-template-columns: repeat(8, 52px);
+  grid-template-rows: repeat(8, 52px);
+  border: 2px solid #444;
+  width: max-content;
+  margin-top: 0.5rem;
+}
+.sq-disabled { opacity: 0.3; pointer-events: none; }
 
 /* --- Defeat screen --- */
 #screen-defeat { max-width: 480px; }

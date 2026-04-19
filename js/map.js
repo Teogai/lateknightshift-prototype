@@ -11,6 +11,7 @@ const ROOM_META = {
 };
 
 export function getFixedType(floor, config = MAP_CONFIG) {
+  if (floor === 1)                    return 'monster';
   if (floor === config.treasureFloor) return 'treasure';
   if (floor === config.upgradeFloor)  return 'upgrade';
   if (floor === config.bossFloor)     return 'boss';
@@ -28,9 +29,12 @@ function weightedRandom(weights) {
   return Object.keys(weights)[0];
 }
 
-export function rollRoomTypes(floor, count, config = MAP_CONFIG) {
+export function rollRoomTypes(floor, count, config = MAP_CONFIG, excludeTypes = []) {
   const eligibleWeights = { ...config.roomWeights };
   if (floor < config.eliteMinFloor) delete eligibleWeights.elite;
+  for (const t of excludeTypes) {
+    if (t === 'shop' || t === 'elite') delete eligibleWeights[t];
+  }
   const types = [];
   for (let i = 0; i < count; i++) {
     const filtered = {};
@@ -43,14 +47,14 @@ export function rollRoomTypes(floor, count, config = MAP_CONFIG) {
   return types;
 }
 
-export function generateNodes(floor, config = MAP_CONFIG) {
+export function generateNodes(floor, config = MAP_CONFIG, excludeTypes = []) {
   const fixed = getFixedType(floor, config);
   if (fixed) {
     const meta = ROOM_META[fixed];
     return [{ type: fixed, label: meta.label, icon: meta.icon }];
   }
   const count = config.minNodes + Math.floor(Math.random() * (config.maxNodes - config.minNodes + 1));
-  const types = rollRoomTypes(floor, count, config);
+  const types = rollRoomTypes(floor, count, config, excludeTypes);
   return types.map(t => ({ type: t, label: ROOM_META[t].label, icon: ROOM_META[t].icon }));
 }
 

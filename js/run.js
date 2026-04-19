@@ -13,14 +13,16 @@ export class RunState {
     this.currentFloor = 1;
     this.phase = 'map';
     this.currentNodes = [];
+    this.previousFloorTypes = [];
     this.pendingEnemy = null;
     this.pendingNode = null;
     this.advanceToFloor(1);
   }
 
   advanceToFloor(floor) {
+    this.previousFloorTypes = this.currentNodes.map(n => n.type);
     this.currentFloor = floor;
-    this.currentNodes = generateNodes(floor);
+    this.currentNodes = generateNodes(floor, undefined, this.previousFloorTypes);
   }
 
   enterRoom(nodeIndex) {

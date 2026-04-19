@@ -295,25 +295,43 @@ export class GameState {
     if (isEnemyDoublePush) this.enPassantTarget = chosen.to[0] + '6';
   }
 
-  endTurn() {
+  startEnemyTurn() {
     if (this.turn !== 'player') return { error: 'not player turn' };
     this.turn = 'enemy';
     this.summonedThisTurn.clear();
     this.movedThisTurn.clear();
 
-    if (this._enemyAI) {
-      const result = this._enemyAI.takeTurn(this._chess, this._personality, this.enPassantTarget);
+    if (!this._enemyAI) {
       this.enPassantTarget = null;
-      for (const move of result.moves) {
-        this._executeEnemyMoveObj(move);
-        const winner = checkKingCaptured(this._chess);
-        if (winner) { this.turn = winner; break; }
-      }
-      this.enemyWillDoubleMove = result.warnNext || false;
-    } else {
-      // No AI defined — enemy skips turn (should not happen in practice)
-      this.enPassantTarget = null;
+      return { pendingMoves: [], warnNext: false };
     }
+
+    const result = this._enemyAI.takeTurn(this._chess, this._personality, this.enPassantTarget);
+    this.enPassantTarget = null;
+
+    if (result.moves.length > 0) {
+      this._executeEnemyMoveObj(result.moves[0]);
+      this.lastMove = { from: result.moves[0].from, to: result.moves[0].to };
+      const winner = checkKingCaptured(this._chess);
+      if (winner) {
+        this.turn = winner;
+        this.enemyWillDoubleMove = false;
+        return { pendingMoves: [], warnNext: false };
+      }
+    }
+
+    return { pendingMoves: result.moves.slice(1), warnNext: result.warnNext || false };
+  }
+
+  finishEnemyTurn(pendingMoves, warnNext = false) {
+    for (const move of pendingMoves) {
+      this._executeEnemyMoveObj(move);
+      this.lastMove = { from: move.from, to: move.to };
+      const winner = checkKingCaptured(this._chess);
+      if (winner) { this.turn = winner; break; }
+    }
+
+    this.enemyWillDoubleMove = warnNext;
 
     if (this.turn !== 'player_won' && this.turn !== 'enemy_won') {
       this.turn = 'player';
@@ -335,5 +353,11 @@ export class GameState {
     }
 
     return { ok: true };
+  }
+
+  endTurn() {
+    const { pendingMoves, warnNext, error } = this.startEnemyTurn();
+    if (error) return { error };
+    return this.finishEnemyTurn(pendingMoves, warnNext);
   }
 }
