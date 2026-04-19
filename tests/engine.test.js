@@ -1,36 +1,35 @@
 import { describe, test, expect } from 'vitest';
-import { GameState, CHARACTER_PIECES, HAND_SIZE, STARTING_MANA } from '../js/engine.js';
+import { GameState, CHARACTER_PIECES, HAND_SIZE } from '../js/engine.js';
 
 function freshGame(character = 'knight') {
   return new GameState(character);
 }
 
-test('new game returns board with mana and hand and turn', () => {
+test('new game returns board and hand and turn', () => {
   const state = freshGame();
   const d = state.toDict();
   expect(d.board).toBeDefined();
-  expect(d.mana).toBe(3);
   expect(d.hand).toBeDefined();
   expect(d.turn).toBe('player');
 });
 
-test('knight character starts with 5 white pieces', () => {
+test('knight character starts with 6 white pieces', () => {
   const state = freshGame();
   const pieces = Object.values(state.toDict().board);
   const player = pieces.filter(p => p.color === 'white');
-  expect(player).toHaveLength(5);
+  expect(player).toHaveLength(6);
 });
 
-test('pawn pusher enemy starts with 5 black pieces', () => {
+test('pawn pusher enemy starts with 6 black pieces', () => {
   const state = freshGame();
   const pieces = Object.values(state.toDict().board);
   const enemy = pieces.filter(p => p.color === 'black');
-  expect(enemy).toHaveLength(5);
+  expect(enemy).toHaveLength(6);
 });
 
-test('new game deals 5 cards', () => {
+test('new game deals 6 cards', () => {
   const state = freshGame();
-  expect(state.toDict().hand).toHaveLength(5);
+  expect(state.toDict().hand).toHaveLength(6);
 });
 
 test('invalid character throws', () => {
@@ -99,15 +98,18 @@ test('en passant target clears after non-en-passant player move', () => {
   expect(state.enPassantTarget).toBeNull();
 });
 
-test('player pawn double push sets en passant target', () => {
+test('en passant target cleared after auto-turn end (double push)', () => {
+  // In wildfrost mode, playing a card auto-ends the turn (enemy moves).
+  // startEnemyTurn clears enPassantTarget, so it is always null at the start of the next player turn.
   const state = freshGame();
   state._chess.clear();
   state._chess.put({ type: 'k', color: 'w' }, 'a1');
   state._chess.put({ type: 'k', color: 'b' }, 'h8');
   state._chess.put({ type: 'p', color: 'w' }, 'e2');
   state.hand = [{ name: 'Move', type: 'move', cost: 1 }];
-  state.mana = 3;
 
   state.playMoveCard(0, 'e2', 'e4');
-  expect(state.enPassantTarget).toBe('e3');
+  // Auto-turn ran; enPassantTarget was set then cleared by startEnemyTurn
+  expect(state.enPassantTarget).toBeNull();
 });
+

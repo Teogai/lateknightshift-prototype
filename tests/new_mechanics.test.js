@@ -22,16 +22,23 @@ test('bishop character does not exist', () => {
 
 // --- No-repeat-piece rule ---
 
-test('moved piece cannot move again same turn', () => {
+test('moved piece can move again next turn', () => {
+  // Wildfrost: 1 card/turn; auto-turn runs after move, so movedThisTurn is cleared before player's next turn
   const state = freshGame();
-  state.hand = [
-    { name: 'Move', type: 'move', cost: 1 },
-    { name: 'Move', type: 'move', cost: 1 },
-  ];
-  state.mana = 3;
+  state.hand = [{ name: 'Move', type: 'move', cost: 1 }];
   state.playMoveCard(0, 'b1', 'a3');
+  // Auto-turn ran; now it's a new player turn with movedThisTurn cleared
+  state.hand = [{ name: 'Move', type: 'move', cost: 1 }];
   const result = state.playMoveCard(0, 'a3', 'b5');
-  expect(result.error).toMatch(/already moved/);
+  expect(result.ok).toBe(true);
+});
+
+test('moved_this_turn is empty at start of player turn', () => {
+  const state = freshGame();
+  state.hand = [{ name: 'Move', type: 'move', cost: 1 }];
+  state.playMoveCard(0, 'b1', 'a3');
+  // After auto-turn, movedThisTurn is cleared
+  expect(state.toDict().moved_this_turn).toEqual([]);
 });
 
 test('moved_this_turn resets after end turn', () => {
@@ -46,25 +53,15 @@ test('moved_this_turn resets after end turn', () => {
   expect(result.ok).toBe(true);
 });
 
-test('state exposes moved_this_turn', () => {
-  const state = freshGame();
-  state.hand = [{ name: 'Move', type: 'move', cost: 1 }];
-  state.mana = 3;
-  state.playMoveCard(0, 'b1', 'a3');
-  expect(state.toDict().moved_this_turn).toContain('a3');
-});
 
 // --- Knight Move card ---
 
 test('knight move card moves piece to valid L-shape destination', () => {
   const state = freshGame();
   state.hand = [{ name: 'Knight Move', type: 'knight_move', cost: 2 }];
-  state.mana = 3;
   const result = state.playKnightMoveCard(0, 'a1', 'b3');
   expect(result.ok).toBe(true);
-  const d = state.toDict();
-  expect(d.board['b3'].type).toBe('rook');
-  expect(d.mana).toBe(1);
+  expect(state.toDict().board['b3'].type).toBe('rook');
 });
 
 test('knight move card rejects non-L-shape destination', () => {
@@ -75,24 +72,24 @@ test('knight move card rejects non-L-shape destination', () => {
   expect(result.error).toBeDefined();
 });
 
-test('knight move card obeys no-repeat rule', () => {
-  const state = freshGame();
-  state.hand = [
-    { name: 'Move', type: 'move', cost: 1 },
-    { name: 'Knight Move', type: 'knight_move', cost: 2 },
-  ];
-  state.mana = 3;
-  state.playMoveCard(0, 'b1', 'a3');
-  const result = state.playKnightMoveCard(0, 'a3', 'b5');
-  expect(result.error).toMatch(/already moved/);
-});
-
-test('knight move card costs 2 mana', () => {
+test('knight-moved piece can move again next turn', () => {
+  // Wildfrost: auto-turn clears movedThisTurn; knight-moved piece can be moved next turn
   const state = freshGame();
   state.hand = [{ name: 'Knight Move', type: 'knight_move', cost: 2 }];
-  state.mana = 1;
-  const result = state.playKnightMoveCard(0, 'a1', 'b3');
-  expect(result.error).toMatch(/mana/);
+  state.playKnightMoveCard(0, 'b1', 'a3');
+  // Auto-turn ran; movedThisTurn cleared
+  state.hand = [{ name: 'Move', type: 'move', cost: 1 }];
+  const result = state.playMoveCard(0, 'a3', 'b5');
+  expect(result.ok).toBe(true);
+});
+
+test('knight move card rejects friendly piece at destination', () => {
+  const state = freshGame();
+  state.hand = [{ name: 'Knight Move', type: 'knight_move', cost: 2 }];
+  state.mana = 3;
+  // a1 rook → b2 is L-shape but b2 has a pawn (friendly)
+  const result = state.playKnightMoveCard(0, 'a1', 'b2');
+  expect(result.error).toBeDefined();
 });
 
 // --- Knight move pawn promotion ---

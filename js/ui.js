@@ -178,10 +178,12 @@ export function makeCardEl(card, { onClick } = {}) {
   name.className = 'card-name' + (card.upgraded ? ' upgraded' : '');
   name.textContent = card.name;
   div.appendChild(name);
-  const cost = document.createElement('div');
-  cost.className = 'card-cost' + (card.upgraded ? ' upgraded' : '');
-  cost.textContent = card.type === 'curse' ? 'Unplayable' : `Cost: ${card.cost}`;
-  div.appendChild(cost);
+  if (card.type === 'curse') {
+    const unplayable = document.createElement('div');
+    unplayable.className = 'card-cost';
+    unplayable.textContent = 'Unplayable';
+    div.appendChild(unplayable);
+  }
   return div;
 }
 
@@ -191,14 +193,12 @@ export function renderHand() {
   if (!gameState) return;
   const d = gameState.toDict();
   d.hand.forEach((card, idx) => {
-    const isAffordable = card.cost <= d.mana;
-    const onClick = (card.type !== 'curse' && isAffordable)
+    const onClick = card.type !== 'curse'
       ? () => handleCardClick(idx, card)
       : undefined;
     const div = makeCardEl(card, { onClick });
     if (card.type !== 'curse') {
       if (idx === uiState.selectedCardIndex) div.classList.add('selected');
-      if (!isAffordable) div.classList.add('unaffordable');
     }
     handEl.appendChild(div);
   });
@@ -224,9 +224,12 @@ export function renderStatus() {
     statusEl.textContent = 'Game over.';
     statusEl.classList.add('game-over');
   }
-  document.getElementById('mana-display').textContent = `Mana: ${d.mana} / 3`;
   document.getElementById('deck-info').textContent = `Deck: ${d.deck_size}  |  Discard: ${d.discard_size}  |  Lives: ${runState?.lives ?? '—'}`;
-  document.getElementById('btn-end-turn').disabled = d.turn !== 'player';
+  const btnRedraw = document.getElementById('btn-redraw');
+  if (btnRedraw) {
+    btnRedraw.disabled = d.turn !== 'player';
+    document.getElementById('redraw-countdown').textContent = d.redraw_countdown;
+  }
 }
 
 function checkGameOver() {
@@ -361,7 +364,6 @@ export function handleCardClick(index, card) {
     resetUiState(); setHint(''); render(); return;
   }
   const d = gameState.toDict();
-  if (card.cost > d.mana) return;
   resetUiState();
   uiState.phase = 'card_selected';
   uiState.selectedCardIndex = index;
@@ -517,17 +519,14 @@ export function handleSquareClick(sq) {
   }
 }
 
-export async function handleEndTurn() {
-  document.getElementById('btn-end-turn').disabled = true;
+export async function handleRedraw() {
+  const btnRedraw = document.getElementById('btn-redraw');
+  if (btnRedraw) btnRedraw.disabled = true;
   resetUiState(); setHint('');
-  const { pendingMoves, warnNext, error } = gameState.startEnemyTurn();
-  if (error) { setHint(error); return; }
+  const result = gameState.redrawHand();
+  await new Promise(r => setTimeout(r, 300));
   render();
-  if (pendingMoves.length > 0) {
-    await new Promise(r => setTimeout(r, 600));
-  }
-  gameState.finishEnemyTurn(pendingMoves, warnNext);
-  render();
+  console.log('[ui] redraw free=%s', result.free);
 }
 
 export function handlePromotionChoice(promoLetter) {

@@ -14,13 +14,6 @@ function setHand(state, type, piece = null, cost = 1) {
 
 // --- summoned_this_turn ---
 
-test('summoned_this_turn appears in state after summon', () => {
-  const state = freshGame();
-  setHand(state, 'summon', 'pawn');
-  state.playSummonCard(0, 'pawn', 'c2');
-  const d = state.toDict();
-  expect(d.summoned_this_turn).toContain('c2');
-});
 
 test('summoned square not in moved_this_turn', () => {
   const state = freshGame();
@@ -46,32 +39,6 @@ test('last_move is null/null on new game', () => {
   expect(d.last_move.to).toBeNull();
 });
 
-test('last_move tracks move card', () => {
-  const state = freshGame();
-  setHand(state, 'move');
-  state.playMoveCard(0, 'b1', 'a3');
-  const d = state.toDict();
-  expect(d.last_move.from).toBe('b1');
-  expect(d.last_move.to).toBe('a3');
-});
-
-test('last_move tracks knight move', () => {
-  const state = freshGame();
-  setHand(state, 'knight_move', null, 2);
-  state.playKnightMoveCard(0, 'b1', 'a3');
-  const d = state.toDict();
-  expect(d.last_move.from).toBe('b1');
-  expect(d.last_move.to).toBe('a3');
-});
-
-test('last_move tracks summon (from is null)', () => {
-  const state = freshGame();
-  setHand(state, 'summon', 'pawn');
-  state.playSummonCard(0, 'pawn', 'c2');
-  const d = state.toDict();
-  expect(d.last_move.from).toBeNull();
-  expect(d.last_move.to).toBe('c2');
-});
 
 test('last_move.to is set after end turn (enemy moves)', () => {
   const state = freshGame();
@@ -128,19 +95,6 @@ test('legalDestinationsFor returns moves for knight', () => {
   expect(dests.some(d => d === 'a3' || d === 'c3')).toBe(true);
 });
 
-test('legalDestinationsFor returns empty for summoned piece', () => {
-  const state = freshGame();
-  setHand(state, 'summon', 'pawn');
-  state.playSummonCard(0, 'pawn', 'c2');
-  expect(state.legalDestinationsFor('c2')).toEqual([]);
-});
-
-test('legalDestinationsFor returns empty for already-moved piece', () => {
-  const state = freshGame();
-  setHand(state, 'move');
-  state.playMoveCard(0, 'b1', 'a3');
-  expect(state.legalDestinationsFor('a3')).toEqual([]);
-});
 
 test('legalDestinationsFor returns empty for enemy piece', () => {
   const state = freshGame();
