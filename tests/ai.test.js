@@ -5,6 +5,10 @@ import { ENEMIES } from '../js/enemies.js';
 const PAWN_PUSHER = ENEMIES.pawn_pusher.personality;
 const KNIGHT_RIDER = ENEMIES.knight_rider.personality;
 
+function hasBlackQueen(chess) {
+  return chess.board().flat().some(p => p?.type === 'q' && p?.color === 'b');
+}
+
 function emptyChess() {
   const c = new Chess();
   c.clear();
@@ -309,4 +313,24 @@ test('selectMoveIterative finds king capture in one move', () => {
     timeBudgetMs: 1000,
   });
   expect(chosen.to).toBe('e1');
+});
+
+// Regression: AI should push a pawn to promotion in quiet endgame, not shuffle king
+test('pawn_pusher promotes a pawn within 20 turns from quiet endgame', () => {
+  const chess = new Chess();
+  chess.load('5k2/8/8/2p1p3/p2p4/6p1/P2PP3/RN2K3 w - - 0 1');
+  const positionHistory = [chess.fen().split(' ')[0]];
+  for (let turn = 0; turn < 20; turn++) {
+    const moves = generateMoves(chess, 'b');
+    if (!moves.length) break;
+    const chosen = selectMoveIterative(chess, moves, PAWN_PUSHER, {
+      maxDepth: 6, timeBudgetMs: 1000, positionHistory,
+    });
+    if (!chosen) break;
+    makeMove(chess, chosen);
+    positionHistory.push(chess.fen().split(' ')[0]);
+    if (positionHistory.length > 12) positionHistory.shift();
+    if (hasBlackQueen(chess)) break;
+  }
+  expect(hasBlackQueen(chess)).toBe(true);
 });
