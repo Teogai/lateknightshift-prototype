@@ -69,6 +69,21 @@ export class GameState {
     this.movedThisTurn = new Set();
     this.lastMove = { from: null, to: null };
     this.enPassantTarget = null;
+    // Rolling log of recent position keys (board segment of FEN). Used by the
+    // enemy AI to penalize moves that reach a recently-seen position, which
+    // breaks cross-turn shuffling in quiet endgames.
+    this.positionHistory = [this._positionKey()];
+  }
+
+  _positionKey() {
+    // Board-only FEN segment: ignores turn/castling/EP/halfmove intentionally
+    // so "same pieces on same squares" counts as repetition regardless of side to move.
+    return this._chess.fen().split(' ')[0];
+  }
+
+  _pushPositionHistory() {
+    this.positionHistory.push(this._positionKey());
+    if (this.positionHistory.length > 12) this.positionHistory.shift();
   }
 
   toDict() {
@@ -164,6 +179,7 @@ export class GameState {
     this.discard.push(this.hand.splice(cardIndex, 1)[0]);
     this.movedThisTurn.add(toSq);
     this.lastMove = { from: fromSq, to: toSq };
+    this._pushPositionHistory();
     const winner = checkKingCaptured(this._chess);
     if (winner) this.turn = winner;
     return { ok: true };
@@ -191,6 +207,7 @@ export class GameState {
     this.discard.push(this.hand.splice(cardIndex, 1)[0]);
     this.movedThisTurn.add(toSq);
     this.lastMove = { from: fromSq, to: toSq };
+    this._pushPositionHistory();
     const winner = checkKingCaptured(this._chess);
     if (winner) this.turn = winner;
 
@@ -224,6 +241,7 @@ export class GameState {
     this.discard.push(this.hand.splice(cardIndex, 1)[0]);
     this.movedThisTurn.add(toSq);
     this.lastMove = { from: fromSq, to: toSq };
+    this._pushPositionHistory();
     const winner = checkKingCaptured(this._chess);
     if (winner) this.turn = winner;
 
@@ -276,6 +294,7 @@ export class GameState {
     this.mana -= card.cost;
     this.discard.push(this.hand.splice(cardIndex, 1)[0]);
     this.lastMove = { from: null, to: toSq };
+    this._pushPositionHistory();
     return { ok: true };
   }
 
@@ -296,6 +315,7 @@ export class GameState {
     }
     const isEnemyDoublePush = movingPiece?.type === 'p' && chosen.from[1] === '7' && chosen.to[1] === '5';
     if (isEnemyDoublePush) this.enPassantTarget = chosen.to[0] + '6';
+    this._pushPositionHistory();
   }
 
   startEnemyTurn() {
@@ -309,7 +329,7 @@ export class GameState {
       return { pendingMoves: [], warnNext: false };
     }
 
-    const result = this._enemyAI.takeTurn(this._chess, this._personality, this.enPassantTarget);
+    const result = this._enemyAI.takeTurn(this._chess, this._personality, this.enPassantTarget, this.positionHistory);
     this.enPassantTarget = null;
 
     if (result.moves.length > 0) {

@@ -318,7 +318,13 @@ function _findKing(chess, color) {
 // the one whose post-move position already scores higher (achieve the goal now,
 // not via a detour). Without this, "move king, then advance pawn" ties with
 // "advance pawn now" and order-of-iteration picks arbitrarily.
-export function selectMove(chess, moves, personality, depth, enPassantTarget = null) {
+// Penalty applied at root to any move whose resulting position has been seen
+// recently (passed via positionHistory). Beats quiet-position tie plateaus
+// (tropism/mobility swings are single digits to ~50) but far below material
+// (100–900) or king capture (~10000) — tactics still dominate.
+const REPETITION_PENALTY = 75;
+
+export function selectMove(chess, moves, personality, depth, enPassantTarget = null, positionHistory = []) {
   const d = adaptiveDepth(chess, depth);
   let bestMove = moves[0];
   let bestScore = -Infinity;
@@ -332,6 +338,10 @@ export function selectMove(chess, moves, personality, depth, enPassantTarget = n
       score = Infinity;
     } else {
       score = minimax(chess, d - 1, -Infinity, Infinity, false, personality, saved.newEnPassantTarget);
+    }
+    // Castling/EP are intentionally ignored — "same pieces on same squares" is the cycle we want to break.
+    if (positionHistory.length && positionHistory.includes(chess.fen().split(' ')[0])) {
+      score -= REPETITION_PENALTY;
     }
     unmakeMove(chess, move, saved);
     if (score > bestScore || (score === bestScore && immediate > bestImmediate)) {
@@ -351,12 +361,13 @@ export function selectMoveIterative(chess, moves, personality, {
   maxDepth = 6,
   timeBudgetMs = 200,
   enPassantTarget = null,
+  positionHistory = [],
 } = {}) {
   const start = Date.now();
   let bestMove = moves[0];
 
   for (let depth = 1; depth <= maxDepth; depth++) {
-    bestMove = selectMove(chess, moves, personality, depth, enPassantTarget);
+    bestMove = selectMove(chess, moves, personality, depth, enPassantTarget, positionHistory);
     if (Date.now() - start > timeBudgetMs / 2) break;
   }
   return bestMove;
