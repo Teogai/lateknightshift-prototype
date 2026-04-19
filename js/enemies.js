@@ -8,12 +8,12 @@ import { pseudoLegalMovesFor, allGeometricMovesFor, savePieces, restorePieces } 
 
 function defaultAI() {
   return {
-    takeTurn(chess, personality, enPassantTarget) {
+    takeTurn(chess, personality, enPassantTarget, positionHistory = []) {
       let moves = pseudoLegalMovesFor(chess, 'b', enPassantTarget);
       if (!moves.length) moves = allGeometricMovesFor(chess, 'b');
       if (!moves.length) return { moves: [], warnNext: false };
       const chosen = selectMoveIterative(chess, moves, personality, {
-        maxDepth: 6, timeBudgetMs: 200, enPassantTarget,
+        maxDepth: 6, timeBudgetMs: 200, enPassantTarget, positionHistory,
       });
       return { moves: chosen ? [chosen] : [], warnNext: false };
     },
@@ -23,7 +23,7 @@ function defaultAI() {
 function doubleMoveAI() {
   let doubleMovePending = false;
   return {
-    takeTurn(chess, personality, enPassantTarget) {
+    takeTurn(chess, personality, enPassantTarget, positionHistory = []) {
       if (doubleMovePending) {
         doubleMovePending = false;
         // Select first move
@@ -31,7 +31,7 @@ function doubleMoveAI() {
         if (!moves.length) moves = allGeometricMovesFor(chess, 'b');
         if (!moves.length) return { moves: [], warnNext: false };
         const first = selectMoveIterative(chess, moves, personality, {
-          maxDepth: 6, timeBudgetMs: 200, enPassantTarget,
+          maxDepth: 6, timeBudgetMs: 200, enPassantTarget, positionHistory,
         });
         if (!first) return { moves: [], warnNext: false };
 
@@ -42,11 +42,14 @@ function doubleMoveAI() {
         chess.remove(first.to);
         if (movingPiece) chess.put(movingPiece, first.to);
 
+        // Include the just-played position so the second move also avoids it.
+        const extendedHistory = [...positionHistory, chess.fen().split(' ')[0]];
+
         let moves2 = pseudoLegalMovesFor(chess, 'b', null);
         if (!moves2.length) moves2 = allGeometricMovesFor(chess, 'b');
         const second = moves2.length
           ? selectMoveIterative(chess, moves2, personality, {
-              maxDepth: 6, timeBudgetMs: 200, enPassantTarget: null,
+              maxDepth: 6, timeBudgetMs: 200, enPassantTarget: null, positionHistory: extendedHistory,
             })
           : null;
 
@@ -58,7 +61,7 @@ function doubleMoveAI() {
         if (!moves.length) moves = allGeometricMovesFor(chess, 'b');
         if (!moves.length) return { moves: [], warnNext: true };
         const chosen = selectMoveIterative(chess, moves, personality, {
-          maxDepth: 6, timeBudgetMs: 200, enPassantTarget,
+          maxDepth: 6, timeBudgetMs: 200, enPassantTarget, positionHistory,
         });
         return { moves: chosen ? [chosen] : [], warnNext: true };
       }

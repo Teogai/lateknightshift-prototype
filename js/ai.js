@@ -113,7 +113,16 @@ export function makeMove(chess, move) {
   const capturedPiece = chess.get(move.to) || null;
   chess.remove(move.from);
   chess.remove(move.to);
-  chess.put(movingPiece, move.to);
+
+  // Auto-promote pawns that reach the last rank. Search generates the pawn's
+  // one-square push with no promotion flag, so we detect it here. Queen is the
+  // best promotion in the overwhelming majority of positions; under-promotion
+  // is not worth the branching cost in this search.
+  const isPromotion = movingPiece.type === 'p' &&
+    ((movingPiece.color === 'w' && move.to[1] === '8') ||
+     (movingPiece.color === 'b' && move.to[1] === '1'));
+  const placedPiece = isPromotion ? { type: 'q', color: movingPiece.color } : movingPiece;
+  chess.put(placedPiece, move.to);
 
   let epCapturedSq = null;
   if (move.enPassant) {
@@ -161,10 +170,17 @@ function pawnAdvanceScore(chess) {
   const board = chess.board();
   for (let r = 0; r < 8; r++) {
     for (let f = 0; f < 8; f++) {
-      if (board[r][f]?.type === 'p' && board[r][f]?.color === 'b') {
+      const p = board[r][f];
+      if (p?.color !== 'b') continue;
+      if (p.type === 'p') {
         // r=0 is rank 8 (black back rank), r=7 is rank 1 (promotion).
         // r*r rewards advancing an already-advanced pawn more than a backward one.
         score += r * r;
+      } else if (p.type === 'q') {
+        // A promoted pawn reaches the maximum rank; keep its pawn_advance credit
+        // after promotion so the pawn-push personality doesn't lose score by
+        // promoting. Also applies uniformly to starting queens (a fixed bonus).
+        score += 49;
       }
     }
   }
@@ -318,7 +334,21 @@ function _findKing(chess, color) {
 // the one whose post-move position already scores higher (achieve the goal now,
 // not via a detour). Without this, "move king, then advance pawn" ties with
 // "advance pawn now" and order-of-iteration picks arbitrarily.
-export function selectMove(chess, moves, personality, depth, enPassantTarget = null) {
+// Penalty applied at root to any move whose resulting position has been seen
+// recently (passed via positionHistory). Beats quiet-position tie plateaus
+// (tropism/mobility swings are single digits to ~50) but far below material
+// (100–900) or king capture (~10000) — tactics still dominate.
+const REPETITION_PENALTY = 75;
+
+export function selectMove(chess, moves, personality, depth, enPassantTarget = null, positionHistory = []) {
+  // Direct king capture is the shortest possible win — always pick it over any
+  // deferred forced mate. Without this, both direct and deferred captures score
+  // Infinity and tiebreak-by-immediate-eval can pick the longer path.
+  for (const move of moves) {
+    const target = chess.get(move.to);
+    if (target?.type === 'k' && target.color === 'w') return move;
+  }
+
   const d = adaptiveDepth(chess, depth);
   let bestMove = moves[0];
   let bestScore = -Infinity;
@@ -332,6 +362,10 @@ export function selectMove(chess, moves, personality, depth, enPassantTarget = n
       score = Infinity;
     } else {
       score = minimax(chess, d - 1, -Infinity, Infinity, false, personality, saved.newEnPassantTarget);
+    }
+    // Castling/EP are intentionally ignored — "same pieces on same squares" is the cycle we want to break.
+    if (positionHistory.length && positionHistory.includes(chess.fen().split(' ')[0])) {
+      score -= REPETITION_PENALTY;
     }
     unmakeMove(chess, move, saved);
     if (score > bestScore || (score === bestScore && immediate > bestImmediate)) {
@@ -351,12 +385,13 @@ export function selectMoveIterative(chess, moves, personality, {
   maxDepth = 6,
   timeBudgetMs = 200,
   enPassantTarget = null,
+  positionHistory = [],
 } = {}) {
   const start = Date.now();
   let bestMove = moves[0];
 
   for (let depth = 1; depth <= maxDepth; depth++) {
-    bestMove = selectMove(chess, moves, personality, depth, enPassantTarget);
+    bestMove = selectMove(chess, moves, personality, depth, enPassantTarget, positionHistory);
     if (Date.now() - start > timeBudgetMs / 2) break;
   }
   return bestMove;
