@@ -3,6 +3,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "build": "vite build",
+    "build:single": "node build-single.js",
     "test": "vitest run",
     "test:watch": "vitest"
   },

@@ -9,3 +9,5 @@ node_modules/
 .DS_Store
 .claude/settings.local.json
 .claude/worktrees
+dist/
+game.html
