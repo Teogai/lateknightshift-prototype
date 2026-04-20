@@ -2,8 +2,8 @@ import { test, expect } from 'vitest';
 import { RunState, generateNodes } from '../js/run.js';
 
 // --- RunState init ---
-test('RunState starts with 3 lives', () => {
-  expect(new RunState('knight').lives).toBe(3);
+test('RunState starts with 1 life', () => {
+  expect(new RunState('knight').lives).toBe(1);
 });
 test('RunState starts at floor 1', () => {
   expect(new RunState('knight').currentFloor).toBe(1);
@@ -19,14 +19,14 @@ test('RunState startingPieces starts empty', () => {
 });
 
 // --- recordDefeat ---
-test('recordDefeat decrements lives', () => {
+test('recordDefeat decrements to 0 with 1 life', () => {
   const r = new RunState('knight');
   r.recordDefeat();
-  expect(r.lives).toBe(2);
+  expect(r.lives).toBe(0);
 });
 test('recordDefeat to 0 sets phase defeated', () => {
   const r = new RunState('knight');
-  r.recordDefeat(); r.recordDefeat(); r.recordDefeat();
+  r.recordDefeat();
   expect(r.lives).toBe(0);
   expect(r.phase).toBe('defeated');
 });

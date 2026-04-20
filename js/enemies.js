@@ -71,6 +71,8 @@ function doubleMoveAI() {
 
 export const ENEMIES = {
   pawn_pusher: {
+    name: 'Pawn Pusher',
+    specialAbility: { name: 'Pawn Rush', description: 'Aggressively advances pawns toward promotion.' },
     pieces: [
       { type: 'k', color: 'b', sq: 'e8' },
       { type: 'p', color: 'b', sq: 'a7' },
@@ -83,6 +85,8 @@ export const ENEMIES = {
     createAI: defaultAI,
   },
   knight_rider: {
+    name: 'Knight Rider',
+    specialAbility: { name: 'Horse Power', description: 'Leverages knight mobility for rapid flanking attacks.' },
     pieces: [
       { type: 'k', color: 'b', sq: 'e8' },
       { type: 'n', color: 'b', sq: 'b8' },
@@ -95,6 +99,8 @@ export const ENEMIES = {
     createAI: defaultAI,
   },
   bishop_pair: {
+    name: 'Bishop Pair',
+    specialAbility: { name: 'Diagonal Control', description: 'Coordinates two bishops to dominate open diagonals.' },
     pieces: [
       { type: 'k', color: 'b', sq: 'e8' },
       { type: 'b', color: 'b', sq: 'c8' },
@@ -108,6 +114,8 @@ export const ENEMIES = {
   },
   // Floor 8 — king pushed to 7th rank, flanking knights
   phalanx: {
+    name: 'Phalanx',
+    specialAbility: { name: 'Wall Formation', description: 'Advances a fortified king flanked by protecting knights.' },
     pieces: [
       { type: 'k', color: 'b', sq: 'e7' },
       { type: 'b', color: 'b', sq: 'd7' },
@@ -123,6 +131,8 @@ export const ENEMIES = {
   },
   // Floor 9 — rook+bishop back rank with advanced knight pawn
   iron_line: {
+    name: 'Iron Line',
+    specialAbility: { name: 'Iron Defense', description: 'Holds a heavy defensive line anchored by rook and bishop.' },
     pieces: [
       { type: 'k', color: 'b', sq: 'e8' },
       { type: 'r', color: 'b', sq: 'a8' },
@@ -140,6 +150,8 @@ export const ENEMIES = {
   },
   // Floor 10 — 4 knights + full pawn rank
   cavalry_charge: {
+    name: 'Cavalry Charge',
+    specialAbility: { name: 'Four Horsemen', description: 'Deploys four knights in a sweeping cavalry rush.' },
     pieces: [
       { type: 'k', color: 'b', sq: 'e8' },
       { type: 'n', color: 'b', sq: 'b8' },
@@ -160,6 +172,8 @@ export const ENEMIES = {
   },
   // Floor 13 — offset king, heavy mixed army
   high_command: {
+    name: 'High Command',
+    specialAbility: { name: 'Siege Tactics', description: 'Commands a mixed heavy army with relentless pressure.' },
     pieces: [
       { type: 'k', color: 'b', sq: 'g8' },
       { type: 'b', color: 'b', sq: 'c8' },
@@ -179,6 +193,8 @@ export const ENEMIES = {
     createAI: defaultAI,
   },
   duelist: {
+    name: 'Duelist',
+    specialAbility: { name: 'Double Strike', description: 'Every other turn, takes two moves instead of one.' },
     // FEN rows: 2bnkb2/2pppp2
     pieces: [
       { type: 'b', color: 'b', sq: 'c8' },
@@ -195,6 +211,8 @@ export const ENEMIES = {
   },
   // Floor 12 — duelist with rook + queen added, doubleMoveAI
   duelist_2: {
+    name: 'Duelist II',
+    specialAbility: { name: 'Double Strike+', description: 'Double-move threat backed by rook and queen firepower.' },
     pieces: [
       { type: 'r', color: 'b', sq: 'a8' },
       { type: 'q', color: 'b', sq: 'b8' },
@@ -213,6 +231,8 @@ export const ENEMIES = {
     createAI: doubleMoveAI,
   },
   boss_duelist: {
+    name: 'Boss Duelist',
+    specialAbility: { name: 'Grand Finale', description: 'Commands the full chess army with relentless double moves.' },
     // Full 16-piece standard chess starting position (black side)
     pieces: [
       { type: 'r', color: 'b', sq: 'a8' },

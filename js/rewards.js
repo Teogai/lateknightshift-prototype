@@ -204,11 +204,20 @@ export function renderTransformResultScreen(oldCard, newCard, onContinue) {
   const content = document.getElementById('room-content');
   if (!content) return;
   content.innerHTML = '<h2>Card Transformed</h2>';
-  const msg = document.createElement('p');
-  msg.textContent = `${oldCard.name} (${oldCard.cost}) → ${newCard.name} (${newCard.cost})`;
-  msg.style.fontSize = '1.1rem';
-  msg.style.margin = '0.75rem 0';
-  content.appendChild(msg);
+
+  const row = document.createElement('div');
+  row.className = 'transform-result-row';
+
+  row.appendChild(makeCardEl(oldCard));
+
+  const arrow = document.createElement('span');
+  arrow.className = 'transform-arrow';
+  arrow.textContent = '→';
+  row.appendChild(arrow);
+
+  row.appendChild(makeCardEl(newCard));
+  content.appendChild(row);
+
   const btn = document.createElement('button');
   btn.className = 'reward-card-btn';
   btn.textContent = 'Continue';

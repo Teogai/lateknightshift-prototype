@@ -6,7 +6,7 @@ import {
   renderTransformScreen, renderTransformResultScreen, renderShopScreen, renderDefeatScreen,
   pickCardChoices, pickPieceChoices,
 } from './rewards.js';
-import { REGULAR_ENEMIES, ELITE_ENEMY, BOSS_ENEMY } from './enemies.js';
+import { ENEMIES, REGULAR_ENEMIES, ELITE_ENEMY, BOSS_ENEMY } from './enemies.js';
 import { curseCard, bishopMoveCard, rookMoveCard, queenMoveCard } from './cards.js';
 
 const PIECES = {
@@ -28,10 +28,11 @@ const PIECES = {
   },
 };
 
-const ALL_SCREENS = ['screen-select', 'screen-map', 'screen-game', 'screen-room', 'screen-defeat', 'screen-complete'];
+const ALL_SCREENS = ['screen-select', 'screen-map', 'screen-game', 'screen-room', 'screen-defeat', 'screen-victory', 'screen-complete'];
 
 export let gameState = null;
 export let runState = null;
+let currentEnemyKey = null;
 
 export const uiState = {
   phase: 'idle',
@@ -309,18 +310,16 @@ function pickEnemy(nodeType) {
   return REGULAR_ENEMIES[Math.floor(Math.random() * REGULAR_ENEMIES.length)];
 }
 
-export function handleBattleWon() {
+function showBattleReward() {
   if (!runState) return;
   const nodeType = runState.pendingNode?.type;
 
   if (nodeType === 'elite' || nodeType === 'treasure') {
-    // Show piece reward
     const choices = pickPieceChoices(3);
     runState.phase = 'room';
     showScreen('screen-room');
     renderPieceRewardScreen(choices, runState, () => advanceAfterRoom());
   } else {
-    // Show card reward then advance
     const choices = pickCardChoices(3, runState.character);
     runState.phase = 'room';
     showScreen('screen-room');
@@ -329,6 +328,15 @@ export function handleBattleWon() {
       advanceAfterRoom();
     });
   }
+}
+
+export function handleBattleWon() {
+  if (!runState) return;
+  const enemyDef = currentEnemyKey ? ENEMIES[currentEnemyKey] : null;
+  const enemyName = enemyDef?.name ?? 'the enemy';
+  showScreen('screen-victory');
+  document.getElementById('victory-message').textContent = `You defeated ${enemyName}!`;
+  document.getElementById('btn-victory-continue').onclick = showBattleReward;
 }
 
 export function handleBattleDefeated() {
@@ -352,8 +360,52 @@ export function handleBattleDefeated() {
   );
 }
 
+const NODE_TYPE_LABELS = { monster: 'Normal Enemy', elite: 'Elite Enemy', boss: 'Boss' };
+
+function renderSidebar(enemyKey, nodeType) {
+  const sidebar = document.getElementById('sidebar');
+  if (!sidebar) return;
+  const enemy = ENEMIES[enemyKey];
+  if (!enemy) { sidebar.innerHTML = ''; return; }
+
+  const panel = document.createElement('div');
+  panel.className = 'enemy-panel';
+
+  const nameEl = document.createElement('div');
+  nameEl.className = 'enemy-panel-name';
+  nameEl.textContent = enemy.name;
+  panel.appendChild(nameEl);
+
+  const typeLabel = NODE_TYPE_LABELS[nodeType];
+  if (typeLabel) {
+    const badge = document.createElement('div');
+    badge.className = 'enemy-type-badge';
+    badge.dataset.type = nodeType;
+    badge.textContent = typeLabel;
+    panel.appendChild(badge);
+  }
+
+  const divider = document.createElement('hr');
+  divider.className = 'enemy-panel-divider';
+  panel.appendChild(divider);
+
+  const abilityName = document.createElement('div');
+  abilityName.className = 'ability-name';
+  abilityName.textContent = enemy.specialAbility.name;
+  panel.appendChild(abilityName);
+
+  const abilityDesc = document.createElement('div');
+  abilityDesc.className = 'ability-desc';
+  abilityDesc.textContent = enemy.specialAbility.description;
+  panel.appendChild(abilityDesc);
+
+  sidebar.innerHTML = '';
+  sidebar.appendChild(panel);
+}
+
 function startBattle(nodeType) {
   const enemy = pickEnemy(nodeType);
+  currentEnemyKey = enemy;
   gameState = new GameState(
     runState.character,
     enemy,
@@ -362,6 +414,7 @@ function startBattle(nodeType) {
   );
   resetUiState();
   showScreen('screen-game');
+  renderSidebar(enemy, nodeType);
   render();
 }
 
@@ -415,9 +468,18 @@ function renderPathTrack(rs, onEnter) {
     label.className = 'path-node-label';
     label.textContent = pathNode.label;
 
+    const COMBAT_TYPE_LABELS = { monster: 'Normal Enemy', elite: 'Elite Enemy', boss: 'Boss' };
+    const typeText = COMBAT_TYPE_LABELS[pathNode.type];
+    const typeSpan = typeText ? document.createElement('span') : null;
+    if (typeSpan) {
+      typeSpan.className = 'path-node-type';
+      typeSpan.textContent = typeText;
+    }
+
     nodeEl.appendChild(floorNum);
     nodeEl.appendChild(icon);
     nodeEl.appendChild(label);
+    if (typeSpan) nodeEl.appendChild(typeSpan);
     cell.appendChild(nodeEl);
 
     if (isCurrent) {
