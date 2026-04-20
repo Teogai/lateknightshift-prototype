@@ -58,6 +58,16 @@ export class GameState {
     return { ok: true, log };
   }
 
+  // ─── canUndo ──────────────────────────────────────────────────────────────
+
+  /**
+   * Returns true if there is at least one action on the undo stack.
+   * @returns {boolean}
+   */
+  canUndo() {
+    return this.undoStack.length > 0;
+  }
+
   // ─── undo ──────────────────────────────────────────────────────────────────
 
   /**

@@ -1,7 +1,8 @@
-import { startGame, handleRedraw, handlePromotionChoice } from './ui.js';
+import { startGame, handleRedraw, handlePromotionChoice, handleUndo } from './ui.js';
 
 document.getElementById('btn-knight').addEventListener('click', () => startGame('knight'));
 document.getElementById('btn-redraw').addEventListener('click', handleRedraw);
+document.getElementById('btn-undo').addEventListener('click', handleUndo);
 document.getElementById('btn-play-again').addEventListener('click', () => {
   document.getElementById('screen-complete').classList.add('hidden');
   document.getElementById('screen-select').classList.remove('hidden');

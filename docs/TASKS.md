@@ -26,3 +26,4 @@
 - [2026-04-20] done: P10 multi-target cards — aoe_card (explode via cascade), line_card (3-sq capture), _resolveCapture iterates all targets, undo restores all (6 tests green, 385 total)
 - [2026-04-20] done: p9 ai2 search+eval — evaluate.js, order.js, search.js; selectAction minimax+αβ iterative deepening; personality weights; explode support; 9 tests green
 - [2026-04-20] done: p12 view/fog seam — getView(state, perspective) identity shallow clone; board+piece mutation isolation; perspective stored; 4 tests green
+- [2026-04-20] done: p11 player undo — canUndo() on GameState; btn-undo in HTML+main.js; handleUndo stub in ui.js; 3 tests green

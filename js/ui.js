@@ -744,6 +744,15 @@ export function handlePromotionChoice(promoLetter) {
   }
 }
 
+// ─── undo (P11) ───────────────────────────────────────────────────────────────
+// STUB: engine2 GameState is not yet wired to the battle UI (old engine.js still
+// owns gameState). When the battle renderer migrates to engine2, replace the body
+// with: engine2State.undo(); render();
+export function handleUndo() {
+  // TODO(P13): replace with engine2State.canUndo() / engine2State.undo() call
+  console.log('[ui] handleUndo called — engine2 not yet wired to battle UI');
+}
+
 export function startGame(character) {
   document.getElementById('select-error').textContent = '';
   try {
