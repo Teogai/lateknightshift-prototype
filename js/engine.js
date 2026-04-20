@@ -151,24 +151,35 @@ export class GameState {
     if (this.movedThisTurn.has(fromSq)) return { error: 'piece already moved this turn' };
 
     const isPromo = piece.type === 'p' && toSq[1] === '8';
-    if (isPromo && !VALID_PROMO.has(promotion)) return { error: 'promotion piece required' };
+    if (isPromo && promotion !== null && !VALID_PROMO.has(promotion)) return { error: 'invalid promotion piece' };
 
     const targetPiece = this._chess.get(toSq);
     const isKingCapture = targetPiece?.type === 'k' && targetPiece?.color === 'b';
 
     if (isKingCapture) {
-      const movingPiece = isPromo ? { type: promotion, color: 'w' } : piece;
-      executeKingCapture(this._chess, fromSq, toSq, movingPiece);
+      if (isPromo && promotion === null) {
+        this._chess.remove(toSq);
+        this._chess.remove(fromSq);
+        this._chess.put(piece, toSq);
+      } else {
+        const movingPiece = (isPromo && promotion) ? { type: promotion, color: 'w' } : piece;
+        executeKingCapture(this._chess, fromSq, toSq, movingPiece);
+      }
     } else {
       const dests = getMovesForSq(this._chess, fromSq, 'w', this.enPassantTarget).map(m => m.to);
       if (!dests.includes(toSq)) return { error: 'illegal move' };
 
-      const fen = this._chess.fen();
-      const parts = fen.split(' ');
-      const epW = this.enPassantTarget;
-      parts[1] = 'w'; parts[2] = '-'; parts[3] = (epW && epW[1] === '6') ? epW : '-';
-      this._chess.load(parts.join(' '));
-      this._chess.move({ from: fromSq, to: toSq, promotion: isPromo ? promotion : undefined });
+      if (isPromo && promotion === null) {
+        this._chess.remove(fromSq);
+        this._chess.put(piece, toSq);
+      } else {
+        const fen = this._chess.fen();
+        const parts = fen.split(' ');
+        const epW = this.enPassantTarget;
+        parts[1] = 'w'; parts[2] = '-'; parts[3] = (epW && epW[1] === '6') ? epW : '-';
+        this._chess.load(parts.join(' '));
+        this._chess.move({ from: fromSq, to: toSq, promotion: promotion || undefined });
+      }
     }
 
     const isPawnDoublePush = piece.type === 'p' && fromSq[1] === '2' && toSq[1] === '4';
@@ -180,6 +191,10 @@ export class GameState {
     this._pushPositionHistory();
     const winner = checkKingCaptured(this._chess);
     if (winner) this.turn = winner;
+
+    if (piece.type === 'p' && toSq[1] === '8' && promotion === null) {
+      return { ok: true, needs_promotion: [toSq] };
+    }
     return { ok: true };
   }
 

@@ -32,10 +32,12 @@ test.each([['q', 'queen'], ['r', 'rook'], ['b', 'bishop'], ['n', 'knight']])(
   }
 );
 
-test('missing promotion returns error', () => {
+test('missing promotion returns needs_promotion flag', () => {
   const state = setupPawnOnE7();
   const result = state.playMoveCard(0, 'e7', 'e8');
-  expect(result.error).toMatch(/promotion/);
+  expect(result.ok).toBe(true);
+  expect(result.needs_promotion).toEqual(['e8']);
+  expect(state._chess.get('e8').type).toBe('p');
 });
 
 test('invalid promotion letter returns error', () => {
