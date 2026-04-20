@@ -1,5 +1,8 @@
 import { describe, test, expect } from 'vitest';
 import { GameState, knightAttacks } from '../js/battle_state.js';
+import { pawnBoostCard } from '../js/cards2/move_cards.js';
+import { makePiece } from '../js/engine2/pieces.js';
+import { set } from '../js/engine2/board.js';
 
 function freshGame(character = 'knight', enemy = 'pawn_pusher') {
   return new GameState(character, enemy);
@@ -206,5 +209,92 @@ describe('debugMovePiece', () => {
     const result2 = state.debugMovePiece('a7', 'a8');
     expect(result2.error).toBeUndefined();
     expect(result2.needs_promotion).toBe(true);
+  });
+});
+
+
+describe('pawn boost', () => {
+  function makeStateWithPawnBoost(placements) {
+    const state = new GameState('knight', 'pawn_pusher');
+    // Clear board
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) state._state.board[r][c] = null;
+    // Place pieces
+    for (const { sq, type, owner } of placements) {
+      set(state._state.board, sq, makePiece(type, owner));
+    }
+    // Set hand to only pawn boost
+    state._state.hand = [pawnBoostCard()];
+    state._state.deck = [];
+    state._state.discard = [];
+    return state;
+  }
+
+  test('pawn can slide forward multiple squares', () => {
+    const state = makeStateWithPawnBoost([
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'a2', type: 'pawn', owner: 'player' },
+    ]);
+    const dests = state.pawnBoostDestsFor('a2');
+    expect(dests).toContain('a3');
+    expect(dests).toContain('a4');
+    expect(dests).toContain('a5');
+    expect(dests).toContain('a6');
+    expect(dests).toContain('a7');
+    expect(dests).toContain('a8');
+    expect(dests).toHaveLength(6);
+  });
+
+  test('non-pawn piece rejected', () => {
+    const state = makeStateWithPawnBoost([
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'a1', type: 'rook', owner: 'player' },
+    ]);
+    expect(state.pawnBoostDestsFor('a1')).toHaveLength(0);
+    const result = state.playPawnBoostCard(0, 'a1', 'a4');
+    expect(result.error).toBeDefined();
+  });
+
+  test('blocked by friendly piece', () => {
+    const state = makeStateWithPawnBoost([
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'a2', type: 'pawn', owner: 'player' },
+      { sq: 'a5', type: 'pawn', owner: 'player' },
+    ]);
+    const dests = state.pawnBoostDestsFor('a2');
+    expect(dests).toContain('a3');
+    expect(dests).toContain('a4');
+    expect(dests).not.toContain('a5');
+    expect(dests).not.toContain('a6');
+    expect(dests).toHaveLength(2);
+  });
+
+  test('can capture enemy piece at end of slide', () => {
+    const state = makeStateWithPawnBoost([
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'a2', type: 'pawn', owner: 'player' },
+      { sq: 'a6', type: 'pawn', owner: 'enemy' },
+    ]);
+    const dests = state.pawnBoostDestsFor('a2');
+    expect(dests).toContain('a6');
+    expect(dests).not.toContain('a7');
+    const result = state.playPawnBoostCard(0, 'a2', 'a6');
+    expect(result.error).toBeUndefined();
+    expect(state.toDict().board['a6'].type).toBe('pawn');
+    expect(state.toDict().board['a6'].color).toBe('white');
+  });
+
+  test('promotion on rank 8', () => {
+    const state = makeStateWithPawnBoost([
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'a7', type: 'pawn', owner: 'player' },
+    ]);
+    const result = state.playPawnBoostCard(0, 'a7', 'a8');
+    expect(result.error).toBeUndefined();
+    expect(result.needs_promotion).toEqual(['a8']);
   });
 });

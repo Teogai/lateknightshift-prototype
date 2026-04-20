@@ -12,6 +12,7 @@
 - Summon Rook | cost 3 | type summon | effect: place rook on ranks 1–2 (cannot move same turn)
 - Summon Queen | cost 3 | type summon | effect: place queen on ranks 1–2 (cannot move same turn)
 - Knight Move | cost 2 | type signature | effect: move any friendly piece to any knight-jump square (ignores blockers)
+- Pawn Boost | cost 1 | type move | effect: move a pawn forward any number of squares (sliding, can capture)
 
 ## Starter decks (10 cards each)
 

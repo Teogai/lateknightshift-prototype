@@ -49,6 +49,7 @@ export const uiState = {
   legalDests: [],
   summonTargets: [],
   geometricTargets: [],
+  pawnBoostTargets: [],
   gameOverHandled: false,
   debugMove: false,
   debugDests: [],
@@ -66,6 +67,7 @@ export function resetUiState() {
   uiState.legalDests = [];
   uiState.summonTargets = [];
   uiState.geometricTargets = [];
+  uiState.pawnBoostTargets = [];
   uiState.gameOverHandled = false;
   uiState.debugMove = false;
   uiState.debugDests = [];
@@ -128,13 +130,14 @@ export function renderBoard() {
         if (sqName === enemyAttackerSq) div.classList.add('check-attacker');
       }
 
-      if ((uiState.phase === 'from_selected' || uiState.phase === 'knight_from_selected' || uiState.phase === 'geometric_from_selected' || uiState.phase === 'debug_from_selected') && uiState.fromSq === sqName) {
+      if ((uiState.phase === 'from_selected' || uiState.phase === 'knight_from_selected' || uiState.phase === 'geometric_from_selected' || uiState.phase === 'pawn_boost_from_selected' || uiState.phase === 'debug_from_selected') && uiState.fromSq === sqName) {
         div.classList.add('selected-from');
       }
       if (uiState.knightTargets.includes(sqName))   div.classList.add('knight-target');
       if (uiState.legalDests.includes(sqName))      div.classList.add('legal-dest');
       if (uiState.summonTargets.includes(sqName))   div.classList.add('summon-target');
       if (uiState.geometricTargets.includes(sqName)) div.classList.add('legal-dest');
+      if (uiState.pawnBoostTargets.includes(sqName)) div.classList.add('legal-dest');
       if (uiState.debugDests.includes(sqName))      div.classList.add('legal-dest');
 
       const piece = board[sqName];
@@ -628,6 +631,8 @@ export function handleCardClick(index, card) {
     setHint('Rook Move: click a friendly piece to move in a straight line');
   } else if (card.type === 'move' && card.moveVariant === 'queen') {
     setHint('Queen Move: click a friendly piece to move diagonally or straight');
+  } else if (card.type === 'move' && card.moveVariant === 'pawn_boost') {
+    setHint('Pawn Boost: click a friendly pawn to slide forward');
   } else if (card.type === 'summon') {
     const validRanks = ['1', '2'];
     uiState.summonTargets = 'abcdefgh'.split('').flatMap(f =>
@@ -734,6 +739,17 @@ export function handleSquareClick(sq) {
       } else {
         setHint('Pick a friendly piece');
       }
+    } else if (uiState.selectedCardType === 'move' && uiState.selectedMoveVariant === 'pawn_boost') {
+      const piece = d.board[sq];
+      if (piece && piece.color === 'white' && piece.type === 'pawn') {
+        uiState.phase = 'pawn_boost_from_selected';
+        uiState.fromSq = sq;
+        uiState.pawnBoostTargets = gameState.pawnBoostDestsFor(sq);
+        setHint('Click a highlighted square to boost to');
+        render();
+      } else {
+        setHint('Pick a friendly pawn');
+      }
     } else if (uiState.selectedCardType === 'summon') {
       if (uiState.summonTargets.length && !uiState.summonTargets.includes(sq)) {
         setHint('Invalid placement square'); return;
@@ -806,6 +822,28 @@ export function handleSquareClick(sq) {
       queen:  () => gameState.playQueenMoveCard(uiState.selectedCardIndex, uiState.fromSq, sq),
     }[uiState.selectedMoveVariant];
     const result = playFn();
+    if (result.error) { setHint(result.error); return; }
+    if (result.needs_promotion) {
+      uiState.pendingPromos = result.needs_promotion.map(s => ({ sq: s, cardType: null }));
+      showNextPromo();
+    } else {
+      resetUiState(); setHint(''); render();
+      playoutEnemyTurn();
+    }
+  }
+
+  if (uiState.phase === 'pawn_boost_from_selected') {
+    if (sq === uiState.fromSq) {
+      uiState.phase = 'card_selected';
+      uiState.fromSq = null;
+      uiState.pawnBoostTargets = [];
+      setHint('Pawn Boost: click a friendly pawn to slide forward');
+      render(); return;
+    }
+    if (!uiState.pawnBoostTargets.includes(sq)) {
+      setHint('Not a valid destination for pawn boost'); return;
+    }
+    const result = gameState.playPawnBoostCard(uiState.selectedCardIndex, uiState.fromSq, sq);
     if (result.error) { setHint(result.error); return; }
     if (result.needs_promotion) {
       uiState.pendingPromos = result.needs_promotion.map(s => ({ sq: s, cardType: null }));

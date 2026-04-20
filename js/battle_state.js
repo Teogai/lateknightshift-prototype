@@ -257,6 +257,25 @@ export class GameState {
     return dests;
   }
 
+  pawnBoostDestsFor(sq) {
+    const piece = get(this._state.board, sq);
+    if (!piece || piece.owner !== 'player' || piece.type !== 'pawn') return [];
+    if (this.movedThisTurn.has(sq)) return [];
+    const board = this._state.board;
+    const [fromR, fromC] = sqToRC(sq);
+    const dests = [];
+    // Player pawns move forward = decreasing row (toward rank 8)
+    for (let r = fromR - 1; r >= 0; r--) {
+      const target = board[r][fromC];
+      if (target) {
+        if (target.owner !== 'player') dests.push(rcToSq(r, fromC));
+        break;
+      }
+      dests.push(rcToSq(r, fromC));
+    }
+    return dests;
+  }
+
   // ─── card play ─────────────────────────────────────────────────────────────
 
   playMoveCard(cardIndex, fromSq, toSq, promotion = null) {
@@ -377,6 +396,33 @@ export class GameState {
 
   playQueenMoveCard(cardIndex, fromSq, toSq) {
     return this._playPatternMoveCard(cardIndex, 'queen', 'q', fromSq, toSq);
+  }
+
+  playPawnBoostCard(cardIndex, fromSq, toSq) {
+    if (cardIndex < 0 || cardIndex >= this._state.hand.length) return { error: 'invalid card index' };
+    const card = this._state.hand[cardIndex];
+    if (card.type !== 'move' || card.moveVariant !== 'pawn_boost') return { error: 'not a pawn_boost card' };
+
+    const piece = get(this._state.board, fromSq);
+    if (!piece || piece.owner !== 'player') return { error: 'no friendly piece on that square' };
+    if (piece.type !== 'pawn') return { error: 'pawn boost can only be used on pawns' };
+    if (this.movedThisTurn.has(fromSq)) return { error: 'piece already moved this turn' };
+
+    const dests = this.pawnBoostDestsFor(fromSq);
+    if (!dests.includes(toSq)) return { error: 'invalid destination for pawn boost' };
+
+    set(this._state.board, fromSq, null);
+    set(this._state.board, toSq, piece);
+
+    this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
+    this.movedThisTurn.add(toSq);
+    this.lastMove = { from: fromSq, to: toSq };
+
+    const winner = checkKingCaptured(this._state.board);
+    if (winner) this.turn = winner;
+
+    if (piece.type === 'pawn' && toSq[1] === '8') return { ok: true, needs_promotion: [toSq] };
+    return { ok: true };
   }
 
   applyPromotion(sq, promoType) {

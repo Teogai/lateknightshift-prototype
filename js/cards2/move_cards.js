@@ -30,6 +30,10 @@ export function queenMoveCard() {
   return { name: 'Queen Move', type: 'move', moveVariant: 'queen', cost: 3 };
 }
 
+export function pawnBoostCard() {
+  return { name: 'Pawn Boost', type: 'move', moveVariant: 'pawn_boost', cost: 1 };
+}
+
 export function curseCard() {
   return { name: 'Curse', type: 'curse', cost: 0, unplayable: true };
 }
@@ -41,6 +45,8 @@ export function upgradeCard(card) {
     c.multiMove = true; // upgraded Move: move 2 pieces
   } else if (c.type === 'summon' && c.piece === 'pawn') {
     c.cost = 1;
+  } else if (c.type === 'move' && c.moveVariant === 'pawn_boost') {
+    c.cost = Math.max(1, c.cost - 1);
   } else if (c.type === 'move' || c.type === 'summon') {
     c.cost = Math.max(1, c.cost - 1);
   }
@@ -55,6 +61,7 @@ export const CARD_CATALOG = [
   { card: () => summonCard('bishop'), rarity: 'common' },
   { card: knightMoveCard,             rarity: 'common' },
   { card: bishopMoveCard,             rarity: 'common' },
+  { card: pawnBoostCard,              rarity: 'common' },
   { card: () => summonCard('rook'),   rarity: 'uncommon' },
   { card: rookMoveCard,               rarity: 'uncommon' },
   { card: () => summonCard('queen'),  rarity: 'rare' },
