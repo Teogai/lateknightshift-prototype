@@ -148,9 +148,24 @@ export function runHook(state, hookName, ctx) {
   // 2. Source piece
   _firePiece(srcPieceId);
 
-  // 3. Target piece (different from source piece)
+  // 3. Target piece (different from source piece).
   if (tgtPieceId && tgtPieceId !== srcPieceId) {
     _firePiece(tgtPieceId);
+  }
+
+  // 3b. Dying piece: for onCapture, the captured piece is already off the board,
+  //     so tgtPieceId resolves to the attacker (now occupying that square), not
+  //     the dead piece. ctx.capturedPieceId carries the dead piece's id so its
+  //     piece-scoped effects can still fire (bypass liveness check).
+  const capturedId = ctx.capturedPieceId ?? null;
+  if (capturedId && capturedId !== srcPieceId && capturedId !== tgtPieceId) {
+    const list = reg.pieces.get(capturedId);
+    if (list) {
+      for (const effect of list) {
+        const fn = effect.hooks[hookName];
+        if (fn) fn(ctx);
+      }
+    }
   }
 
   // 4. Source tile

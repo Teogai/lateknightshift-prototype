@@ -81,28 +81,53 @@ export function _setState(state, field, val, log) {
 // ─── action resolution ────────────────────────────────────────────────────────
 
 /**
- * Resolve an action against state, recording all mutations in log.
+ * Resolve a single action's board mutations and run its lifecycle hooks.
+ * Does NOT manage the cascade queue — see resolveAction for the top-level entry.
  *
- * @param {object} state  - GameState (board, tiles, enPassant, castling, ...)
- * @param {object} action - { kind, source, targets, piece, capture?, payload? }
- * @param {Array}  log    - mutation inverse log (caller provides, effects will extend)
+ * @param {object} state
+ * @param {object} action
+ * @param {Array}  log
+ * @param {Array}  queue   - FIFO cascade queue; hooks push onto this via ctx.enqueue
  */
-export function resolveAction(state, action, log = []) {
-  const { board, tiles } = state;
+function _resolveOne(state, action, log, queue) {
+  const { board } = state;
   const { kind, source, targets, payload } = action;
-  const dest = targets[0];
+  const dest = targets?.[0];
 
   console.log('[engine2/actions] kind=%s src=%s dst=%s', kind, source, dest);
 
-  const ctx = { action };
+  const ctx = {
+    action,
+    /** Enqueue a cascaded action (FIFO). Effects call ctx.enqueue(action). */
+    enqueue: (a) => {
+      queue.push(a);
+      console.log('[engine2/actions] enqueued kind=%s dst=%s qlen=%d', a.kind, a.targets?.[0], queue.length);
+    },
+  };
 
   // onBeforeAction: fires before any board mutation
   runHook(state, 'onBeforeAction', ctx);
 
-  // Detect capture before mutation
+  // Detect capture BEFORE mutation; record the dying piece's id for onCapture hooks.
+  // After mutation the piece is gone from the board, so piece-scoped onCapture
+  // effects need the id injected via ctx.capturedPieceId.
   let isCapture = false;
+  let capturedPieceId = null;
   if (kind === 'en_passant') {
     isCapture = true;
+    // captured pawn is at payload.captured
+    if (payload?.captured) {
+      const [cr, cc] = sqToRC(payload.captured);
+      const cp = board[cr][cc];
+      if (cp) capturedPieceId = cp.id;
+    }
+  } else if (kind === 'capture') {
+    isCapture = true;
+    if (dest) {
+      const [dr, dc] = sqToRC(dest);
+      const cp = board[dr][dc];
+      if (cp) capturedPieceId = cp.id;
+    }
   } else if (kind !== 'castle' && dest) {
     const [dr, dc] = sqToRC(dest);
     const occupant = board[dr][dc];
@@ -112,6 +137,7 @@ export function resolveAction(state, action, log = []) {
       const mover = board[sr][sc];
       if (!mover || occupant.owner !== mover.owner) {
         isCapture = true;
+        capturedPieceId = occupant.id;
       }
     }
   }
@@ -120,6 +146,9 @@ export function resolveAction(state, action, log = []) {
     _resolveCastle(state, action, log);
   } else if (kind === 'en_passant') {
     _resolveEnPassant(state, action, log);
+  } else if (kind === 'capture') {
+    // Pure capture: clear the target square (used by cascade effects like explode)
+    _resolveCapture(state, action, log);
   } else {
     // Normal move (includes captures and promotions)
     _resolveMove(state, action, log);
@@ -128,13 +157,56 @@ export function resolveAction(state, action, log = []) {
   // onAction: fires after mutation
   runHook(state, 'onAction', ctx);
 
-  // onCapture: fires only when a piece was taken
+  // onCapture: fires only when a piece was taken.
+  // Inject capturedPieceId so piece-scoped effects on the dying piece still fire.
   if (isCapture) {
+    ctx.capturedPieceId = capturedPieceId;
     runHook(state, 'onCapture', ctx);
+    ctx.capturedPieceId = null; // clean up
   }
 
   // onAfterAction: fires last
   runHook(state, 'onAfterAction', ctx);
+}
+
+/**
+ * Resolve an action against state, recording all mutations in log.
+ * Maintains a FIFO cascade queue: effects may call ctx.enqueue(action) to
+ * schedule follow-up actions. The queue drains fully or until depth > 64.
+ *
+ * All cascaded mutations are appended to the same log for unified undo.
+ *
+ * @param {object} state  - GameState (board, tiles, enPassant, castling, ...)
+ * @param {object} action - { kind, source, targets, piece, capture?, payload? }
+ * @param {Array}  log    - mutation inverse log (caller provides, effects will extend)
+ */
+export function resolveAction(state, action, log = []) {
+  /** FIFO queue of pending cascaded actions. */
+  const queue = [];
+
+  // Resolve the top-level action (may push onto queue via ctx.enqueue)
+  _resolveOne(state, action, log, queue);
+
+  // Drain cascade queue with depth cap
+  let depth = 0;
+  const DEPTH_CAP = 64;
+
+  while (queue.length > 0) {
+    if (depth >= DEPTH_CAP) {
+      console.warn('[engine2/actions] cascade depth cap reached depth=%d remaining=%d', depth, queue.length);
+      break;
+    }
+
+    // FIFO: take from front
+    const next = queue.shift();
+    depth++;
+    console.log('[engine2/actions] cascade depth=%d kind=%s dst=%s', depth, next.kind, next.targets?.[0]);
+    _resolveOne(state, next, log, queue);
+  }
+
+  if (queue.length > 0) {
+    console.log('[engine2/actions] cascade stopped depth=%d unresolved=%d', depth, queue.length);
+  }
 }
 
 // ─── move ─────────────────────────────────────────────────────────────────────
@@ -174,6 +246,23 @@ function _resolveCastle(state, action, log) {
   _set(board, rookFrom, null, log);
   _set(board, kingDest, kingPiece, log);
   _set(board, rookTo, rookPiece, log);
+}
+
+// ─── pure capture (cascade) ───────────────────────────────────────────────────
+
+/**
+ * Pure capture: clear the piece at targets[0].
+ * Used by cascade effects (e.g. explode) that want to remove a piece without
+ * "moving" anything. source is recorded for hook context but no piece moves.
+ */
+function _resolveCapture(state, action, log) {
+  const { board } = state;
+  const dest = action.targets[0];
+  if (!dest) return;
+  const [dr, dc] = sqToRC(dest);
+  if (board[dr][dc] !== null) {
+    _set(board, dest, null, log);
+  }
 }
 
 // ─── en passant ───────────────────────────────────────────────────────────────
