@@ -17,3 +17,4 @@
 - [2026-04-20] done: fixed 16-floor path — replace random room choices with authored FIXED_PATH; horizontal path track UI; 5 new enemies (Phalanx, Iron Line, Cavalry Charge, High Command, Duelist II); remove Lone Rook
 - [2026-04-20] done: battle UI polish — enemy sidebar (name, type badge, ability), 1-life game over, victory screen, floor type labels, transform result card UI
 - [2026-04-20] done: P1 engine2 — board, pieces, movegen (54 tests; no chess.js in source)
+- [2026-04-20] done: P2 engine2 — GameState, resolveAction, undo log, applyMove (23 tests; fuzz+undo green)

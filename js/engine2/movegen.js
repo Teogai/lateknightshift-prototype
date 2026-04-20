@@ -11,6 +11,7 @@
 
 import { sqToRC, rcToSq, inBounds, get, set } from './board.js';
 import { PIECE_DEFS } from './pieces.js';
+import { resolveAction } from './actions.js';
 
 // ─── attack detection ─────────────────────────────────────────────────────────
 
@@ -277,4 +278,21 @@ export function generateLegalActions(state, owner) {
 
   console.log('[engine2/movegen] owner=%s actions=%d', owner, legal.length);
   return legal;
+}
+
+// ─── applyMove ────────────────────────────────────────────────────────────────
+
+/**
+ * Apply an action to state via resolveAction (P2 undo-log path).
+ * This is the canonical way to mutate state from outside the engine.
+ *
+ * @param {object} state  - GameState (board, tiles, ...)
+ * @param {object} action - Legal action from generateLegalActions
+ * @returns {{ ok: true, log: Array }}
+ */
+export function applyMove(state, action) {
+  const log = [];
+  resolveAction(state, action, log);
+  console.log('[engine2/movegen] applyMove kind=%s src=%s dst=%s', action.kind, action.source, action.targets[0]);
+  return { ok: true, log };
 }
