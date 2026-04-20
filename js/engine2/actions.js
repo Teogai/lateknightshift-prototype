@@ -294,17 +294,29 @@ function _resolveCastle(state, action, log) {
 // ─── pure capture (cascade) ───────────────────────────────────────────────────
 
 /**
- * Pure capture: clear the piece at targets[0].
+ * Pure capture: clear every square in action.targets.
  * Used by cascade effects (e.g. explode) that want to remove a piece without
  * "moving" anything. source is recorded for hook context but no piece moves.
+ * Handles single-target (targets[0]) and multi-target (lineCard) alike.
  */
 function _resolveCapture(state, action, log) {
   const { board } = state;
-  const dest = action.targets[0];
-  if (!dest) return;
-  const [dr, dc] = sqToRC(dest);
-  if (board[dr][dc] !== null) {
-    _set(board, dest, null, log);
+  const targets = action.targets;
+  if (!targets || targets.length === 0) return;
+  for (const dest of targets) {
+    if (!dest) continue;
+    const [dr, dc] = sqToRC(dest);
+    const occupant = board[dr][dc];
+    if (occupant !== null) {
+      // Per-square uncapturable guard for multi-target captures.
+      // (Single-target captures are already guarded by the pre-check above.)
+      if (occupant?.tags?.has('uncapturable')) {
+        console.log('[engine2/actions] capture skipped — uncapturable id=%s sq=%s', occupant.id, dest);
+        continue;
+      }
+      console.log('[engine2/actions] capture clearing sq=%s', dest);
+      _set(board, dest, null, log);
+    }
   }
 }
 
