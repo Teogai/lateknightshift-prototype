@@ -9,19 +9,19 @@ export function summonCard(piece, cost) {
 }
 
 export function knightMoveCard() {
-  return { name: 'Knight Move', type: 'knight_move', cost: 2 };
+  return { name: 'Knight Move', type: 'move', moveVariant: 'knight', cost: 2 };
 }
 
 export function bishopMoveCard() {
-  return { name: 'Bishop Move', type: 'bishop_move', cost: 2 };
+  return { name: 'Bishop Move', type: 'move', moveVariant: 'bishop', cost: 2 };
 }
 
 export function rookMoveCard() {
-  return { name: 'Rook Move', type: 'rook_move', cost: 3 };
+  return { name: 'Rook Move', type: 'move', moveVariant: 'rook', cost: 3 };
 }
 
 export function queenMoveCard() {
-  return { name: 'Queen Move', type: 'queen_move', cost: 3 };
+  return { name: 'Queen Move', type: 'move', moveVariant: 'queen', cost: 3 };
 }
 
 export function curseCard() {
@@ -31,11 +31,11 @@ export function curseCard() {
 // Returns upgraded copy of a card (never mutates original)
 export function upgradeCard(card) {
   const c = { ...card };
-  if (c.type === 'move') {
+  if (c.type === 'move' && !c.moveVariant) {
     c.multiMove = true; // upgraded Move: move 2 pieces
   } else if (c.type === 'summon' && c.piece === 'pawn') {
     c.cost = 1;
-  } else if (['summon', 'knight_move', 'bishop_move', 'rook_move', 'queen_move'].includes(c.type)) {
+  } else if (c.type === 'move' || c.type === 'summon') {
     c.cost = Math.max(1, c.cost - 1);
   }
   c.upgraded = true;

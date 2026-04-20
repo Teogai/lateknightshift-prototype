@@ -186,7 +186,7 @@ export class GameState {
   playKnightMoveCard(cardIndex, fromSq, toSq) {
     if (cardIndex < 0 || cardIndex >= this.hand.length) return { error: 'invalid card index' };
     const card = this.hand[cardIndex];
-    if (card.type !== 'knight_move') return { error: 'not a knight_move card' };
+    if (card.type !== 'move' || card.moveVariant !== 'knight') return { error: 'not a knight_move card' };
 
     const piece = this._chess.get(fromSq);
     if (!piece || piece.color !== 'w') return { error: 'no friendly piece on that square' };
@@ -211,10 +211,10 @@ export class GameState {
     return { ok: true };
   }
 
-  _playPatternMoveCard(cardIndex, expectedType, pattern, fromSq, toSq) {
+  _playPatternMoveCard(cardIndex, expectedVariant, pattern, fromSq, toSq) {
     if (cardIndex < 0 || cardIndex >= this.hand.length) return { error: 'invalid card index' };
     const card = this.hand[cardIndex];
-    if (card.type !== expectedType) return { error: `not a ${expectedType} card` };
+    if (card.type !== 'move' || card.moveVariant !== expectedVariant) return { error: `not a ${expectedVariant} move card` };
 
     const piece = this._chess.get(fromSq);
     if (!piece || piece.color !== 'w') return { error: 'no friendly piece on that square' };
@@ -244,15 +244,15 @@ export class GameState {
   }
 
   playBishopMoveCard(cardIndex, fromSq, toSq) {
-    return this._playPatternMoveCard(cardIndex, 'bishop_move', 'b', fromSq, toSq);
+    return this._playPatternMoveCard(cardIndex, 'bishop', 'b', fromSq, toSq);
   }
 
   playRookMoveCard(cardIndex, fromSq, toSq) {
-    return this._playPatternMoveCard(cardIndex, 'rook_move', 'r', fromSq, toSq);
+    return this._playPatternMoveCard(cardIndex, 'rook', 'r', fromSq, toSq);
   }
 
   playQueenMoveCard(cardIndex, fromSq, toSq) {
-    return this._playPatternMoveCard(cardIndex, 'queen_move', 'q', fromSq, toSq);
+    return this._playPatternMoveCard(cardIndex, 'queen', 'q', fromSq, toSq);
   }
 
   applyPromotion(sq, promoType) {

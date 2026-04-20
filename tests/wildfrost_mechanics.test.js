@@ -59,7 +59,7 @@ test('playing a summon card auto-ends the player turn', () => {
 test('playing a knight_move card auto-ends the player turn', () => {
   const state = freshGame();
   makeTestBoard(state);
-  state.hand = [{ name: 'Knight Move', type: 'knight_move', cost: 2 }];
+  state.hand = [{ name: 'Knight Move', type: 'move', moveVariant: 'knight', cost: 2 }];
   const boardBefore = JSON.stringify(state.toDict().board);
   const result = state.playKnightMoveCard(0, 'a1', 'b3');
   expect(result.ok).toBe(true);

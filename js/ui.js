@@ -145,16 +145,11 @@ export function renderBoard() {
 
 const CARD_ART_COLORS = {
   move: '#3a5a8a',
-  knight_move: '#5a3a8a',
-  bishop_move: '#3a6a5a',
-  rook_move: '#2a6a6a',
-  queen_move: '#7a3a7a',
-  curse: '#5a1a1a',
+  curse: '#5a1a7a',
 };
 function cardArtColor(card) {
   if (card.type === 'summon') {
-    const colors = { pawn: '#3a5a3a', knight: '#2a4a2a', bishop: '#2a5a4a', rook: '#1a4a4a', queen: '#6a5a1a' };
-    return colors[card.piece] || '#3a3a3a';
+    return '#e8e8e8';
   }
   return CARD_ART_COLORS[card.type] || '#3a3a3a';
 }

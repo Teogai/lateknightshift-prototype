@@ -12,19 +12,22 @@ test('summonCard rook costs 3', () => expect(summonCard('rook').cost).toBe(3));
 test('summonCard queen costs 3', () => expect(summonCard('queen').cost).toBe(3));
 
 // --- New card factories ---
-test('bishopMoveCard has type bishop_move and cost 2', () => {
+test('bishopMoveCard has type move with bishop variant and cost 2', () => {
   const c = bishopMoveCard();
-  expect(c.type).toBe('bishop_move');
+  expect(c.type).toBe('move');
+  expect(c.moveVariant).toBe('bishop');
   expect(c.cost).toBe(2);
 });
-test('rookMoveCard has type rook_move and cost 3', () => {
+test('rookMoveCard has type move with rook variant and cost 3', () => {
   const c = rookMoveCard();
-  expect(c.type).toBe('rook_move');
+  expect(c.type).toBe('move');
+  expect(c.moveVariant).toBe('rook');
   expect(c.cost).toBe(3);
 });
-test('queenMoveCard has type queen_move and cost 3', () => {
+test('queenMoveCard has type move with queen variant and cost 3', () => {
   const c = queenMoveCard();
-  expect(c.type).toBe('queen_move');
+  expect(c.type).toBe('move');
+  expect(c.moveVariant).toBe('queen');
   expect(c.cost).toBe(3);
 });
 test('curseCard is unplayable', () => {
@@ -84,14 +87,14 @@ test('CARD_CATALOG entries produce valid cards', () => {
 test('knight starter deck has 10 cards', () => {
   expect(STARTER_DECKS.knight).toHaveLength(10);
 });
-test('knight starter deck has 7 move cards', () => {
-  expect(STARTER_DECKS.knight.filter(c => c.type === 'move')).toHaveLength(7);
+test('knight starter deck has 8 move cards (7 basic + 1 knight move)', () => {
+  expect(STARTER_DECKS.knight.filter(c => c.type === 'move')).toHaveLength(8);
 });
 test('knight starter deck has 2 summon pawn cards', () => {
   expect(STARTER_DECKS.knight.filter(c => c.type === 'summon' && c.piece === 'pawn')).toHaveLength(2);
 });
-test('knight starter deck has 1 knight_move card', () => {
-  expect(STARTER_DECKS.knight.filter(c => c.type === 'knight_move')).toHaveLength(1);
+test('knight starter deck has 1 move card with knight variant', () => {
+  expect(STARTER_DECKS.knight.filter(c => c.type === 'move' && c.moveVariant === 'knight')).toHaveLength(1);
 });
 test('buildStarterDeck returns shuffled independent copy', () => {
   const a = buildStarterDeck('knight');
@@ -100,4 +103,40 @@ test('buildStarterDeck returns shuffled independent copy', () => {
   // copies are independent objects
   a[0].cost = 99;
   expect(b[0].cost).not.toBe(99);
+});
+
+// --- Card categories ---
+test('knightMoveCard has type move and moveVariant knight', () => {
+  const c = knightMoveCard();
+  expect(c.type).toBe('move');
+  expect(c.moveVariant).toBe('knight');
+});
+test('bishopMoveCard has type move and moveVariant bishop', () => {
+  const c = bishopMoveCard();
+  expect(c.type).toBe('move');
+  expect(c.moveVariant).toBe('bishop');
+});
+test('rookMoveCard has type move and moveVariant rook', () => {
+  const c = rookMoveCard();
+  expect(c.type).toBe('move');
+  expect(c.moveVariant).toBe('rook');
+});
+test('queenMoveCard has type move and moveVariant queen', () => {
+  const c = queenMoveCard();
+  expect(c.type).toBe('move');
+  expect(c.moveVariant).toBe('queen');
+});
+test('curseCard has type curse and category curse', () => {
+  const c = curseCard();
+  expect(c.type).toBe('curse');
+});
+test('upgraded Knight Move still has moveVariant', () => {
+  const c = upgradeCard(knightMoveCard());
+  expect(c.type).toBe('move');
+  expect(c.moveVariant).toBe('knight');
+  expect(c.upgraded).toBe(true);
+});
+test('knight starter deck has 1 knight_move card with moveVariant', () => {
+  const knightMoves = STARTER_DECKS.knight.filter(c => c.type === 'move' && c.moveVariant === 'knight');
+  expect(knightMoves).toHaveLength(1);
 });

@@ -8,11 +8,11 @@ function freshGame() {
 
 // --- Deck composition ---
 
-test('starter deck: 7 move, 2 summon pawn, 1 knight_move, total 10', () => {
+test('starter deck: 8 move (7 basic + 1 knight), 2 summon pawn, total 10', () => {
   const deck = STARTER_DECKS['knight'];
-  expect(deck.filter(c => c.type === 'move')).toHaveLength(7);
+  expect(deck.filter(c => c.type === 'move')).toHaveLength(8);
   expect(deck.filter(c => c.type === 'summon' && c.piece === 'pawn')).toHaveLength(2);
-  expect(deck.filter(c => c.type === 'knight_move')).toHaveLength(1);
+  expect(deck.filter(c => c.type === 'move' && c.moveVariant === 'knight')).toHaveLength(1);
   expect(deck).toHaveLength(10);
 });
 
@@ -72,7 +72,7 @@ test('moved_this_turn resets after end turn', () => {
 
 test('knight move card moves piece to valid L-shape destination', () => {
   const state = freshGame();
-  state.hand = [{ name: 'Knight Move', type: 'knight_move', cost: 2 }];
+  state.hand = [{ name: 'Knight Move', type: 'move', moveVariant: 'knight', cost: 2 }];
   const result = state.playKnightMoveCard(0, 'a1', 'b3');
   expect(result.ok).toBe(true);
   expect(state.toDict().board['b3'].type).toBe('rook');
@@ -80,7 +80,7 @@ test('knight move card moves piece to valid L-shape destination', () => {
 
 test('knight move card rejects non-L-shape destination', () => {
   const state = freshGame();
-  state.hand = [{ name: 'Knight Move', type: 'knight_move', cost: 2 }];
+  state.hand = [{ name: 'Knight Move', type: 'move', moveVariant: 'knight', cost: 2 }];
   state.mana = 3;
   const result = state.playKnightMoveCard(0, 'a1', 'a3');
   expect(result.error).toBeDefined();
@@ -89,7 +89,7 @@ test('knight move card rejects non-L-shape destination', () => {
 test('knight-moved piece can move again next turn', () => {
   // Wildfrost: auto-turn clears movedThisTurn; knight-moved piece can be moved next turn
   const state = freshGame();
-  state.hand = [{ name: 'Knight Move', type: 'knight_move', cost: 2 }];
+  state.hand = [{ name: 'Knight Move', type: 'move', moveVariant: 'knight', cost: 2 }];
   state.playKnightMoveCard(0, 'b1', 'a3');
   // Manually trigger enemy turn sequence to clear movedThisTurn
   const seq = state.executeEnemyTurnSequence();
@@ -105,7 +105,7 @@ test('knight-moved piece can move again next turn', () => {
 
 test('knight move card rejects friendly piece at destination', () => {
   const state = freshGame();
-  state.hand = [{ name: 'Knight Move', type: 'knight_move', cost: 2 }];
+  state.hand = [{ name: 'Knight Move', type: 'move', moveVariant: 'knight', cost: 2 }];
   state.mana = 3;
   // a1 rook → b2 is L-shape but b2 has a pawn (friendly)
   const result = state.playKnightMoveCard(0, 'a1', 'b2');
@@ -120,7 +120,7 @@ function setupKnightPromo() {
   state._chess.put({ type: 'k', color: 'w' }, 'e1');
   state._chess.put({ type: 'k', color: 'b' }, 'a8');
   state._chess.put({ type: 'p', color: 'w' }, 'b7');
-  state.hand = [{ name: 'Knight Move', type: 'knight_move', cost: 2 }];
+  state.hand = [{ name: 'Knight Move', type: 'move', moveVariant: 'knight', cost: 2 }];
   state.mana = 3;
   state.movedThisTurn = new Set();
   return state;
