@@ -27,3 +27,4 @@
 - [2026-04-20] done: p9 ai2 search+eval — evaluate.js, order.js, search.js; selectAction minimax+αβ iterative deepening; personality weights; explode support; 9 tests green
 - [2026-04-20] done: p12 view/fog seam — getView(state, perspective) identity shallow clone; board+piece mutation isolation; perspective stored; 4 tests green
 - [2026-04-20] done: p11 player undo — canUndo() on GameState; btn-undo in HTML+main.js; handleUndo stub in ui.js; 3 tests green
+- [2026-04-21] done: p13 migrate+cleanup — cards2/move_cards.js, enemies2.js, battle_state.js adapter; ui.js/run.js/rewards.js updated; old engine.js/ai.js/cards.js/enemies.js + engine/ deleted; old tests deleted; 246 tests green

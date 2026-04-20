@@ -1,8 +1,7 @@
-import { CARD_CATALOG, curseCard } from './cards.js';
+import { CARD_CATALOG, curseCard, STARTER_DECKS } from './cards2/move_cards.js';
 import { CARD_RARITY_WEIGHTS, PIECE_RARITY_WEIGHTS, REWARD_CHOICES, PIECE_REWARD_CHOICES } from './config.js';
-import { STARTER_DECKS } from './cards.js';
 import { makeCardEl } from './ui.js';
-import { CHARACTER_PIECES } from './engine/constants.js';
+import { CHARACTER_PIECES } from './engine2/constants2.js';
 
 const WHITE_PIECES = {
   king:   './pieces/Chess_klt60.png',

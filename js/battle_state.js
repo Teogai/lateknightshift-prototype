@@ -1,0 +1,564 @@
+/**
+ * battle_state.js
+ * Adapter: wraps engine2/GameState with the old GameState API that ui.js expects.
+ *
+ * Board dict format (toDict): { sq: { type: fullName, color: 'white'|'black' } }
+ * engine2 board: { type: fullName, owner: 'player'|'enemy' }
+ *
+ * All card/AI logic is handled here using engine2 + ai2 + cards2.
+ */
+
+import { GameState as Engine2State } from './engine2/state.js';
+import { makePiece } from './engine2/pieces.js';
+import { get, set, sqToRC, rcToSq, inBounds, makeBoard } from './engine2/board.js';
+import { generateLegalActions, isAttackedBy } from './engine2/movegen.js';
+import { PIECE_DEFS } from './engine2/pieces.js';
+import { buildStarterDeck, dealHand } from './cards2/move_cards.js';
+import { ENEMIES, VALID_ENEMIES } from './enemies2.js';
+import { VALID_CHARACTERS, CHARACTER_PIECES, HAND_SIZE, REDRAW_COUNTDOWN_START, VALID_PROMO } from './engine2/constants2.js';
+
+export { VALID_ENEMIES } from './enemies2.js';
+export { VALID_CHARACTERS, CHARACTER_PIECES } from './engine2/constants2.js';
+
+// ─── helpers ──────────────────────────────────────────────────────────────────
+
+const PIECE_FULL = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king',
+                     pawn: 'pawn', knight: 'knight', bishop: 'bishop', rook: 'rook', queen: 'queen', king: 'king' };
+const PIECE_SHORT = { pawn: 'p', knight: 'n', bishop: 'b', rook: 'r', queen: 'q', king: 'k' };
+
+function ownerToColor(owner) {
+  return owner === 'player' ? 'white' : 'black';
+}
+
+function colorToOwner(color) {
+  return color === 'white' ? 'player' : 'enemy';
+}
+
+/** Convert engine2 board to the {sq:{type,color}} dict the UI expects. */
+function boardToDict(board) {
+  const result = {};
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const piece = board[r][c];
+      if (piece) {
+        const sq = rcToSq(r, c);
+        result[sq] = { type: piece.type, color: ownerToColor(piece.owner) };
+      }
+    }
+  }
+  return result;
+}
+
+/** True if player king is absent from the board (enemy won). */
+function playerKingGone(board) {
+  for (let r = 0; r < 8; r++)
+    for (let c = 0; c < 8; c++) {
+      const p = board[r][c];
+      if (p?.type === 'king' && p?.owner === 'player') return false;
+    }
+  return true;
+}
+
+/** True if enemy king is absent from the board (player won). */
+function enemyKingGone(board) {
+  for (let r = 0; r < 8; r++)
+    for (let c = 0; c < 8; c++) {
+      const p = board[r][c];
+      if (p?.type === 'king' && p?.owner === 'enemy') return false;
+    }
+  return true;
+}
+
+/** Check win state from board, returns 'player_won'|'enemy_won'|null */
+function checkKingCaptured(board) {
+  if (enemyKingGone(board)) return 'player_won';
+  if (playerKingGone(board)) return 'enemy_won';
+  return null;
+}
+
+/** Knight attack squares from algebraic sq. */
+export function knightAttacks(sq) {
+  const [r, c] = sqToRC(sq);
+  return [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]
+    .map(([dr, dc]) => [r + dr, c + dc])
+    .filter(([nr, nc]) => inBounds(nr, nc))
+    .map(([nr, nc]) => rcToSq(nr, nc));
+}
+
+/** Find the square of a king for owner, or null. */
+function findKingSq(board, owner) {
+  for (let r = 0; r < 8; r++)
+    for (let c = 0; c < 8; c++) {
+      const p = board[r][c];
+      if (p?.type === 'king' && p?.owner === owner) return rcToSq(r, c);
+    }
+  return null;
+}
+
+/** Find the first piece that attacks targetSq from attackerOwner. */
+function findAttacker(board, targetSq, attackerOwner) {
+  for (let r = 0; r < 8; r++)
+    for (let c = 0; c < 8; c++) {
+      const p = board[r][c];
+      if (!p || p.owner !== attackerOwner) continue;
+      const from = rcToSq(r, c);
+      // Use pseudo-legal check: does this piece attack targetSq?
+      const pseudos = PIECE_DEFS[p.type]?.generateMoves(board, from, p, {}) ?? [];
+      if (pseudos.some(m => m.sq === targetSq)) return from;
+    }
+  return null;
+}
+
+/** Validate geometric pattern (bishop/rook/queen) from src to dest on board. */
+function matchesPattern(board, fromSq, toSq, patternType) {
+  const [ff, fr] = sqToRC(fromSq);
+  const [tf, tr] = sqToRC(toSq);
+  const dr = tf - ff, dc = tr - fr;
+  if (dr === 0 && dc === 0) return false;
+  const diag = Math.abs(dr) === Math.abs(dc);
+  const straight = dr === 0 || dc === 0;
+  let ok = false;
+  if (patternType === 'b') ok = diag;
+  else if (patternType === 'r') ok = straight;
+  else if (patternType === 'q') ok = diag || straight;
+  if (!ok) return false;
+  // Check path is clear (excluding endpoints)
+  const stepR = Math.sign(tf - ff), stepC = Math.sign(tr - fr);
+  let r = ff + stepR, c = fr + stepC;
+  while (r !== tf || c !== tr) {
+    if (!inBounds(r, c)) return false;
+    if (board[r][c]) return false;
+    r += stepR; c += stepC;
+  }
+  return true;
+}
+
+// ─── BattleState (adapter) ────────────────────────────────────────────────────
+
+export class GameState {
+  constructor(character, enemy = 'pawn_pusher', persistentDeck = null, startingPieces = []) {
+    if (!VALID_CHARACTERS.has(character)) throw new Error(`unknown character: ${character}`);
+    if (!VALID_ENEMIES.has(enemy)) throw new Error(`unknown enemy: ${enemy}`);
+
+    this._state = new Engine2State();
+    this.character = character;
+
+    // Place player pieces from CHARACTER_PIECES
+    for (const { type, sq } of CHARACTER_PIECES[character]) {
+      const fullType = PIECE_FULL[type] || type;
+      set(this._state.board, sq, makePiece(fullType, 'player'));
+    }
+
+    // Place starting pieces from run
+    for (const { piece, square } of startingPieces) {
+      if (!get(this._state.board, square)) {
+        const pieceType = PIECE_FULL[piece.type] || piece.type;
+        set(this._state.board, square, makePiece(pieceType, 'player'));
+      }
+    }
+
+    // Place enemy pieces
+    const enemyDef = ENEMIES[enemy];
+    for (const { type, sq } of enemyDef.pieces) {
+      set(this._state.board, sq, makePiece(type, 'enemy'));
+    }
+
+    this._enemyAI = enemyDef.createAI();
+    this._personality = enemyDef.personality;
+
+    // Cards
+    const rawDeck = persistentDeck
+      ? persistentDeck.map(c => ({ ...c }))
+      : buildStarterDeck(character);
+    // shuffle
+    for (let i = rawDeck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [rawDeck[i], rawDeck[j]] = [rawDeck[j], rawDeck[i]];
+    }
+    const dealt = dealHand(rawDeck, HAND_SIZE);
+    this._state.deck = dealt.deck;
+    this._state.hand = dealt.hand;
+    this._state.discard = dealt.discard;
+
+    this.turn = 'player';
+    this.redrawCountdown = REDRAW_COUNTDOWN_START;
+    this.enemyWillDoubleMove = false;
+    this.movedThisTurn = new Set();
+    this.summonedThisTurn = new Set();
+    this.lastMove = { from: null, to: null };
+
+    console.log('[battle_state] created character=%s enemy=%s', character, enemy);
+  }
+
+  // ─── toDict ────────────────────────────────────────────────────────────────
+
+  toDict() {
+    const board = this._state.board;
+    const playerKingSq = findKingSq(board, 'player');
+    const enemyKingSq  = findKingSq(board, 'enemy');
+
+    let inCheck = false, checkAttackerSq = null;
+    if (playerKingSq && isAttackedBy(board, playerKingSq, 'enemy')) {
+      inCheck = true;
+      checkAttackerSq = findAttacker(board, playerKingSq, 'enemy');
+    }
+
+    let enemyInCheck = false, enemyCheckAttackerSq = null;
+    if (enemyKingSq && isAttackedBy(board, enemyKingSq, 'player')) {
+      enemyInCheck = true;
+      enemyCheckAttackerSq = findAttacker(board, enemyKingSq, 'player');
+    }
+
+    return {
+      board: boardToDict(board),
+      redraw_countdown: this.redrawCountdown,
+      hand: this._state.hand,
+      turn: this.turn,
+      deck_size: this._state.deck.length,
+      discard_size: this._state.discard.length,
+      moved_this_turn: [...this.movedThisTurn],
+      summoned_this_turn: [...this.summonedThisTurn],
+      last_move: { from: this.lastMove.from, to: this.lastMove.to },
+      in_check: inCheck,
+      check_attacker_sq: checkAttackerSq,
+      enemy_in_check: enemyInCheck,
+      enemy_check_attacker_sq: enemyCheckAttackerSq,
+      enemy_will_double_move: this.enemyWillDoubleMove,
+    };
+  }
+
+  // ─── move targeting ────────────────────────────────────────────────────────
+
+  legalDestinationsFor(sq) {
+    const piece = get(this._state.board, sq);
+    if (!piece || piece.owner !== 'player') return [];
+    if (this.summonedThisTurn.has(sq) || this.movedThisTurn.has(sq)) return [];
+    const actions = generateLegalActions(this._state, 'player');
+    return actions
+      .filter(a => a.source === sq)
+      .map(a => a.targets[0]);
+  }
+
+  geometricDestsFor(sq, pattern) {
+    const piece = get(this._state.board, sq);
+    if (!piece || piece.owner !== 'player') return [];
+    if (this.movedThisTurn.has(sq)) return [];
+    const board = this._state.board;
+    const dests = [];
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const toSq = rcToSq(r, c);
+        if (toSq === sq) continue;
+        const target = board[r][c];
+        if (target?.owner === 'player') continue;
+        if (matchesPattern(board, sq, toSq, pattern)) dests.push(toSq);
+      }
+    }
+    return dests;
+  }
+
+  // ─── card play ─────────────────────────────────────────────────────────────
+
+  playMoveCard(cardIndex, fromSq, toSq, promotion = null) {
+    if (cardIndex < 0 || cardIndex >= this._state.hand.length) return { error: 'invalid card index' };
+    const card = this._state.hand[cardIndex];
+    if (card.type !== 'move') return { error: 'not a move card' };
+    if (card.unplayable) return { error: 'card is unplayable' };
+
+    const piece = get(this._state.board, fromSq);
+    if (!piece || piece.owner !== 'player') return { error: 'no friendly piece on that square' };
+    if (this.summonedThisTurn.has(fromSq)) return { error: 'summoned pieces cannot move this turn' };
+    if (this.movedThisTurn.has(fromSq)) return { error: 'piece already moved this turn' };
+
+    const isPromo = piece.type === 'pawn' && toSq[1] === '8';
+    const targetPiece = get(this._state.board, toSq);
+    const isKingCapture = targetPiece?.type === 'king' && targetPiece?.owner === 'enemy';
+
+    if (!isKingCapture) {
+      const actions = generateLegalActions(this._state, 'player');
+      const legalDests = actions.filter(a => a.source === fromSq).map(a => a.targets[0]);
+      if (!legalDests.includes(toSq)) return { error: 'illegal move' };
+    }
+
+    if (isPromo && promotion === null) {
+      // Move piece without promotion (will ask for promotion via modal)
+      set(this._state.board, fromSq, null);
+      set(this._state.board, toSq, piece);
+    } else {
+      const promoType = isPromo && promotion ? PIECE_FULL[promotion] || promotion : null;
+      const action = {
+        kind: 'move',
+        source: fromSq,
+        targets: [toSq],
+        piece,
+        ...(promoType ? { payload: { promotion: promoType } } : {}),
+      };
+      this._state.play(action);
+    }
+
+    const isPawnDoublePush = piece.type === 'pawn' && fromSq[1] === '2' && toSq[1] === '4';
+    this._state.enPassant = isPawnDoublePush ? (toSq[0] + '3') : null;
+
+    this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
+    this.movedThisTurn.add(toSq);
+    this.lastMove = { from: fromSq, to: toSq };
+
+    const winner = checkKingCaptured(this._state.board);
+    if (winner) this.turn = winner;
+
+    if (isPromo && promotion === null) {
+      return { ok: true, needs_promotion: [toSq] };
+    }
+    return { ok: true };
+  }
+
+  playKnightMoveCard(cardIndex, fromSq, toSq) {
+    if (cardIndex < 0 || cardIndex >= this._state.hand.length) return { error: 'invalid card index' };
+    const card = this._state.hand[cardIndex];
+    if (card.type !== 'move' || card.moveVariant !== 'knight') return { error: 'not a knight_move card' };
+
+    const piece = get(this._state.board, fromSq);
+    if (!piece || piece.owner !== 'player') return { error: 'no friendly piece on that square' };
+    if (this.movedThisTurn.has(fromSq)) return { error: 'piece already moved this turn' };
+
+    if (!knightAttacks(fromSq).includes(toSq)) return { error: 'invalid knight move destination' };
+
+    const target = get(this._state.board, toSq);
+    if (target?.owner === 'player') return { error: 'square occupied by friendly piece' };
+
+    set(this._state.board, fromSq, null);
+    set(this._state.board, toSq, piece);
+
+    this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
+    this.movedThisTurn.add(toSq);
+    this.lastMove = { from: fromSq, to: toSq };
+
+    const winner = checkKingCaptured(this._state.board);
+    if (winner) this.turn = winner;
+
+    if (piece.type === 'pawn' && toSq[1] === '8') return { ok: true, needs_promotion: [toSq] };
+    return { ok: true };
+  }
+
+  _playPatternMoveCard(cardIndex, expectedVariant, pattern, fromSq, toSq) {
+    if (cardIndex < 0 || cardIndex >= this._state.hand.length) return { error: 'invalid card index' };
+    const card = this._state.hand[cardIndex];
+    if (card.type !== 'move' || card.moveVariant !== expectedVariant) return { error: `not a ${expectedVariant} move card` };
+
+    const piece = get(this._state.board, fromSq);
+    if (!piece || piece.owner !== 'player') return { error: 'no friendly piece on that square' };
+    if (this.movedThisTurn.has(fromSq)) return { error: 'piece already moved this turn' };
+
+    const target = get(this._state.board, toSq);
+    if (target?.owner === 'player') return { error: 'square occupied by friendly piece' };
+    if (!matchesPattern(this._state.board, fromSq, toSq, pattern)) return { error: 'invalid destination for this card' };
+
+    set(this._state.board, fromSq, null);
+    set(this._state.board, toSq, piece);
+
+    this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
+    this.movedThisTurn.add(toSq);
+    this.lastMove = { from: fromSq, to: toSq };
+
+    const winner = checkKingCaptured(this._state.board);
+    if (winner) this.turn = winner;
+
+    if (piece.type === 'pawn' && toSq[1] === '8') return { ok: true, needs_promotion: [toSq] };
+    return { ok: true };
+  }
+
+  playBishopMoveCard(cardIndex, fromSq, toSq) {
+    return this._playPatternMoveCard(cardIndex, 'bishop', 'b', fromSq, toSq);
+  }
+
+  playRookMoveCard(cardIndex, fromSq, toSq) {
+    return this._playPatternMoveCard(cardIndex, 'rook', 'r', fromSq, toSq);
+  }
+
+  playQueenMoveCard(cardIndex, fromSq, toSq) {
+    return this._playPatternMoveCard(cardIndex, 'queen', 'q', fromSq, toSq);
+  }
+
+  applyPromotion(sq, promoType) {
+    if (!VALID_PROMO.has(promoType)) return { error: 'invalid promotion piece' };
+    const piece = get(this._state.board, sq);
+    if (!piece || piece.type !== 'pawn' || piece.owner !== 'player') return { error: 'no promotable pawn on that square' };
+    set(this._state.board, sq, makePiece(PIECE_FULL[promoType] || promoType, 'player'));
+    return { ok: true };
+  }
+
+  playSummonCard(cardIndex, pieceType, toSq) {
+    if (cardIndex < 0 || cardIndex >= this._state.hand.length) return { error: 'invalid card index' };
+    const card = this._state.hand[cardIndex];
+    if (card.type !== 'summon') return { error: 'not a summon card' };
+    if (card.piece && card.piece !== pieceType) return { error: 'card summons a different piece type' };
+
+    if (!PIECE_FULL[pieceType] && !['pawn','knight','bishop','rook','queen'].includes(pieceType))
+      return { error: 'unknown piece type' };
+
+    if (get(this._state.board, toSq)) return { error: 'square occupied' };
+
+    const rank = parseInt(toSq[1]);
+    if (rank !== 1 && rank !== 2) return { error: 'pieces must be placed on ranks 1 or 2' };
+
+    set(this._state.board, toSq, makePiece(pieceType, 'player'));
+    this.summonedThisTurn.add(toSq);
+    this._state.hand.splice(cardIndex, 1);
+    this.lastMove = { from: null, to: toSq };
+
+    const winner = checkKingCaptured(this._state.board);
+    if (winner) this.turn = winner;
+
+    return { ok: true };
+  }
+
+  // ─── enemy turn ────────────────────────────────────────────────────────────
+
+  _applyEnemyAction(action) {
+    if (!action) return;
+    this.lastMove = { from: action.source, to: action.targets?.[0] ?? null };
+    // Handle en passant update
+    const piece = get(this._state.board, action.source);
+    this._state.play(action);
+    // Track enemy pawn double-push for en passant
+    if (piece?.type === 'pawn' && action.source?.[1] === '7' && action.targets?.[0]?.[1] === '5') {
+      this._state.enPassant = action.targets[0][0] + '6';
+    }
+  }
+
+  startEnemyTurn() {
+    if (this.turn !== 'player') return { error: 'not player turn' };
+    this.turn = 'enemy';
+    this.summonedThisTurn.clear();
+    this.movedThisTurn.clear();
+
+    if (!this._enemyAI) {
+      return { pendingMoves: [], warnNext: false };
+    }
+
+    const result = this._enemyAI.selectMove(this._state);
+    this._state.enPassant = null;
+
+    if (!result) {
+      return { pendingMoves: [], warnNext: false };
+    }
+
+    // Double-move AI returns { _double: true, moves: [...] }
+    if (result._double) {
+      const [first, ...rest] = result.moves;
+      if (first) {
+        this._applyEnemyAction(first);
+        this.lastMove = { from: first.source, to: first.targets?.[0] };
+        const winner = checkKingCaptured(this._state.board);
+        if (winner) {
+          this.turn = winner;
+          return { pendingMoves: [], warnNext: false };
+        }
+      }
+      return { pendingMoves: rest, warnNext: result.warnNext ?? false };
+    }
+
+    // warnNext flag from single-move (double-move AI first turn)
+    const warnNext = result.warnNext ?? false;
+    // Strip warnNext from action before applying
+    const cleanAction = warnNext ? { ...result } : result;
+    if (warnNext) delete cleanAction.warnNext;
+
+    this._applyEnemyAction(cleanAction);
+    if (cleanAction.source) {
+      this.lastMove = { from: cleanAction.source, to: cleanAction.targets?.[0] };
+    }
+    const winner = checkKingCaptured(this._state.board);
+    if (winner) {
+      this.turn = winner;
+      return { pendingMoves: [], warnNext: false };
+    }
+
+    return { pendingMoves: [], warnNext };
+  }
+
+  finishEnemyTurn(pendingMoves, warnNext = false) {
+    for (const action of pendingMoves) {
+      this._applyEnemyAction(action);
+      this.lastMove = { from: action.source, to: action.targets?.[0] };
+      const winner = checkKingCaptured(this._state.board);
+      if (winner) { this.turn = winner; break; }
+    }
+
+    this.enemyWillDoubleMove = warnNext;
+
+    if (this.turn !== 'player_won' && this.turn !== 'enemy_won') {
+      this.turn = 'player';
+      this.redrawCountdown = Math.max(0, this.redrawCountdown - 1);
+    }
+
+    return { ok: true };
+  }
+
+  executeEnemyTurnSequence() {
+    const { pendingMoves, warnNext, error } = this.startEnemyTurn();
+    if (error) return { error, firstMove: null, remainingMoves: [], warnNext: false, gameEnded: false };
+
+    const firstMove = this.lastMove.from !== null ? { from: this.lastMove.from, to: this.lastMove.to } : null;
+    const gameEnded = this.turn === 'player_won' || this.turn === 'enemy_won';
+
+    return { firstMove, remainingMoves: pendingMoves, warnNext, gameEnded };
+  }
+
+  executeNextEnemyMove(action) {
+    this._applyEnemyAction(action);
+    const winner = checkKingCaptured(this._state.board);
+    if (winner) {
+      this.turn = winner;
+      return { ok: true, gameEnded: true };
+    }
+    return { ok: true, gameEnded: false };
+  }
+
+  finishEnemyTurnSequence(warnNext = false) {
+    this.enemyWillDoubleMove = warnNext;
+    this._state.enPassant = null;
+
+    if (this.turn !== 'player_won' && this.turn !== 'enemy_won') {
+      this.turn = 'player';
+      this.redrawCountdown = Math.max(0, this.redrawCountdown - 1);
+    }
+
+    return { ok: true };
+  }
+
+  // ─── redraw ────────────────────────────────────────────────────────────────
+
+  redrawHand() {
+    this._state.discard.push(...this._state.hand);
+    this._state.hand = [];
+    if (this._state.deck.length < HAND_SIZE) {
+      this._state.deck.push(...this._state.discard);
+      this._state.discard = [];
+      for (let i = this._state.deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [this._state.deck[i], this._state.deck[j]] = [this._state.deck[j], this._state.deck[i]];
+      }
+    }
+    const dealt = dealHand(this._state.deck, HAND_SIZE, this._state.discard);
+    this._state.deck = dealt.deck;
+    this._state.hand = dealt.hand;
+    this._state.discard = dealt.discard;
+    console.log('[battle_state] redraw countdown=%d free=%s', this.redrawCountdown, this.redrawCountdown === 0);
+    if (this.redrawCountdown === 0) {
+      this.redrawCountdown = REDRAW_COUNTDOWN_START;
+      return { ok: true, free: true };
+    }
+    const { pendingMoves, warnNext } = this.startEnemyTurn();
+    this.finishEnemyTurn(pendingMoves, warnNext);
+    return { ok: true, free: false };
+  }
+
+  endTurn() {
+    const { pendingMoves, warnNext, error } = this.startEnemyTurn();
+    if (error) return { error };
+    return this.finishEnemyTurn(pendingMoves, warnNext);
+  }
+}
+
+console.log('[battle_state] loaded');

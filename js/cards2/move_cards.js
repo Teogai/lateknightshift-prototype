@@ -1,3 +1,9 @@
+/**
+ * cards2/move_cards.js
+ * Card factories for move/summon/curse cards (engine2 compatible).
+ * Also exports CARD_CATALOG, STARTER_DECKS, buildStarterDeck, dealHand.
+ */
+
 export function moveCard(cost = 1) {
   return { name: 'Move', type: 'move', cost };
 }
@@ -79,3 +85,5 @@ export function buildStarterDeck(character) {
 export function dealHand(deck, size, discard = []) {
   return { deck: deck.slice(size), hand: deck.slice(0, size), discard };
 }
+
+console.log('[cards2/move_cards] loaded');

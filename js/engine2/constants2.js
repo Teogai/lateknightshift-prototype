@@ -1,10 +1,14 @@
+/**
+ * engine2/constants2.js
+ * Game constants for engine2 adapter layer.
+ */
+
 export const HAND_SIZE = 6;
 export const REDRAW_COUNTDOWN_START = 4;
+// Valid promotion short-types (single character)
 export const VALID_PROMO = new Set(['q', 'r', 'b', 'n']);
 
-export const FILES = 'abcdefgh';
-export const PIECE_NAMES = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' };
-
+// Character starting piece definitions (type uses short notation: p/n/b/r/q/k, color: 'w'|'b')
 export const CHARACTER_PIECES = {
   knight: [
     { type: 'k', color: 'w', sq: 'e1' },
@@ -17,3 +21,5 @@ export const CHARACTER_PIECES = {
 };
 
 export const VALID_CHARACTERS = new Set(Object.keys(CHARACTER_PIECES));
+
+console.log('[engine2/constants2] loaded');

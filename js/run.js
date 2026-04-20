@@ -1,5 +1,5 @@
 import { LIVES } from './config.js';
-import { buildStarterDeck, upgradeCard as _upgradeCard } from './cards.js';
+import { buildStarterDeck, upgradeCard as _upgradeCard } from './cards2/move_cards.js';
 import { generateNodes } from './map.js';
 
 export { generateNodes } from './map.js';

@@ -1,6 +1,6 @@
 import { test, expect } from 'vitest';
 import { getRewardPool, pickCardChoices, pickPieceChoices } from '../js/rewards.js';
-import { STARTER_DECKS } from '../js/cards.js';
+import { STARTER_DECKS } from '../js/cards2/move_cards.js';
 
 // --- getRewardPool ---
 test('getRewardPool excludes knight starter types', () => {

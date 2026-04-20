@@ -1,4 +1,4 @@
-import { GameState, knightAttacks, VALID_ENEMIES } from './engine.js';
+import { GameState, knightAttacks, VALID_ENEMIES } from './battle_state.js';
 import { RunState } from './run.js';
 import { FIXED_PATH } from './map.js';
 import {
@@ -6,8 +6,8 @@ import {
   renderTransformScreen, renderTransformResultScreen, renderShopScreen, renderDefeatScreen,
   pickCardChoices, pickPieceChoices,
 } from './rewards.js';
-import { ENEMIES, REGULAR_ENEMIES, ELITE_ENEMY, BOSS_ENEMY } from './enemies.js';
-import { curseCard, bishopMoveCard, rookMoveCard, queenMoveCard } from './cards.js';
+import { ENEMIES, REGULAR_ENEMIES, ELITE_ENEMY, BOSS_ENEMY } from './enemies2.js';
+import { curseCard, bishopMoveCard, rookMoveCard, queenMoveCard } from './cards2/move_cards.js';
 
 const PIECES = {
   white: {
