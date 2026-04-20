@@ -24,3 +24,4 @@
 - [2026-04-20] done: P6 engine2 — neutrals+duck: duck piece type, uncapturable tag, canCapture helper, movegen excludes uncapturable targets, actions.js cancels capture on uncapturable (14 tests green, 349 total)
 - [2026-04-20] done: P8 engine2 — tiles+tile-effects: TILE_DEFS (normal/void/damage/heal), makeTile, movegen filters void squares, onTileEnter fires damage/heal hooks, undo restores (20 tests green, 369 total)
 - [2026-04-20] done: P10 multi-target cards — aoe_card (explode via cascade), line_card (3-sq capture), _resolveCapture iterates all targets, undo restores all (6 tests green, 385 total)
+- [2026-04-20] done: p9 ai2 search+eval — evaluate.js, order.js, search.js; selectAction minimax+αβ iterative deepening; personality weights; explode support; 9 tests green
