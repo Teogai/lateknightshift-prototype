@@ -56,6 +56,7 @@
 ## Doc rules
 - Flat bullets, no prose, <200 lines per file
 - Split by concern; link between docs instead of duplicating
+- After non-trivial exploration, record findings in `docs/EXPLORATION.md` (pattern name, files touched, key snippets) so future sessions skip re-exploration
 
 ## Comms
 - Terse. No filler. Skip "Let me...", "I'll now...", "Great!"
