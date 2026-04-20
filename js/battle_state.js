@@ -27,11 +27,11 @@ const PIECE_FULL = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen',
 const PIECE_SHORT = { pawn: 'p', knight: 'n', bishop: 'b', rook: 'r', queen: 'q', king: 'k' };
 
 function ownerToColor(owner) {
-  return owner === 'player' ? 'white' : 'black';
+  return owner === 'player' ? 'white' : owner === 'neutral' ? 'neutral' : 'black';
 }
 
 function colorToOwner(color) {
-  return color === 'white' ? 'player' : 'enemy';
+  return color === 'white' ? 'player' : color === 'neutral' ? 'neutral' : 'enemy';
 }
 
 /** Convert engine2 board to the {sq:{type,color}} dict the UI expects. */
@@ -159,8 +159,8 @@ export class GameState {
 
     // Place enemy pieces
     const enemyDef = ENEMIES[enemy];
-    for (const { type, sq } of enemyDef.pieces) {
-      set(this._state.board, sq, makePiece(type, 'enemy'));
+    for (const { type, sq, owner } of enemyDef.pieces) {
+      set(this._state.board, sq, makePiece(type, owner || 'enemy'));
     }
 
     this._enemyAI = enemyDef.createAI();
