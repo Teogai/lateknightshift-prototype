@@ -125,3 +125,86 @@ test('redrawHand replaces hand', () => {
   expect(result.ok).toBe(true);
   expect(state.toDict().hand).toHaveLength(6);
 });
+
+describe('debugMovePiece', () => {
+  test('moves piece without consuming card', () => {
+    const state = freshGame();
+    const d = state.toDict();
+    // Find a white piece (player piece)
+    let fromSq = null;
+    for (const sq in d.board) {
+      if (d.board[sq].color === 'white') {
+        fromSq = sq;
+        break;
+      }
+    }
+    expect(fromSq).toBeDefined();
+    
+    const result = state.debugMovePiece(fromSq, 'h4');
+    expect(result.error).toBeUndefined();
+    const d2 = state.toDict();
+    expect(d2.board[fromSq]).toBeUndefined();
+    expect(d2.board['h4']).toBeDefined();
+    expect(d2.board['h4'].type).toBe(d.board[fromSq].type);
+    expect(d2.board['h4'].color).toBe('white');
+  });
+
+  test('returns error if no piece at source', () => {
+    const state = freshGame();
+    const result = state.debugMovePiece('h4', 'h5');
+    expect(result.error).toBeDefined();
+  });
+
+  test('detects win if debug move captures enemy king', () => {
+    const state = freshGame();
+    const d = state.toDict();
+    
+    // Find the enemy king square
+    let enemyKingSq = null;
+    for (const sq in d.board) {
+      if (d.board[sq].color === 'black' && d.board[sq].type === 'king') {
+        enemyKingSq = sq;
+        break;
+      }
+    }
+    expect(enemyKingSq).toBeDefined();
+    
+    // Find a white piece
+    let fromSq = null;
+    for (const sq in d.board) {
+      if (d.board[sq].color === 'white') {
+        fromSq = sq;
+        break;
+      }
+    }
+    expect(fromSq).toBeDefined();
+    
+    const result = state.debugMovePiece(fromSq, enemyKingSq);
+    expect(result.error).toBeUndefined();
+    expect(state.turn).toBe('player_won');
+  });
+
+  test('detects promotion when moving pawn to rank 8', () => {
+    const state = freshGame();
+    // Move a pawn to rank 7 first using debug move
+    let pawnSq = null;
+    const d1 = state.toDict();
+    for (const sq in d1.board) {
+      if (d1.board[sq].color === 'white' && d1.board[sq].type === 'pawn') {
+        pawnSq = sq;
+        break;
+      }
+    }
+    expect(pawnSq).toBeDefined();
+    
+    // Move pawn from rank 2 to rank 7
+    const result1 = state.debugMovePiece(pawnSq, 'a7');
+    expect(result1.error).toBeUndefined();
+    expect(result1.needs_promotion).toBeUndefined();
+    
+    // Move pawn from rank 7 to rank 8 - should trigger promotion
+    const result2 = state.debugMovePiece('a7', 'a8');
+    expect(result2.error).toBeUndefined();
+    expect(result2.needs_promotion).toBe(true);
+  });
+});

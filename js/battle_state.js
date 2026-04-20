@@ -554,6 +554,27 @@ export class GameState {
     return { ok: true, free: false };
   }
 
+  // ─── debug ────────────────────────────────────────────────────────────────
+
+  debugMovePiece(fromSq, toSq) {
+    const board = this._state.board;
+    const piece = get(board, fromSq);
+    if (!piece) return { error: 'no piece at ' + fromSq };
+    set(board, toSq, piece);
+    set(board, fromSq, null);
+    const win = checkKingCaptured(board);
+    if (win) this.turn = win;
+    console.log('[debug] move %s→%s piece=%s win=%s', fromSq, toSq, piece.type, win);
+    
+    // Check for pawn promotion (rank 8 = row 0 for white pawns)
+    if (piece.type === 'pawn' && piece.owner === 'player') {
+      const [r] = sqToRC(toSq);
+      if (r === 0) return { needs_promotion: true };
+    }
+    
+    return {};
+  }
+
   endTurn() {
     const { pendingMoves, warnNext, error } = this.startEnemyTurn();
     if (error) return { error };

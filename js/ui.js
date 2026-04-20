@@ -47,6 +47,8 @@ export const uiState = {
   summonTargets: [],
   geometricTargets: [],
   gameOverHandled: false,
+  debugMove: false,
+  debugDests: [],
 };
 
 export function resetUiState() {
@@ -62,6 +64,8 @@ export function resetUiState() {
   uiState.summonTargets = [];
   uiState.geometricTargets = [];
   uiState.gameOverHandled = false;
+  uiState.debugMove = false;
+  uiState.debugDests = [];
 }
 
 export function showScreen(id) {
@@ -121,13 +125,14 @@ export function renderBoard() {
         if (sqName === enemyAttackerSq) div.classList.add('check-attacker');
       }
 
-      if ((uiState.phase === 'from_selected' || uiState.phase === 'knight_from_selected' || uiState.phase === 'geometric_from_selected') && uiState.fromSq === sqName) {
+      if ((uiState.phase === 'from_selected' || uiState.phase === 'knight_from_selected' || uiState.phase === 'geometric_from_selected' || uiState.phase === 'debug_from_selected') && uiState.fromSq === sqName) {
         div.classList.add('selected-from');
       }
       if (uiState.knightTargets.includes(sqName))   div.classList.add('knight-target');
       if (uiState.legalDests.includes(sqName))      div.classList.add('legal-dest');
       if (uiState.summonTargets.includes(sqName))   div.classList.add('summon-target');
       if (uiState.geometricTargets.includes(sqName)) div.classList.add('legal-dest');
+      if (uiState.debugDests.includes(sqName))      div.classList.add('legal-dest');
 
       const piece = board[sqName];
       if (piece) {
@@ -587,8 +592,55 @@ function showNextPromo() {
 }
 
 export function handleSquareClick(sq) {
+  const d = gameState ? gameState.toDict() : null;
+
+  // Debug move mode: intercept clicks before idle check
+  if (uiState.debugMove && uiState.phase === 'idle') {
+    const piece = d?.board[sq];
+    if (piece && piece.color === 'white') {
+      uiState.phase = 'debug_from_selected';
+      uiState.fromSq = sq;
+      // debugDests = all 64 squares except fromSq
+      uiState.debugDests = [];
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const dest = 'abcdefgh'[c] + (r + 1);
+          if (dest !== sq) uiState.debugDests.push(dest);
+        }
+      }
+      setHint('Click a destination square (or same piece to cancel)');
+      render();
+      return;
+    }
+  }
+
+  // Debug move destination phase
+  if (uiState.phase === 'debug_from_selected') {
+    if (sq === uiState.fromSq) {
+      uiState.phase = 'idle';
+      uiState.fromSq = null;
+      uiState.debugDests = [];
+      setHint('');
+      render();
+      return;
+    }
+    const result = gameState.debugMovePiece(uiState.fromSq, sq);
+    if (result.error) {
+      setHint(result.error);
+      return;
+    }
+    if (result.needs_promotion) {
+      uiState.pendingPromos = [{ sq: sq, cardType: null }];
+      document.getElementById('promotion-modal').classList.remove('hidden');
+      return;
+    }
+    resetUiState();
+    setHint('');
+    render();
+    return;
+  }
+
   if (uiState.phase === 'idle') return;
-  const d = gameState.toDict();
 
   if (uiState.phase === 'card_selected') {
     if (uiState.selectedCardType === 'move' && !uiState.selectedMoveVariant) {
@@ -751,6 +803,32 @@ export function handlePromotionChoice(promoLetter) {
 export function handleUndo() {
   // TODO(P13): replace with engine2State.canUndo() / engine2State.undo() call
   console.log('[ui] handleUndo called — engine2 not yet wired to battle UI');
+}
+
+// ─── debug ────────────────────────────────────────────────────────────────────
+
+export function handleDebugMove() {
+  if (!gameState) return;
+  uiState.debugMove = !uiState.debugMove;
+  const btn = document.getElementById('btn-debug-move');
+  if (btn) {
+    if (uiState.debugMove) {
+      btn.classList.add('active');
+      setHint('Debug Move: click a piece to move it anywhere');
+    } else {
+      btn.classList.remove('active');
+      resetUiState();
+      setHint('');
+      render();
+    }
+  }
+}
+
+export function handleDebugWin() {
+  if (!gameState) return;
+  gameState.turn = 'player_won';
+  console.log('[debug] immediate win triggered');
+  render();
 }
 
 export function startGame(character) {
