@@ -99,6 +99,16 @@ test('summon knight on invalid rank (rank 3+) is rejected', () => {
   expect(result.error).toBeDefined();
 });
 
+test('summon card is removed from game, not discarded', () => {
+  const state = freshGame();
+  state.hand = [{ name: 'Summon Pawn', type: 'summon', piece: 'pawn', cost: 1 }];
+  const initialTotal = state.hand.length + state.deck.length + state.discard.length;
+  state.playSummonCard(0, 'pawn', 'b2');
+  const finalTotal = state.hand.length + state.deck.length + state.discard.length;
+  expect(finalTotal).toBe(initialTotal - 1); // card removed from game
+  expect(state.discard).toHaveLength(0); // not in discard
+});
+
 // --- End turn ---
 
 test('end turn triggers enemy move and resets turn to player', () => {

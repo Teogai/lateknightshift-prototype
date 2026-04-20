@@ -280,7 +280,7 @@ export class GameState {
 
     this._chess.put({ type: typeMap[pieceType], color: 'w' }, toSq);
     this.summonedThisTurn.add(toSq);
-    this.discard.push(this.hand.splice(cardIndex, 1)[0]);
+    this.hand.splice(cardIndex, 1); // remove from hand, card disappears from game
     this.lastMove = { from: null, to: toSq };
     this._pushPositionHistory();
     return { ok: true };
