@@ -16,6 +16,7 @@
 
 import { sqToRC, rcToSq } from './board.js';
 import { runHook } from './effects.js';
+import { TILE_DEFS } from './tiles.js';
 
 // ─── mutation helpers ─────────────────────────────────────────────────────────
 
@@ -175,6 +176,25 @@ function _resolveOne(state, action, log, queue) {
   } else {
     // Normal move (includes captures and promotions)
     _resolveMove(state, action, log);
+  }
+
+  // P8: onTileEnter — fire tile effect when a piece lands on a destination square.
+  // Applies to move and en_passant (where the piece ends up at dest).
+  // Does NOT apply to castle (king lands but tile effects are not expected there)
+  // or pure capture (no piece moves onto the square).
+  if (dest && (kind === 'move' || kind === 'en_passant')) {
+    const [dr, dc] = sqToRC(dest);
+    const tileData = state.tiles?.[dr]?.[dc];
+    if (tileData) {
+      const tileDef = TILE_DEFS[tileData.type];
+      if (tileDef?.onTileEnter) {
+        const landedPiece = board[dr][dc];
+        if (landedPiece) {
+          console.log('[engine2/actions] onTileEnter tile=%s piece.id=%s sq=%s', tileData.type, landedPiece.id, dest);
+          tileDef.onTileEnter(landedPiece, dest, log);
+        }
+      }
+    }
   }
 
   // onAction: fires after mutation

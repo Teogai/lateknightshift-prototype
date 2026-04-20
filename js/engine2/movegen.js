@@ -13,6 +13,53 @@ import { sqToRC, rcToSq, inBounds, get, set } from './board.js';
 import { PIECE_DEFS } from './pieces.js';
 import { resolveAction } from './actions.js';
 
+// ─── void-tile helpers ────────────────────────────────────────────────────────
+
+/**
+ * Return true if the tile at sq is a void tile (no piece may land there).
+ * @param {Array[]} tiles  state.tiles
+ * @param {string}  sq     algebraic square
+ */
+function _isVoid(tiles, sq) {
+  if (!tiles) return false;
+  const [r, c] = sqToRC(sq);
+  const tile = tiles[r]?.[c];
+  return tile && tile.type === 'void';
+}
+
+/**
+ * Return true if any tile strictly between src and dest is void.
+ * Used to detect sliding movement blocked by a void tile along the path.
+ * Returns false for knight hops (non-linear) and single-step moves (no intermediate).
+ *
+ * @param {Array[]} tiles
+ * @param {string}  src   source square
+ * @param {string}  dest  destination square
+ */
+function _voidOnPath(tiles, src, dest) {
+  if (!tiles) return false;
+  const [sr, sc] = sqToRC(src);
+  const [dr, dc] = sqToRC(dest);
+  const dR = Math.abs(dr - sr);
+  const dC = Math.abs(dc - sc);
+
+  // Knight hop: non-linear, no intermediate squares
+  if ((dR === 2 && dC === 1) || (dR === 1 && dC === 2)) return false;
+
+  // Single step or same square: no intermediate
+  if (dR <= 1 && dC <= 1) return false;
+
+  // Sliding move (rook/bishop/queen/long king-range): check intermediate squares
+  const stepR = Math.sign(dr - sr);
+  const stepC = Math.sign(dc - sc);
+  let r = sr + stepR, c = sc + stepC;
+  while (r !== dr || c !== dc) {
+    if (_isVoid(tiles, rcToSq(r, c))) return true;
+    r += stepR; c += stepC;
+  }
+  return false;
+}
+
 // ─── attack detection ─────────────────────────────────────────────────────────
 
 /**
@@ -255,6 +302,17 @@ export function generateLegalActions(state, owner) {
       const pseudoMoves = def.generateMoves(board, sq, piece, ctx);
 
       for (const mv of pseudoMoves) {
+        // P8: skip destinations that are void tiles
+        if (_isVoid(state.tiles, mv.sq)) {
+          console.log('[engine2/movegen] skip void dest sq=%s', mv.sq);
+          continue;
+        }
+        // P8: skip moves whose path passes through a void tile (sliding pieces)
+        if (_voidOnPath(state.tiles, sq, mv.sq)) {
+          console.log('[engine2/movegen] skip void path src=%s dst=%s', sq, mv.sq);
+          continue;
+        }
+
         let action;
         if (mv.enPassantCapture) {
           action = {
