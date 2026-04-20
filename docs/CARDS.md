@@ -6,7 +6,11 @@
 ## Implemented
 
 - Move | cost 1 | type move | effect: move any friendly piece to a legal square (each piece once per turn)
-- Summon Pawn | cost 1 | type summon | effect: place pawn on ranks 1–2 (cannot move same turn)
+- Summon Pawn | cost 2 | type summon | effect: place pawn on ranks 1–2 (cannot move same turn)
+- Summon Knight | cost 3 | type summon | effect: place knight on ranks 1–2 (cannot move same turn)
+- Summon Bishop | cost 3 | type summon | effect: place bishop on ranks 1–2 (cannot move same turn)
+- Summon Rook | cost 3 | type summon | effect: place rook on ranks 1–2 (cannot move same turn)
+- Summon Queen | cost 3 | type summon | effect: place queen on ranks 1–2 (cannot move same turn)
 - Knight Move | cost 2 | type signature | effect: move any friendly piece to any knight-jump square (ignores blockers)
 
 ## Starter decks (10 cards each)

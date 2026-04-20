@@ -60,6 +60,45 @@ test('summon pawn on invalid rank is rejected', () => {
   expect(result.error).toBeDefined();
 });
 
+test('summon knight on rank 2', () => {
+  const state = freshGame();
+  state.hand = [{ name: 'Summon Knight', type: 'summon', piece: 'knight', cost: 3 }];
+  const result = state.playSummonCard(0, 'knight', 'c2');
+  expect(result.ok).toBe(true);
+  expect(state.toDict().board['c2'].type).toBe('knight');
+});
+
+test('summon bishop on rank 2', () => {
+  const state = freshGame();
+  state.hand = [{ name: 'Summon Bishop', type: 'summon', piece: 'bishop', cost: 3 }];
+  const result = state.playSummonCard(0, 'bishop', 'b2');
+  expect(result.ok).toBe(true);
+  expect(state.toDict().board['b2'].type).toBe('bishop');
+});
+
+test('summon rook on rank 2', () => {
+  const state = freshGame();
+  state.hand = [{ name: 'Summon Rook', type: 'summon', piece: 'rook', cost: 3 }];
+  const result = state.playSummonCard(0, 'rook', 'h2');
+  expect(result.ok).toBe(true);
+  expect(state.toDict().board['h2'].type).toBe('rook');
+});
+
+test('summon queen on rank 2', () => {
+  const state = freshGame();
+  state.hand = [{ name: 'Summon Queen', type: 'summon', piece: 'queen', cost: 3 }];
+  const result = state.playSummonCard(0, 'queen', 'f2');
+  expect(result.ok).toBe(true);
+  expect(state.toDict().board['f2'].type).toBe('queen');
+});
+
+test('summon knight on invalid rank (rank 3+) is rejected', () => {
+  const state = freshGame();
+  state.hand = [{ name: 'Summon Knight', type: 'summon', piece: 'knight', cost: 3 }];
+  const result = state.playSummonCard(0, 'knight', 'c3');
+  expect(result.error).toBeDefined();
+});
+
 // --- End turn ---
 
 test('end turn triggers enemy move and resets turn to player', () => {

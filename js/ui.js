@@ -427,8 +427,7 @@ export function handleCardClick(index, card) {
   } else if (card.type === 'queen_move') {
     setHint('Queen Move: click a friendly piece to move diagonally or straight');
   } else if (card.type === 'summon') {
-    const isPawn = card.piece === 'pawn';
-    const validRanks = isPawn ? ['1', '2'] : ['1'];
+    const validRanks = ['1', '2'];
     uiState.summonTargets = 'abcdefgh'.split('').flatMap(f =>
       validRanks.map(r => f + r)
     ).filter(sq => !d.board[sq]);

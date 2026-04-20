@@ -276,11 +276,7 @@ export class GameState {
     if (this._chess.get(toSq)) return { error: 'square occupied' };
 
     const rank = parseInt(toSq[1]);
-    if (pieceType === 'pawn') {
-      if (rank !== 1 && rank !== 2) return { error: 'pawns must be placed on ranks 1 or 2' };
-    } else {
-      if (rank !== 1) return { error: 'pieces must be placed on rank 1' };
-    }
+    if (rank !== 1 && rank !== 2) return { error: 'pieces must be placed on ranks 1 or 2' };
 
     this._chess.put({ type: typeMap[pieceType], color: 'w' }, toSq);
     this.summonedThisTurn.add(toSq);
