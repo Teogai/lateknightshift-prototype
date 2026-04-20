@@ -109,6 +109,17 @@ function _resolveOne(state, action, log, queue) {
     },
   };
 
+  // P6: if action targets an uncapturable piece, cancel immediately before hooks.
+  if (dest && kind !== 'castle' && kind !== 'en_passant') {
+    const [dr, dc] = sqToRC(dest);
+    const destPiece = board[dr][dc];
+    if (destPiece?.tags?.has('uncapturable')) {
+      console.log('[engine2/actions] cancelled — target uncapturable id=%s type=%s dst=%s', destPiece.id, destPiece.type, dest);
+      ctx.cancel = true;
+      return;
+    }
+  }
+
   // onBeforeAction: fires before any board mutation
   runHook(state, 'onBeforeAction', ctx);
 

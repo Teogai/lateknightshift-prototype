@@ -15,15 +15,17 @@ function nextId() { return _nextId++; }
 
 /**
  * Create a new Piece.
- * @param {string} type  - 'pawn'|'knight'|'bishop'|'rook'|'queen'|'king'
+ * @param {string} type  - 'pawn'|'knight'|'bishop'|'rook'|'queen'|'king'|'duck'
  * @param {string} owner - 'player'|'enemy'|'neutral'
  * @param {object} overrides - optional extra fields merged into piece
  */
 export function makePiece(type, owner, overrides = {}) {
+  const def = PIECE_DEFS[type];
+  const defaultTags = def?.defaultTags ? new Set(def.defaultTags) : new Set();
   return {
     type,
     owner,
-    tags: new Set(),
+    tags: defaultTags,
     data: {},
     id: nextId(),
     ...overrides,
@@ -51,8 +53,11 @@ function slideMoves(board, fromR, fromC, dr, dc, owner) {
     const sq = rcToSq(r, c);
     const occupant = board[r][c];
     if (occupant) {
-      if (occupant.owner !== owner) moves.push({ sq, capture: occupant }); // capture
-      break; // blocked
+      // Uncapturable pieces block but cannot be taken
+      if (occupant.owner !== owner && !occupant.tags?.has('uncapturable')) {
+        moves.push({ sq, capture: occupant }); // capture
+      }
+      break; // blocked regardless
     }
     moves.push({ sq });
     r += dr; c += dc;
@@ -106,7 +111,7 @@ export const PIECE_DEFS = {
         if (!inBounds(r1, rc)) continue;
         const target = board[r1][rc];
         const toSq = rcToSq(r1, rc);
-        if (target && target.owner !== piece.owner) {
+        if (target && target.owner !== piece.owner && !target.tags?.has('uncapturable')) {
           if (r1 === promoRank) {
             for (const promo of ['queen', 'rook', 'bishop', 'knight']) {
               moves.push({ sq: toSq, capture: target, promotion: promo });
@@ -139,6 +144,8 @@ export const PIECE_DEFS = {
         if (!inBounds(r, c)) continue;
         const occupant = board[r][c];
         if (occupant && occupant.owner === piece.owner) continue;
+        // Skip uncapturable occupants (cannot move onto them)
+        if (occupant && occupant.tags?.has('uncapturable')) continue;
         moves.push({ sq: rcToSq(r, c), ...(occupant ? { capture: occupant } : {}) });
       }
       return moves;
@@ -187,12 +194,22 @@ export const PIECE_DEFS = {
         if (!inBounds(r, c)) continue;
         const occupant = board[r][c];
         if (occupant && occupant.owner === piece.owner) continue;
+        // Skip uncapturable occupants (cannot move onto them)
+        if (occupant && occupant.tags?.has('uncapturable')) continue;
         moves.push({ sq: rcToSq(r, c), ...(occupant ? { capture: occupant } : {}) });
       }
       // Castling is generated in movegen.js (needs king-safety checks)
       return moves;
     },
   },
+
+  duck: {
+    defaultTags: ['uncapturable'],
+    generateMoves(_board, _sq, _piece, _ctx) {
+      // Duck never moves on its own turn
+      return [];
+    },
+  },
 };
 
-console.log('[engine2/pieces] loaded');
+console.log('[engine2/pieces] loaded types=%s', Object.keys(PIECE_DEFS).join(','));

@@ -97,6 +97,25 @@ function isOpponent(owner, targetOwner) {
   return targetOwner !== owner && targetOwner !== null;
 }
 
+// ─── canCapture ───────────────────────────────────────────────────────────────
+
+/**
+ * Returns false if target has 'uncapturable' tag or same owner as attacker.
+ * Consult before adding a capture action.
+ * @param {object} attacker - Piece
+ * @param {object} target   - Piece
+ * @returns {boolean}
+ */
+export function canCapture(attacker, target) {
+  if (!target) return false;
+  if (target.owner === attacker.owner) return false;
+  if (target.tags?.has('uncapturable')) {
+    console.log('[engine2/movegen] canCapture=false uncapturable id=%s type=%s', target.id, target.type);
+    return false;
+  }
+  return true;
+}
+
 // ─── apply / undo lightweight for check-testing ───────────────────────────────
 
 /**
