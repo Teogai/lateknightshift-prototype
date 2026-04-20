@@ -15,6 +15,7 @@
  */
 
 import { sqToRC, rcToSq } from './board.js';
+import { runHook } from './effects.js';
 
 // ─── mutation helpers ─────────────────────────────────────────────────────────
 
@@ -93,6 +94,28 @@ export function resolveAction(state, action, log = []) {
 
   console.log('[engine2/actions] kind=%s src=%s dst=%s', kind, source, dest);
 
+  const ctx = { action };
+
+  // onBeforeAction: fires before any board mutation
+  runHook(state, 'onBeforeAction', ctx);
+
+  // Detect capture before mutation
+  let isCapture = false;
+  if (kind === 'en_passant') {
+    isCapture = true;
+  } else if (kind !== 'castle' && dest) {
+    const [dr, dc] = sqToRC(dest);
+    const occupant = board[dr][dc];
+    // Capture = destination occupied by a different owner than the moving piece
+    if (occupant) {
+      const [sr, sc] = sqToRC(source);
+      const mover = board[sr][sc];
+      if (!mover || occupant.owner !== mover.owner) {
+        isCapture = true;
+      }
+    }
+  }
+
   if (kind === 'castle') {
     _resolveCastle(state, action, log);
   } else if (kind === 'en_passant') {
@@ -101,6 +124,17 @@ export function resolveAction(state, action, log = []) {
     // Normal move (includes captures and promotions)
     _resolveMove(state, action, log);
   }
+
+  // onAction: fires after mutation
+  runHook(state, 'onAction', ctx);
+
+  // onCapture: fires only when a piece was taken
+  if (isCapture) {
+    runHook(state, 'onCapture', ctx);
+  }
+
+  // onAfterAction: fires last
+  runHook(state, 'onAfterAction', ctx);
 }
 
 // ─── move ─────────────────────────────────────────────────────────────────────
