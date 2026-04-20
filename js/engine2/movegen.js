@@ -221,6 +221,13 @@ export function generateLegalActions(state, owner) {
     for (let c = 0; c < 8; c++) {
       const piece = board[r][c];
       if (!piece || piece.owner !== owner) continue;
+
+      // P5: frozen pieces cannot act (they can still be captured by opponents)
+      if (piece.tags?.has('frozen')) {
+        console.log('[engine2/movegen] skip frozen piece type=%s sq=%s', piece.type, rcToSq(r, c));
+        continue;
+      }
+
       const sq = rcToSq(r, c);
 
       const def = PIECE_DEFS[piece.type];

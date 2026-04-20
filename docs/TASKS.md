@@ -20,3 +20,4 @@
 - [2026-04-20] done: P2 engine2 — GameState, resolveAction, undo log, applyMove (23 tests; fuzz+undo green)
 - [2026-04-20] done: P3 engine2 — effect lifecycle skeleton; attachEffect/runHook; hooks wired into resolveAction (16 tests green, 322 total)
 - [2026-04-20] done: P4 engine2 — cascading queue; FIFO drain with depth cap 64; explode effect type; dying-piece onCapture; undo after cascade (5 tests green, 327 total)
+- [2026-04-20] done: P5 engine2 — tags+status: shielded (ctx.cancel cancels capture, undo restores tag), frozen (movegen skips), _setTag undo (8 tests green, 335 total)

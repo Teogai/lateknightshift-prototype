@@ -98,6 +98,10 @@ function _resolveOne(state, action, log, queue) {
 
   const ctx = {
     action,
+    /** Expose state so effects (e.g. shield) can read the board in onBeforeAction. */
+    _state: state,
+    /** Expose the mutation log so effects can record undo-loggable changes (e.g. tag removal). */
+    log,
     /** Enqueue a cascaded action (FIFO). Effects call ctx.enqueue(action). */
     enqueue: (a) => {
       queue.push(a);
@@ -107,6 +111,14 @@ function _resolveOne(state, action, log, queue) {
 
   // onBeforeAction: fires before any board mutation
   runHook(state, 'onBeforeAction', ctx);
+
+  // P5: if any onBeforeAction hook set ctx.cancel, skip all mutations.
+  // The log may already contain no-op inverse entries from the hook (e.g. tag
+  // removal); those are preserved so undo restores correctly.
+  if (ctx.cancel) {
+    console.log('[engine2/actions] action cancelled kind=%s src=%s dst=%s', kind, source, dest);
+    return;
+  }
 
   // Detect capture BEFORE mutation; record the dying piece's id for onCapture hooks.
   // After mutation the piece is gone from the board, so piece-scoped onCapture
