@@ -1,3 +1,3 @@
-# AGENTS.md
+# CLAUDE.md
 
-read CLAUDE.md first before aoing anything.
+read AGENTS.md first before aoing anything.

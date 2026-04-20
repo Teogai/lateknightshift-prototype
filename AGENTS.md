@@ -1,4 +1,4 @@
-# CLAUDE.md
+# AGENTS.md
 
 ## Read first
 - `docs/ARCHITECTURE.md` — file-purpose map, locate code
