@@ -37,6 +37,7 @@ export const uiState = {
   phase: 'idle',
   selectedCardIndex: null,
   selectedCardType: null,
+  selectedMoveVariant: null,
   selectedPieceType: null,
   fromSq: null,
   pendingPromos: [],
@@ -51,6 +52,7 @@ export function resetUiState() {
   uiState.phase = 'idle';
   uiState.selectedCardIndex = null;
   uiState.selectedCardType = null;
+  uiState.selectedMoveVariant = null;
   uiState.selectedPieceType = null;
   uiState.fromSq = null;
   uiState.pendingPromos = [];
@@ -424,16 +426,17 @@ export function handleCardClick(index, card) {
   uiState.phase = 'card_selected';
   uiState.selectedCardIndex = index;
   uiState.selectedCardType = card.type;
+  uiState.selectedMoveVariant = card.moveVariant || null;
   uiState.selectedPieceType = card.piece || null;
-  if (card.type === 'move') {
+  if (card.type === 'move' && !card.moveVariant) {
     setHint('Click a friendly piece to move');
-  } else if (card.type === 'knight_move') {
+  } else if (card.type === 'move' && card.moveVariant === 'knight') {
     setHint('Knight Move: click a friendly piece to teleport');
-  } else if (card.type === 'bishop_move') {
+  } else if (card.type === 'move' && card.moveVariant === 'bishop') {
     setHint('Bishop Move: click a friendly piece to move diagonally');
-  } else if (card.type === 'rook_move') {
+  } else if (card.type === 'move' && card.moveVariant === 'rook') {
     setHint('Rook Move: click a friendly piece to move in a straight line');
-  } else if (card.type === 'queen_move') {
+  } else if (card.type === 'move' && card.moveVariant === 'queen') {
     setHint('Queen Move: click a friendly piece to move diagonally or straight');
   } else if (card.type === 'summon') {
     const validRanks = ['1', '2'];
@@ -457,7 +460,7 @@ export function handleSquareClick(sq) {
   const d = gameState.toDict();
 
   if (uiState.phase === 'card_selected') {
-    if (uiState.selectedCardType === 'move') {
+    if (uiState.selectedCardType === 'move' && !uiState.selectedMoveVariant) {
       const piece = d.board[sq];
       if (piece && piece.color === 'white') {
         uiState.legalDests = gameState.legalDestinationsFor(sq);
@@ -468,7 +471,7 @@ export function handleSquareClick(sq) {
       } else {
         setHint('Pick a friendly piece');
       }
-    } else if (uiState.selectedCardType === 'knight_move') {
+    } else if (uiState.selectedCardType === 'move' && uiState.selectedMoveVariant === 'knight') {
       const piece = d.board[sq];
       if (piece && piece.color === 'white') {
         uiState.phase = 'knight_from_selected';
@@ -482,13 +485,13 @@ export function handleSquareClick(sq) {
       } else {
         setHint('Pick a friendly piece');
       }
-    } else if (['bishop_move', 'rook_move', 'queen_move'].includes(uiState.selectedCardType)) {
+    } else if (uiState.selectedCardType === 'move' && ['bishop', 'rook', 'queen'].includes(uiState.selectedMoveVariant)) {
       const piece = d.board[sq];
       if (piece && piece.color === 'white') {
-        const patternMap = { bishop_move: 'b', rook_move: 'r', queen_move: 'q' };
+        const patternMap = { bishop: 'b', rook: 'r', queen: 'q' };
         uiState.phase = 'geometric_from_selected';
         uiState.fromSq = sq;
-        uiState.geometricTargets = gameState.geometricDestsFor(sq, patternMap[uiState.selectedCardType]);
+        uiState.geometricTargets = gameState.geometricDestsFor(sq, patternMap[uiState.selectedMoveVariant]);
         setHint('Click a highlighted square to move to');
         render();
       } else {
@@ -515,14 +518,13 @@ export function handleSquareClick(sq) {
       setHint('Click a friendly piece to move');
       render(); return;
     }
-    const piece = d.board[uiState.fromSq];
-    if (piece && piece.type === 'pawn' && piece.color === 'white' && sq[1] === '8') {
+    const result = gameState.playMoveCard(uiState.selectedCardIndex, uiState.fromSq, sq);
+    if (result.error) { setHint(result.error); return; }
+    if (result.needs_promotion) {
       uiState.pendingPromos = [{ from: uiState.fromSq, to: sq, cardType: 'move', cardIndex: uiState.selectedCardIndex }];
       document.getElementById('promotion-modal').classList.remove('hidden');
       return;
     }
-    const result = gameState.playMoveCard(uiState.selectedCardIndex, uiState.fromSq, sq);
-    if (result.error) { setHint(result.error); return; }
     resetUiState(); setHint(''); render();
     playoutEnemyTurn();
     return;
@@ -562,10 +564,10 @@ export function handleSquareClick(sq) {
       setHint('Not a valid destination for this card'); return;
     }
     const playFn = {
-      bishop_move: () => gameState.playBishopMoveCard(uiState.selectedCardIndex, uiState.fromSq, sq),
-      rook_move:   () => gameState.playRookMoveCard(uiState.selectedCardIndex, uiState.fromSq, sq),
-      queen_move:  () => gameState.playQueenMoveCard(uiState.selectedCardIndex, uiState.fromSq, sq),
-    }[uiState.selectedCardType];
+      bishop: () => gameState.playBishopMoveCard(uiState.selectedCardIndex, uiState.fromSq, sq),
+      rook:   () => gameState.playRookMoveCard(uiState.selectedCardIndex, uiState.fromSq, sq),
+      queen:  () => gameState.playQueenMoveCard(uiState.selectedCardIndex, uiState.fromSq, sq),
+    }[uiState.selectedMoveVariant];
     const result = playFn();
     if (result.error) { setHint(result.error); return; }
     if (result.needs_promotion) {

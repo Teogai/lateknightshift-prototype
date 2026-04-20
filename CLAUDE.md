@@ -77,14 +77,16 @@
 - Dev server: `npm run dev` → http://localhost:5173
 
 ## Frontend testing
+- **RULE: Logic changes ALWAYS use Vitest, never preview** — if tests pass, logic is correct; preview wastes tokens
+- Logic tests include: card types, move validation, state changes, game rules
+- Only use preview for: visual layout, colors, click flows, screen transitions that cannot be tested in code
 - Use `preview_eval` with JS selectors to inspect state — not `preview_screenshot`
 - e.g. `document.getElementById('deck-info').textContent` or `gameState.toDict()`
 - Screenshots are slow and unreliable; JS queries are fast and exact
 - Before starting dev server for tests: check if already running (`netstat -ano | grep :5173`)
   - If running: ask user whether to kill it or skip testing
 - **ALWAYS call `preview_stop` after every test session — no exceptions, do not skip**
-- **Only use preview for things that cannot be tested in code** (visual layout, click interactions, screen transitions)
-- **Never run `npm run dev` or start a preview unless visual testing is genuinely required** — it burns tokens; logic tests (AI, engine, rules, cards) must use Vitest only
+- **Never run `npm run dev` or start a preview unless visual testing is genuinely required** — it burns tokens
 - Game logic changes (AI, engine, rules) must be tested via Vitest unit tests, not preview
 
 ## AI testing
