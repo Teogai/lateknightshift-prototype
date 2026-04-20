@@ -180,8 +180,6 @@ export class GameState {
     this._pushPositionHistory();
     const winner = checkKingCaptured(this._chess);
     if (winner) this.turn = winner;
-    const { pendingMoves: pm1, warnNext: wn1, error: e1 } = this.startEnemyTurn();
-    if (!e1) this.finishEnemyTurn(pm1, wn1);
     return { ok: true };
   }
 
@@ -208,8 +206,6 @@ export class GameState {
     this._pushPositionHistory();
     const winner = checkKingCaptured(this._chess);
     if (winner) this.turn = winner;
-    const { pendingMoves: pm2, warnNext: wn2, error: e2 } = this.startEnemyTurn();
-    if (!e2) this.finishEnemyTurn(pm2, wn2);
 
     if (piece.type === 'p' && toSq[1] === '8') return { ok: true, needs_promotion: [toSq] };
     return { ok: true };
@@ -242,8 +238,6 @@ export class GameState {
     this._pushPositionHistory();
     const winner = checkKingCaptured(this._chess);
     if (winner) this.turn = winner;
-    const { pendingMoves: pm3, warnNext: wn3, error: e3 } = this.startEnemyTurn();
-    if (!e3) this.finishEnemyTurn(pm3, wn3);
 
     if (piece.type === 'p' && toSq[1] === '8') return { ok: true, needs_promotion: [toSq] };
     return { ok: true };
@@ -293,8 +287,6 @@ export class GameState {
     this.discard.push(this.hand.splice(cardIndex, 1)[0]);
     this.lastMove = { from: null, to: toSq };
     this._pushPositionHistory();
-    const { pendingMoves: pm4, warnNext: wn4, error: e4 } = this.startEnemyTurn();
-    if (!e4) this.finishEnemyTurn(pm4, wn4);
     return { ok: true };
   }
 
@@ -355,6 +347,41 @@ export class GameState {
     }
 
     this.enemyWillDoubleMove = warnNext;
+
+    if (this.turn !== 'player_won' && this.turn !== 'enemy_won') {
+      this.turn = 'player';
+      this.redrawCountdown = Math.max(0, this.redrawCountdown - 1);
+    }
+
+    return { ok: true };
+  }
+
+  // Initiate enemy turn sequence, returning first move and remaining moves for UI to render separately
+  executeEnemyTurnSequence() {
+    const { pendingMoves, warnNext, error } = this.startEnemyTurn();
+    if (error) return { error, firstMove: null, remainingMoves: [], warnNext: false, gameEnded: false };
+    
+    const firstMove = this.lastMove.from !== null ? { from: this.lastMove.from, to: this.lastMove.to } : null;
+    const gameEnded = this.turn === 'player_won' || this.turn === 'enemy_won';
+    
+    return { firstMove, remainingMoves: pendingMoves, warnNext, gameEnded };
+  }
+
+  // Execute next enemy move in sequence (used for rendering each move individually)
+  executeNextEnemyMove(move) {
+    this._executeEnemyMoveObj(move);
+    const winner = checkKingCaptured(this._chess);
+    if (winner) {
+      this.turn = winner;
+      return { ok: true, gameEnded: true };
+    }
+    return { ok: true, gameEnded: false };
+  }
+
+  // Finish enemy turn sequence after all moves are rendered (called by UI after showing all enemy moves)
+  finishEnemyTurnSequence(warnNext = false) {
+    this.enemyWillDoubleMove = warnNext;
+    this.enPassantTarget = null;
 
     if (this.turn !== 'player_won' && this.turn !== 'enemy_won') {
       this.turn = 'player';

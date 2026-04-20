@@ -243,6 +243,48 @@ function checkGameOver() {
   }, 600);
 }
 
+// Play out enemy turn moves one at a time with renders between each
+async function playoutEnemyTurn() {
+  // Wait for the browser to paint the player's move before starting enemy sequence
+  await new Promise(resolve => {
+    requestAnimationFrame(() => {
+      setTimeout(resolve, 200);
+    });
+  });
+
+  const seq = gameState.executeEnemyTurnSequence();
+  if (seq.error) {
+    console.error('[playoutEnemyTurn] error:', seq.error);
+    return;
+  }
+
+  // First move is already executed by startEnemyTurn, render it
+  render();
+
+  // If game ended on first move or no remaining moves, finish sequence
+  if (seq.gameEnded || seq.remainingMoves.length === 0) {
+    gameState.finishEnemyTurnSequence(seq.warnNext);
+    render();
+    return;
+  }
+
+  // Execute remaining moves one by one with a small render delay
+  for (const move of seq.remainingMoves) {
+    // Wait a frame for visual pacing
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    const result = gameState.executeNextEnemyMove(move);
+    render();
+
+    if (result.gameEnded) break;
+  }
+
+  // Finish the turn (set turn back to player, update redraw countdown)
+  gameState.finishEnemyTurnSequence(seq.warnNext);
+  render();
+}
+
 function pickEnemy(nodeType) {
   if (nodeType === 'elite') return ELITE_ENEMY;
   if (nodeType === 'boss')  return BOSS_ENEMY;
@@ -447,6 +489,7 @@ export function handleSquareClick(sq) {
       const result = gameState.playSummonCard(uiState.selectedCardIndex, uiState.selectedPieceType, sq);
       if (result.error) { setHint(result.error); }
       resetUiState(); setHint(''); render();
+      playoutEnemyTurn();
     }
     return;
   }
@@ -466,8 +509,9 @@ export function handleSquareClick(sq) {
       return;
     }
     const result = gameState.playMoveCard(uiState.selectedCardIndex, uiState.fromSq, sq);
-    if (result.error) { setHint(result.error); }
+    if (result.error) { setHint(result.error); return; }
     resetUiState(); setHint(''); render();
+    playoutEnemyTurn();
     return;
   }
 
@@ -489,6 +533,7 @@ export function handleSquareClick(sq) {
       showNextPromo();
     } else {
       resetUiState(); setHint(''); render();
+      playoutEnemyTurn();
     }
   }
 
@@ -515,6 +560,7 @@ export function handleSquareClick(sq) {
       showNextPromo();
     } else {
       resetUiState(); setHint(''); render();
+      playoutEnemyTurn();
     }
   }
 }
@@ -526,7 +572,13 @@ export async function handleRedraw() {
   const result = gameState.redrawHand();
   await new Promise(r => setTimeout(r, 300));
   render();
+  
   console.log('[ui] redraw free=%s', result.free);
+  
+  if (!result.free) {
+    // Non-free redraw triggers enemy turn - need to sequence the renders
+    playoutEnemyTurn();
+  }
 }
 
 export function handlePromotionChoice(promoLetter) {
@@ -539,7 +591,15 @@ export function handlePromotionChoice(promoLetter) {
     result = gameState.applyPromotion(item.sq, promoLetter);
   }
   if (result.error) setHint(result.error);
-  showNextPromo();
+  
+  if (uiState.pendingPromos.length === 0) {
+    // All promotions done, trigger enemy turn sequence
+    resetUiState(); render();
+    playoutEnemyTurn();
+  } else {
+    // More promotions to go
+    showNextPromo();
+  }
 }
 
 export function startGame(character) {

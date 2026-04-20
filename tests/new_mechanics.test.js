@@ -27,7 +27,13 @@ test('moved piece can move again next turn', () => {
   const state = freshGame();
   state.hand = [{ name: 'Move', type: 'move', cost: 1 }];
   state.playMoveCard(0, 'b1', 'a3');
-  // Auto-turn ran; now it's a new player turn with movedThisTurn cleared
+  // Manually trigger enemy turn sequence to clear movedThisTurn
+  const seq = state.executeEnemyTurnSequence();
+  for (const move of seq.remainingMoves) {
+    state.executeNextEnemyMove(move);
+  }
+  state.finishEnemyTurnSequence(seq.warnNext);
+  // Now it's a new player turn with movedThisTurn cleared
   state.hand = [{ name: 'Move', type: 'move', cost: 1 }];
   const result = state.playMoveCard(0, 'a3', 'b5');
   expect(result.ok).toBe(true);
@@ -37,7 +43,15 @@ test('moved_this_turn is empty at start of player turn', () => {
   const state = freshGame();
   state.hand = [{ name: 'Move', type: 'move', cost: 1 }];
   state.playMoveCard(0, 'b1', 'a3');
-  // After auto-turn, movedThisTurn is cleared
+  // Before enemy turn, movedThisTurn still has the moved piece
+  expect(state.toDict().moved_this_turn).toEqual(['a3']);
+  // Manually trigger enemy turn sequence to clear movedThisTurn
+  const seq = state.executeEnemyTurnSequence();
+  for (const move of seq.remainingMoves) {
+    state.executeNextEnemyMove(move);
+  }
+  state.finishEnemyTurnSequence(seq.warnNext);
+  // After enemy turn finishes, movedThisTurn is cleared
   expect(state.toDict().moved_this_turn).toEqual([]);
 });
 
@@ -77,7 +91,13 @@ test('knight-moved piece can move again next turn', () => {
   const state = freshGame();
   state.hand = [{ name: 'Knight Move', type: 'knight_move', cost: 2 }];
   state.playKnightMoveCard(0, 'b1', 'a3');
-  // Auto-turn ran; movedThisTurn cleared
+  // Manually trigger enemy turn sequence to clear movedThisTurn
+  const seq = state.executeEnemyTurnSequence();
+  for (const move of seq.remainingMoves) {
+    state.executeNextEnemyMove(move);
+  }
+  state.finishEnemyTurnSequence(seq.warnNext);
+  // movedThisTurn cleared; can move again
   state.hand = [{ name: 'Move', type: 'move', cost: 1 }];
   const result = state.playMoveCard(0, 'a3', 'b5');
   expect(result.ok).toBe(true);

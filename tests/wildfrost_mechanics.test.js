@@ -75,6 +75,12 @@ test('redrawCountdown decrements after playing a card', () => {
   state.hand = [{ name: 'Move', type: 'move', cost: 1 }];
   expect(state.redrawCountdown).toBe(4);
   state.playMoveCard(0, 'a1', 'a5');
+  // Manually trigger enemy turn sequence which decrements countdown
+  const seq = state.executeEnemyTurnSequence();
+  for (const move of seq.remainingMoves) {
+    state.executeNextEnemyMove(move);
+  }
+  state.finishEnemyTurnSequence(seq.warnNext);
   expect(state.redrawCountdown).toBe(3);
 });
 
@@ -199,6 +205,15 @@ test('playing a card after free redraw decrements countdown from 4', () => {
   state.redrawHand(); // free, resets to 4
   state.hand = [{ name: 'Move', type: 'move', cost: 1 }];
   state.playMoveCard(0, 'a1', 'a5');
+  // Before enemy turn sequence, countdown is still 4
+  expect(state.redrawCountdown).toBe(4);
+  // Manually trigger enemy turn sequence which decrements countdown
+  const seq = state.executeEnemyTurnSequence();
+  for (const move of seq.remainingMoves) {
+    state.executeNextEnemyMove(move);
+  }
+  state.finishEnemyTurnSequence(seq.warnNext);
+  // After enemy turn finishes, countdown should decrement to 3
   expect(state.redrawCountdown).toBe(3);
 });
 

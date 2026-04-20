@@ -109,7 +109,15 @@ test('en passant target cleared after auto-turn end (double push)', () => {
   state.hand = [{ name: 'Move', type: 'move', cost: 1 }];
 
   state.playMoveCard(0, 'e2', 'e4');
-  // Auto-turn ran; enPassantTarget was set then cleared by startEnemyTurn
+  // enPassantTarget was set by double push
+  expect(state.enPassantTarget).toBe('e3');
+  // Manually trigger enemy turn sequence
+  const seq = state.executeEnemyTurnSequence();
+  for (const move of seq.remainingMoves) {
+    state.executeNextEnemyMove(move);
+  }
+  state.finishEnemyTurnSequence(seq.warnNext);
+  // enPassantTarget cleared after enemy turn finishes
   expect(state.enPassantTarget).toBeNull();
 });
 

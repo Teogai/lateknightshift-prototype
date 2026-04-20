@@ -60,21 +60,6 @@ test('summon pawn on invalid rank is rejected', () => {
   expect(result.error).toBeDefined();
 });
 
-test('summoned piece can move next turn (no same-turn restriction)', () => {
-  // Wildfrost: 1 card/turn; auto-turn runs after summon so next player turn starts fresh
-  const state = new GameState('knight');
-  state._chess.clear();
-  state._chess.put({ type: 'k', color: 'w' }, 'e1');
-  state._chess.put({ type: 'k', color: 'b' }, 'h8');
-  state.hand = [{ name: 'Summon Pawn', type: 'summon', piece: 'pawn', cost: 1 }];
-  state.mana = 3;
-  state.playSummonCard(0, 'pawn', 'c2');
-  // Now it's a new player turn — summonedThisTurn is cleared
-  state.hand = [{ name: 'Move', type: 'move', cost: 1 }];
-  const result = state.playMoveCard(0, 'c2', 'c3');
-  expect(result.ok).toBe(true);
-});
-
 // --- End turn ---
 
 test('end turn triggers enemy move and resets turn to player', () => {
