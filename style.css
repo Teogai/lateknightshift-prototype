@@ -48,7 +48,6 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 .sq.knight-target  { outline: 3px solid #40c0f0; outline-offset: -3px; }
 .sq.legal-dest     { outline: 3px solid #50c050; outline-offset: -3px; }
 .sq.summon-target  { outline: 3px solid #e0a030; outline-offset: -3px; }
-.sq.already-moved .piece-img { opacity: 0.4; }
 .piece-img { width: 46px; height: 46px; display: block; pointer-events: none; }
 .sq.last-move-from { background-color: #b0a020; }
 .sq.last-move-to   { background-color: #ccc030; }
@@ -104,6 +103,22 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 }
 #btn-end-turn:hover:not(:disabled) { background: #2a4a2a; }
 #btn-end-turn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* --- Redraw button --- */
+#btn-redraw {
+  padding: 0.8rem 1.5rem; font-size: 1.05rem; font-weight: bold;
+  background: #1e2a3a; color: #eee;
+  border: 2px solid #4a5a6a; border-radius: 4px; cursor: pointer;
+  transition: all 0.3s ease;
+}
+#btn-redraw:hover:not(:disabled) { background: #2a3a4a; }
+#btn-redraw:disabled { opacity: 0.5; cursor: not-allowed; }
+#btn-redraw.ready {
+  background: #d4a935; color: #111;
+  border-color: #e0b440; font-weight: bold;
+}
+#btn-redraw.ready:hover { background: #e0b440; }
+
 #action-hint { color: #aaa; font-size: 0.85rem; min-height: 1.2em; }
 
 /* --- Map screen --- */

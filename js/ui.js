@@ -229,6 +229,11 @@ export function renderStatus() {
   if (btnRedraw) {
     btnRedraw.disabled = d.turn !== 'player';
     document.getElementById('redraw-countdown').textContent = d.redraw_countdown;
+    if (d.redraw_countdown === 0) {
+      btnRedraw.classList.add('ready');
+    } else {
+      btnRedraw.classList.remove('ready');
+    }
   }
 }
 
