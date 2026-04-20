@@ -3,7 +3,7 @@ import { Chess } from 'chess.js';
 import { selectMove, generateMoves } from '../js/ai.js';
 import { GameState } from '../js/engine.js';
 import { ENEMIES } from '../js/enemies.js';
-const LONE_ROOK    = ENEMIES.lone_rook.personality;
+const IRON_LINE    = ENEMIES.iron_line.personality;
 const KNIGHT_RIDER = ENEMIES.knight_rider.personality;
 const BISHOP_PAIR  = ENEMIES.bishop_pair.personality;
 
@@ -15,8 +15,8 @@ function emptyChess() {
 
 // --- GameState construction ---
 
-test('GameState accepts lone_rook enemy without throwing', () => {
-  expect(() => new GameState('knight', 'lone_rook')).not.toThrow();
+test('GameState accepts iron_line enemy without throwing', () => {
+  expect(() => new GameState('knight', 'iron_line')).not.toThrow();
 });
 
 test('GameState accepts knight_rider enemy without throwing', () => {
@@ -33,8 +33,8 @@ test('GameState rejects unknown enemy', () => {
 
 // --- Board setup ---
 
-test('lone_rook board has king and rook', () => {
-  const gs = new GameState('knight', 'lone_rook');
+test('iron_line board has king and rook', () => {
+  const gs = new GameState('knight', 'iron_line');
   const board = gs.toDict().board;
   const blackPieces = Object.values(board).filter(p => p.color === 'black');
   expect(blackPieces.some(p => p.type === 'king')).toBe(true);
@@ -59,8 +59,8 @@ test('bishop_pair board has king and two bishops', () => {
 
 // --- Personality behaviour ---
 
-// Lone Rook: high material weight — should prefer capturing a queen over any idle move
-test('LONE_ROOK prefers rook capture of queen over idle move', () => {
+// Iron Line: high material+aggression — should prefer capturing a queen over any idle move
+test('IRON_LINE prefers rook capture of queen over idle move', () => {
   const chess = emptyChess();
   // King cornered with limited moves; rook has a clear queen capture
   chess.put({ type: 'k', color: 'b' }, 'h8');
@@ -69,7 +69,7 @@ test('LONE_ROOK prefers rook capture of queen over idle move', () => {
   chess.put({ type: 'q', color: 'w' }, 'e2'); // rook slides e4→e2, capturing the queen (9 pts)
 
   const moves = generateMoves(chess, 'b');
-  const chosen = selectMove(chess, moves, LONE_ROOK, 2);
+  const chosen = selectMove(chess, moves, IRON_LINE, 2);
   expect(chosen.to).toBe('e2');
 });
 
@@ -100,8 +100,8 @@ test('BISHOP_PAIR captures enemy pawn when bishop can reach it', () => {
 
 // --- endTurn uses the correct personality ---
 
-test('GameState endTurn works for lone_rook enemy', () => {
-  const gs = new GameState('knight', 'lone_rook');
+test('GameState endTurn works for iron_line enemy', () => {
+  const gs = new GameState('knight', 'iron_line');
   const result = gs.endTurn();
   expect(result.ok).toBe(true);
 });

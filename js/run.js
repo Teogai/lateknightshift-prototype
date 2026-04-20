@@ -1,4 +1,4 @@
-import { MAP_CONFIG, LIVES } from './config.js';
+import { LIVES } from './config.js';
 import { buildStarterDeck, upgradeCard as _upgradeCard } from './cards.js';
 import { generateNodes } from './map.js';
 
@@ -13,16 +13,14 @@ export class RunState {
     this.currentFloor = 1;
     this.phase = 'map';
     this.currentNodes = [];
-    this.previousFloorTypes = [];
     this.pendingEnemy = null;
     this.pendingNode = null;
     this.advanceToFloor(1);
   }
 
   advanceToFloor(floor) {
-    this.previousFloorTypes = this.currentNodes.map(n => n.type);
     this.currentFloor = floor;
-    this.currentNodes = generateNodes(floor, undefined, this.previousFloorTypes);
+    this.currentNodes = generateNodes(floor);
   }
 
   enterRoom(nodeIndex) {
@@ -69,6 +67,6 @@ export class RunState {
   }
 
   isComplete() {
-    return this.currentFloor > MAP_CONFIG.bossFloor && this.phase === 'complete';
+    return this.currentFloor > 16 && this.phase === 'complete';
   }
 }

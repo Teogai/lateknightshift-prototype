@@ -1,6 +1,6 @@
 import { GameState, knightAttacks, VALID_ENEMIES } from './engine.js';
 import { RunState } from './run.js';
-import { renderMapScreen } from './map.js';
+import { FIXED_PATH } from './map.js';
 import {
   renderCardRewardScreen, renderPieceRewardScreen, renderUpgradeScreen,
   renderTransformScreen, renderTransformResultScreen, renderShopScreen, renderDefeatScreen,
@@ -302,6 +302,8 @@ async function playoutEnemyTurn() {
 }
 
 function pickEnemy(nodeType) {
+  const key = runState?.pendingNode?.enemyKey;
+  if (key) return key;
   if (nodeType === 'elite') return ELITE_ENEMY;
   if (nodeType === 'boss')  return BOSS_ENEMY;
   return REGULAR_ENEMIES[Math.floor(Math.random() * REGULAR_ENEMIES.length)];
@@ -375,7 +377,74 @@ function advanceAfterRoom() {
   runState.advanceToFloor(nextFloor);
   runState.phase = 'map';
   showScreen('screen-map');
-  renderMapScreen(runState, handleNodeChosen);
+  renderPathTrack(runState, handleNodeChosen);
+}
+
+function renderPathTrack(rs, onEnter) {
+  const header = document.getElementById('map-header');
+  const content = document.getElementById('map-content');
+  if (!header || !content) return;
+
+  header.textContent = `Lives: ${rs.lives}`;
+  content.innerHTML = '';
+
+  const track = document.createElement('div');
+  track.className = 'path-track';
+
+  FIXED_PATH.forEach((pathNode, i) => {
+    const floor = i + 1;
+    const isCurrent = floor === rs.currentFloor;
+    const isDone = floor < rs.currentFloor;
+
+    const cell = document.createElement('div');
+    cell.className = 'path-cell';
+
+    const nodeEl = document.createElement('div');
+    nodeEl.className = 'path-node' + (isDone ? ' done' : isCurrent ? ' current' : ' future');
+    nodeEl.dataset.type = pathNode.type;
+
+    const floorNum = document.createElement('span');
+    floorNum.className = 'path-floor-num';
+    floorNum.textContent = floor;
+
+    const icon = document.createElement('span');
+    icon.className = 'path-node-icon';
+    icon.textContent = isDone ? '✓' : pathNode.icon;
+
+    const label = document.createElement('span');
+    label.className = 'path-node-label';
+    label.textContent = pathNode.label;
+
+    nodeEl.appendChild(floorNum);
+    nodeEl.appendChild(icon);
+    nodeEl.appendChild(label);
+    cell.appendChild(nodeEl);
+
+    if (isCurrent) {
+      const enterBtn = document.createElement('button');
+      enterBtn.className = 'path-enter-btn';
+      enterBtn.textContent = 'Enter';
+      enterBtn.addEventListener('click', () => onEnter(0));
+      cell.appendChild(enterBtn);
+    }
+
+    if (i < FIXED_PATH.length - 1) {
+      const connector = document.createElement('div');
+      connector.className = 'path-connector' + (isDone ? ' done' : '');
+      track.appendChild(cell);
+      track.appendChild(connector);
+    } else {
+      track.appendChild(cell);
+    }
+  });
+
+  content.appendChild(track);
+
+  // Scroll current floor into view
+  requestAnimationFrame(() => {
+    const currentCell = track.querySelector('.path-node.current');
+    if (currentCell) currentCell.scrollIntoView({ block: 'nearest', inline: 'center' });
+  });
 }
 
 export function handleNodeChosen(index) {
@@ -599,12 +668,8 @@ export async function handleRedraw() {
 export function handlePromotionChoice(promoLetter) {
   document.getElementById('promotion-modal').classList.add('hidden');
   const item = uiState.pendingPromos.shift();
-  let result;
-  if (item.cardType === 'move') {
-    result = gameState.playMoveCard(item.cardIndex, item.from, item.to, promoLetter);
-  } else {
-    result = gameState.applyPromotion(item.sq, promoLetter);
-  }
+  const sq = item.cardType === 'move' ? item.to : item.sq;
+  const result = gameState.applyPromotion(sq, promoLetter);
   if (result.error) setHint(result.error);
   
   if (uiState.pendingPromos.length === 0) {
@@ -622,7 +687,7 @@ export function startGame(character) {
   try {
     runState = new RunState(character);
     showScreen('screen-map');
-    renderMapScreen(runState, handleNodeChosen);
+    renderPathTrack(runState, handleNodeChosen);
   } catch (e) {
     document.getElementById('select-error').textContent = e.message;
   }

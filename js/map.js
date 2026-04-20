@@ -1,77 +1,36 @@
-import { MAP_CONFIG } from './config.js';
-
 const ROOM_META = {
   monster:  { label: 'Monster',  icon: '⚔' },
   elite:    { label: 'Elite',    icon: '★' },
   event:    { label: 'Event',    icon: '✦' },
   shop:     { label: 'Shop',     icon: '$' },
-  treasure: { label: 'Treasure', icon: '◆' },
   upgrade:  { label: 'Upgrade',  icon: '▲' },
   boss:     { label: 'Boss',     icon: '☠' },
 };
 
-export function getFixedType(floor, config = MAP_CONFIG) {
-  if (floor === 1)                    return 'monster';
-  if (floor === config.treasureFloor) return 'treasure';
-  if (floor === config.upgradeFloor)  return 'upgrade';
-  if (floor === config.bossFloor)     return 'boss';
-  return null;
+function node(type, enemyKey, labelOverride) {
+  const meta = ROOM_META[type];
+  return { type, enemyKey: enemyKey || null, label: labelOverride || meta.label, icon: meta.icon };
 }
 
-function weightedRandom(weights) {
-  let total = 0;
-  for (const v of Object.values(weights)) total += v;
-  let r = Math.random() * total;
-  for (const [k, v] of Object.entries(weights)) {
-    r -= v;
-    if (r < 0) return k;
-  }
-  return Object.keys(weights)[0];
-}
+export const FIXED_PATH = [
+  node('monster', 'pawn_pusher',    'Pawn Pusher'),
+  node('monster', 'knight_rider',   'Knight Rider'),
+  node('event',   null,             'Event'),
+  node('monster', 'bishop_pair',    'Bishop Pair'),
+  node('shop',    null,             'Shop'),
+  node('elite',   'duelist',        'Duelist'),
+  node('upgrade', null,             'Upgrade'),
+  node('monster', 'phalanx',        'Phalanx'),
+  node('monster', 'iron_line',      'Iron Line'),
+  node('monster', 'cavalry_charge', 'Cavalry Charge'),
+  node('event',   null,             'Event'),
+  node('elite',   'duelist_2',      'Duelist II'),
+  node('monster', 'high_command',   'High Command'),
+  node('shop',    null,             'Shop'),
+  node('upgrade', null,             'Upgrade'),
+  node('boss',    'boss_duelist',   'Boss'),
+];
 
-export function rollRoomTypes(floor, count, config = MAP_CONFIG, excludeTypes = []) {
-  const eligibleWeights = { ...config.roomWeights };
-  if (floor < config.eliteMinFloor) delete eligibleWeights.elite;
-  for (const t of excludeTypes) {
-    if (t === 'shop' || t === 'elite') delete eligibleWeights[t];
-  }
-  const types = [];
-  for (let i = 0; i < count; i++) {
-    const filtered = {};
-    for (const [k, v] of Object.entries(eligibleWeights)) {
-      if (!types.includes(k)) filtered[k] = v;
-    }
-    if (!Object.keys(filtered).length) break;
-    types.push(weightedRandom(filtered));
-  }
-  return types;
-}
-
-export function generateNodes(floor, config = MAP_CONFIG, excludeTypes = []) {
-  const fixed = getFixedType(floor, config);
-  if (fixed) {
-    const meta = ROOM_META[fixed];
-    return [{ type: fixed, label: meta.label, icon: meta.icon }];
-  }
-  const count = config.minNodes + Math.floor(Math.random() * (config.maxNodes - config.minNodes + 1));
-  const types = rollRoomTypes(floor, count, config, excludeTypes);
-  return types.map(t => ({ type: t, label: ROOM_META[t].label, icon: ROOM_META[t].icon }));
-}
-
-export function renderMapScreen(runState, onNodeChosen) {
-  const header = document.getElementById('map-header');
-  const content = document.getElementById('map-content');
-  if (!header || !content) return;
-
-  header.textContent = `Floor ${runState.currentFloor} / ${MAP_CONFIG.bossFloor}  |  Lives: ${runState.lives}`;
-
-  content.innerHTML = '';
-  runState.currentNodes.forEach((node, i) => {
-    const btn = document.createElement('button');
-    btn.className = `map-node-btn ${node.type}`;
-    btn.dataset.nodeType = node.type;
-    btn.textContent = `${node.icon}  ${node.label}`;
-    btn.addEventListener('click', () => onNodeChosen(i));
-    content.appendChild(btn);
-  });
+export function generateNodes(floor) {
+  return [FIXED_PATH[floor - 1]];
 }

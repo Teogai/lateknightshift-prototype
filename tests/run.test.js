@@ -1,6 +1,5 @@
 import { test, expect } from 'vitest';
-import { RunState, generateNodes, getFixedType } from '../js/run.js';
-import { MAP_CONFIG } from '../js/config.js';
+import { RunState, generateNodes } from '../js/run.js';
 
 // --- RunState init ---
 test('RunState starts with 3 lives', () => {
@@ -93,46 +92,25 @@ test('enterRoom stores pendingNode', () => {
   expect(r.pendingNode.type).toBe('shop');
 });
 
-// --- generateNodes ---
-test('fixed floor 9 returns 1 treasure node', () => {
+// --- generateNodes (fixed path) ---
+test('every floor returns exactly 1 node', () => {
+  for (let f = 1; f <= 16; f++) {
+    expect(generateNodes(f)).toHaveLength(1);
+  }
+});
+test('floor 9 returns iron_line monster', () => {
   const nodes = generateNodes(9);
-  expect(nodes).toHaveLength(1);
-  expect(nodes[0].type).toBe('treasure');
+  expect(nodes[0]).toMatchObject({ type: 'monster', enemyKey: 'iron_line' });
 });
-test('fixed floor 15 returns 1 upgrade node', () => {
-  const nodes = generateNodes(15);
-  expect(nodes).toHaveLength(1);
-  expect(nodes[0].type).toBe('upgrade');
+test('floor 15 returns upgrade node', () => {
+  expect(generateNodes(15)[0].type).toBe('upgrade');
 });
-test('fixed floor 16 returns 1 boss node', () => {
-  const nodes = generateNodes(16);
-  expect(nodes).toHaveLength(1);
-  expect(nodes[0].type).toBe('boss');
+test('floor 16 returns boss node', () => {
+  expect(generateNodes(16)[0].type).toBe('boss');
 });
-test('random floor returns 1-3 nodes', () => {
-  for (let i = 0; i < 20; i++) {
-    const nodes = generateNodes(3);
-    expect(nodes.length).toBeGreaterThanOrEqual(1);
-    expect(nodes.length).toBeLessThanOrEqual(3);
-  }
+test('floor 6 returns duelist elite', () => {
+  expect(generateNodes(6)[0]).toMatchObject({ type: 'elite', enemyKey: 'duelist' });
 });
-test('random floor has no duplicate types', () => {
-  for (let i = 0; i < 20; i++) {
-    const nodes = generateNodes(3);
-    const types = nodes.map(n => n.type);
-    expect(new Set(types).size).toBe(types.length);
-  }
-});
-test('elite excluded from floors below 6', () => {
-  for (let i = 0; i < 30; i++) {
-    const nodes = generateNodes(3);
-    expect(nodes.every(n => n.type !== 'elite')).toBe(true);
-  }
-});
-test('elite can appear on floor 6+', () => {
-  let found = false;
-  for (let i = 0; i < 200; i++) {
-    if (generateNodes(8).some(n => n.type === 'elite')) { found = true; break; }
-  }
-  expect(found).toBe(true);
+test('floor 12 returns duelist_2 elite', () => {
+  expect(generateNodes(12)[0]).toMatchObject({ type: 'elite', enemyKey: 'duelist_2' });
 });
