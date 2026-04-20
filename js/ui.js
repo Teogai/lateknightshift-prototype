@@ -154,6 +154,12 @@ function cardArtColor(card) {
   return CARD_ART_COLORS[card.type] || '#3a3a3a';
 }
 
+function getCardPiece(card) {
+  if (card.type === 'summon') return card.piece;
+  if (card.type === 'move' && card.moveVariant) return card.moveVariant;
+  return null;
+}
+
 export function makeCardEl(card, { onClick } = {}) {
   const div = document.createElement('div');
   div.className = 'card';
@@ -168,6 +174,14 @@ export function makeCardEl(card, { onClick } = {}) {
   const art = document.createElement('div');
   art.className = 'card-art';
   art.style.background = cardArtColor(card);
+  const piece = getCardPiece(card);
+  if (piece) {
+    const img = document.createElement('img');
+    img.src = PIECES.white[piece];
+    img.className = 'card-piece-img';
+    img.alt = piece;
+    art.appendChild(img);
+  }
   div.appendChild(art);
   const name = document.createElement('div');
   name.className = 'card-name' + (card.upgraded ? ' upgraded' : '');
