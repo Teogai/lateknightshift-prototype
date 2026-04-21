@@ -52,3 +52,4 @@
 - [2026-04-21] done: push charm — after move card resolves, push adjacent pieces 1 square away in all 8 directions; chain push supported; added resolvePush helper in battle_state.js; 333 tests green
 - [2026-04-21] done: atomic charm — piece cards with atomic charm summon atomic pieces; explode on capture (3x3 destruction) when atomic piece captures or is captured; added resolveAtomicExplosion + checkAndResolveAtomic in battle_state.js; enemy turn handles atomic captures; 333 tests green
 - [2026-04-21] done: charm docs — created docs/CHARMS.md; updated docs/CARDS.md, docs/ARCHITECTURE.md; 333 tests green
+- [2026-04-21] done: fix event reward board UI — CHARACTER_PIECES not imported in ui.js caused ReferenceError when placing piece in event room; added import; created event_reward_ui.test.js; switched vitest env to happy-dom; 334 tests green (1 pre-existing perf flake)
