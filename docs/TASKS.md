@@ -37,3 +37,4 @@
 - [2026-04-21] done: fix mobile battle overflow — enemy panel text wrapping, bottom bar flex-wrap, debug bar smaller, board-col min-width 0; 293 tests green
 - [2026-04-21] done: swap deck/discard button positions + fix mobile keyword tooltip dismissal; 294 tests green
 - [2026-04-21] done: center hand cards on mobile; 294 tests green
+- [2026-04-21] done: fix hand scroll clipping — remove overflow-x:hidden from board-col on mobile; 294 tests green
