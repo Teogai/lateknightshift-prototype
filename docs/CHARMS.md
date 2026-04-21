@@ -29,6 +29,14 @@ Charms enhance cards. Obtained from elite battles.
 4. `js/rewards.js` — `renderCharmRewardScreen` + `renderCharmApplyScreen` if UI changes needed
 5. Add tests in `tests/charms.test.js`
 
+## UI Rendering
+- Cards with charms display the charm name as a keyword badge in the description area
+- Charm keyword is appended to card description: e.g. `"Move a piece. {push}"`
+- Keywords registered in `js/ui.js` `KEYWORD_REGISTRY` (color + tooltip)
+- Charm badge element (`<div class="charm-badge">`) renders below description with charm name
+- CSS: `css/cards.css` `.charm-badge` (orange text, top border separator)
+- Files: `js/ui.js:makeCardEl()`, `js/ui.js:KEYWORD_REGISTRY`, `css/cards.css`
+
 ## Implementation Notes
 
 ### Push Charm

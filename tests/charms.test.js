@@ -1,6 +1,7 @@
-import { test, expect } from 'vitest';
+import { test, expect, describe } from 'vitest';
 import { pickCharmChoices, applyCharmToCard } from '../js/rewards.js';
 import { CHARM_CATALOG } from '../js/charms.js';
+import { makeCardEl } from '../js/ui.js';
 
 // --- pickCharmChoices ---
 test('pickCharmChoices returns requested count', () => {
@@ -51,4 +52,46 @@ test('applyCharmToCard allows atomic on piece card', () => {
   const charm = { id: 'atomic', name: 'Atomic', validCardTypes: ['piece'] };
   const result = applyCharmToCard(card, charm);
   expect(result.charm).toEqual(charm);
+});
+
+// --- Charm UI Rendering ---
+describe('makeCardEl charm rendering', () => {
+  test('card with push charm renders charm keyword in description', () => {
+    const card = { name: 'Move', type: 'move', desc: 'Move a piece.', charm: { id: 'push', name: 'Push', validCardTypes: ['move'] } };
+    const el = makeCardEl(card);
+    const descEl = el.querySelector('.card-desc');
+    expect(descEl).not.toBeNull();
+    expect(descEl.textContent).toContain('push');
+  });
+
+  test('card with atomic charm renders charm keyword in description', () => {
+    const card = { name: 'Pawn', type: 'piece', piece: 'pawn', desc: 'Place a pawn.', charm: { id: 'atomic', name: 'Atomic', validCardTypes: ['piece'] } };
+    const el = makeCardEl(card);
+    const descEl = el.querySelector('.card-desc');
+    expect(descEl).not.toBeNull();
+    expect(descEl.textContent).toContain('atomic');
+  });
+
+  test('card with charm renders charm badge', () => {
+    const card = { name: 'Move', type: 'move', desc: 'Move a piece.', charm: { id: 'push', name: 'Push', validCardTypes: ['move'] } };
+    const el = makeCardEl(card);
+    const badge = el.querySelector('.charm-badge');
+    expect(badge).not.toBeNull();
+    expect(badge.textContent).toBe('Push');
+  });
+
+  test('card without charm does not render charm badge', () => {
+    const card = { name: 'Move', type: 'move', desc: 'Move a piece.' };
+    const el = makeCardEl(card);
+    const badge = el.querySelector('.charm-badge');
+    expect(badge).toBeNull();
+  });
+
+  test('card without charm does not add charm keyword to description', () => {
+    const card = { name: 'Move', type: 'move', desc: 'Move a piece.' };
+    const el = makeCardEl(card);
+    const descEl = el.querySelector('.card-desc');
+    expect(descEl.textContent).not.toContain('push');
+    expect(descEl.textContent).not.toContain('atomic');
+  });
 });

@@ -89,6 +89,7 @@
 - Flat bullets, no prose, <200 lines per file
 - Split by concern; link between docs instead of duplicating
 - After non-trivial exploration, record findings in `docs/EXPLORATION.md` (pattern name, files touched, key snippets) so future sessions skip re-exploration
+- **If you have to grep/glob/search to find files related to a feature, the docs are incomplete.** After completing the task, create or update the relevant `docs/<feature>.md` with file paths and key code patterns so future sessions never need to search for it again.
 
 ## Comms
 - If anything is unclear, do not assume — always ask to clarify

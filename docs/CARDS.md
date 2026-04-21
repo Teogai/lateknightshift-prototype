@@ -32,6 +32,12 @@
 - Charms are preserved if valid for the new card type; otherwise lost
 - Implementation: `js/rewards.js` `pickTransformCard()`, `js/ui.js` `handleRoomEntered()`
 
+## Charm Display
+- Cards with charms show charm name as keyword badge appended to description
+- Keyword styling from `js/ui.js` `KEYWORD_REGISTRY` (color + tooltip)
+- Badge rendered via `makeCardEl()` in `js/ui.js`, styled in `css/cards.css`
+- See `docs/CHARMS.md` for full charm system
+
 ## Card data
 - Definitions: `config/cards.js` (id, name, type, rarity, desc, image)
 - Factories: `js/cards2/move_cards.js`

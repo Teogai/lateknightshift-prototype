@@ -48,6 +48,8 @@ const KEYWORD_REGISTRY = {
   frozen:     { color: '#88ccff', desc: 'Frozen: cannot move.' },
   wounded:    { color: '#ff4444', desc: 'Wounded: from damage tiles.' },
   uncapturable: { color: '#aaaaaa', desc: 'Uncapturable: cannot be taken.' },
+  push:       { color: '#ff8844', desc: 'Push: after moving, push all adjacent pieces 1 square away.' },
+  atomic:     { color: '#ff4444', desc: 'Atomic: piece explodes in a 3x3 area on capture.' },
 };
 
 const STATUS_BADGE_COLORS = {
@@ -324,11 +326,21 @@ export function makeCardEl(card, { onClick } = {}) {
   name.className = 'card-name' + (card.upgraded ? ' upgraded' : '');
   name.textContent = card.name;
   div.appendChild(name);
-  if (card.desc) {
+  if (card.desc || card.charm) {
     const descEl = document.createElement('div');
     descEl.className = 'card-desc';
-    _parseCardDesc(card.desc, descEl);
+    let descText = card.desc || '';
+    if (card.charm) {
+      descText = descText ? `${descText} {${card.charm.id}}` : `{${card.charm.id}}`;
+    }
+    _parseCardDesc(descText, descEl);
     div.appendChild(descEl);
+  }
+  if (card.charm) {
+    const badge = document.createElement('div');
+    badge.className = 'charm-badge';
+    badge.textContent = card.charm.name;
+    div.appendChild(badge);
   }
   if (card.type === 'curse') {
     const unplayable = document.createElement('div');
