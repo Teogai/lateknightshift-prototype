@@ -157,7 +157,7 @@ function resolvePush(board, centerSq) {
     if (pushed.has(sq)) continue;
 
     // Try to push this piece
-    const chain = [];
+    const chain = [{ from: sq, piece }];
     let curR = r, curC = c;
     while (true) {
       const nextR = curR + dr, nextC = curC + dc;
