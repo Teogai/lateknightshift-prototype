@@ -302,24 +302,36 @@ export class GameState {
 
     if (!isKingCapture) {
       const actions = generateLegalActions(this._state, 'player');
-      const legalDests = actions.filter(a => a.source === fromSq).map(a => a.targets[0]);
-      if (!legalDests.includes(toSq)) return { error: 'illegal move' };
-    }
+      const action = actions.find(a => a.source === fromSq && a.targets[0] === toSq);
+      if (!action) return { error: 'illegal move' };
 
-    if (isPromo && promotion === null) {
-      // Move piece without promotion (will ask for promotion via modal)
-      set(this._state.board, fromSq, null);
-      set(this._state.board, toSq, piece);
+      if (isPromo && promotion === null) {
+        // Move piece without promotion (will ask for promotion via modal)
+        set(this._state.board, fromSq, null);
+        set(this._state.board, toSq, piece);
+      } else {
+        const promoType = isPromo && promotion ? PIECE_FULL[promotion] || promotion : null;
+        if (promoType) {
+          action.payload = { ...(action.payload || {}), promotion: promoType };
+        }
+        this._state.play(action);
+      }
     } else {
-      const promoType = isPromo && promotion ? PIECE_FULL[promotion] || promotion : null;
-      const action = {
-        kind: 'move',
-        source: fromSq,
-        targets: [toSq],
-        piece,
-        ...(promoType ? { payload: { promotion: promoType } } : {}),
-      };
-      this._state.play(action);
+      // King capture: bypass legality check
+      if (isPromo && promotion === null) {
+        set(this._state.board, fromSq, null);
+        set(this._state.board, toSq, piece);
+      } else {
+        const promoType = isPromo && promotion ? PIECE_FULL[promotion] || promotion : null;
+        const action = {
+          kind: 'move',
+          source: fromSq,
+          targets: [toSq],
+          piece,
+          ...(promoType ? { payload: { promotion: promoType } } : {}),
+        };
+        this._state.play(action);
+      }
     }
 
     const isPawnDoublePush = piece.type === 'pawn' && fromSq[1] === '2' && toSq[1] === '4';
@@ -598,6 +610,7 @@ export class GameState {
 
   _applyEnemyAction(action) {
     if (!action) return;
+    this._state.enPassant = null;
     this.lastMove = { from: action.source, to: action.targets?.[0] ?? null };
     // Handle en passant update
     const piece = get(this._state.board, action.source);
@@ -620,7 +633,6 @@ export class GameState {
     }
 
     const result = this._enemyAI.selectMove(this._state);
-    this._state.enPassant = null;
 
     if (!result) {
       return { pendingMoves: [], warnNext: false };
