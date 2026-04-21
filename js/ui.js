@@ -85,6 +85,7 @@ function _hideTooltip() {
   if (_tooltipEl) _tooltipEl.style.display = 'none';
 }
 
+let _tooltipTarget = null;
 function _parseCardDesc(desc, container) {
   if (!desc) return;
   const regex = /\{(\w+)\}/g;
@@ -101,16 +102,42 @@ function _parseCardDesc(desc, container) {
     span.textContent = key;
     if (info) {
       span.addEventListener('mouseenter', () => {
+        _tooltipTarget = span;
         const rect = span.getBoundingClientRect();
         _showTooltip(info.desc, info.color, rect);
       });
-      span.addEventListener('mouseleave', _hideTooltip);
+      span.addEventListener('mouseleave', () => {
+        _tooltipTarget = null;
+        _hideTooltip();
+      });
+      span.addEventListener('touchstart', (e) => {
+        e.stopPropagation();
+        _tooltipTarget = span;
+        const rect = span.getBoundingClientRect();
+        _showTooltip(info.desc, info.color, rect);
+      }, { passive: true });
     }
     container.appendChild(span);
     lastIdx = regex.lastIndex;
   }
   const after = desc.slice(lastIdx);
   if (after) container.appendChild(document.createTextNode(after));
+}
+
+// Global touch/click listener to dismiss keyword tooltip when tapping outside
+if (typeof document !== 'undefined') {
+  document.addEventListener('touchstart', (e) => {
+    if (_tooltipTarget && !_tooltipTarget.contains(e.target)) {
+      _tooltipTarget = null;
+      _hideTooltip();
+    }
+  }, { passive: true });
+  document.addEventListener('click', (e) => {
+    if (_tooltipTarget && !_tooltipTarget.contains(e.target)) {
+      _tooltipTarget = null;
+      _hideTooltip();
+    }
+  });
 }
 
 const ALL_SCREENS = ['screen-select', 'screen-map', 'screen-game', 'screen-room', 'screen-defeat', 'screen-victory', 'screen-complete'];
