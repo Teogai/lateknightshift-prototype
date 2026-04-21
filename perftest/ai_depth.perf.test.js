@@ -1,8 +1,11 @@
 /**
  * PP — AI depth performance harness
  *
- * 5 reference positions × depth-3 (gated < 1000 ms) + depth-4 (logged only).
- * Log format: [perf] pos=%d depth=%d ms=%d nodes=%d
+ * 5 reference positions × depth-3 + depth-4 with ratio-based gates.
+ * Endgame (pos 3) gate = min(baseline × 2, 20ms for d3 / 100ms for d4).
+ * Other positions gate = (pos_baseline / endgame_baseline) × endgame_gate,
+ * capped at 2000ms (d3) / 4000ms (d4) global max.
+ * Log format: [perf] pos=%d depth=%d ms=%d
  *
  * Positions:
  *   1. Standard opening  — all pieces on starting squares, player turn
@@ -159,7 +162,35 @@ const POS_5 = [
 
 // ─── tests ────────────────────────────────────────────────────────────────────
 
-const GATE_MS = 1000;
+// Baselines measured on this container (Linux, Node.js/Vitest)
+const BASELINES = {
+  3: { d3: 9,   d4: 17 },
+  1: { d3: 227, d4: 921 },
+  2: { d3: 194, d4: 1134 },
+  4: { d3: 198, d4: 1195 },
+  5: { d3: 897, d4: 3826 },
+};
+
+const ENDGAME_ID = 3;
+const ENDGAME_CAP_D3 = 20;   // ms
+const ENDGAME_CAP_D4 = 100;  // ms
+const GLOBAL_CAP_D3 = 2000;  // ms
+const GLOBAL_CAP_D4 = 4000;  // ms
+
+function calcGate(posId, depth) {
+  const key = depth === 3 ? 'd3' : 'd4';
+  const endgameBaseline = BASELINES[ENDGAME_ID][key];
+  const posBaseline = BASELINES[posId][key];
+  const endgameCap = depth === 3 ? ENDGAME_CAP_D3 : ENDGAME_CAP_D4;
+  const globalCap = depth === 3 ? GLOBAL_CAP_D3 : GLOBAL_CAP_D4;
+  const endgameGate = Math.min(endgameBaseline * 2, endgameCap);
+
+  if (posId === ENDGAME_ID) return endgameGate;
+
+  const ratio = posBaseline / endgameBaseline;
+  const gate = ratio * endgameGate;
+  return Math.min(Math.round(gate), globalCap);
+}
 
 const POSITIONS = [
   { id: 1, label: 'standard opening',   placements: POS_1, owner: 'enemy',  castling: { wK: true, wQ: true, bK: true, bQ: true } },
@@ -171,24 +202,26 @@ const POSITIONS = [
 
 describe('AI depth performance', () => {
   for (const pos of POSITIONS) {
-    test(`pos ${pos.id} (${pos.label}) depth-3 < ${GATE_MS} ms`, () => {
+    const gate = calcGate(pos.id, 3);
+    test(`pos ${pos.id} (${pos.label}) depth-3 < ${gate} ms`, () => {
       const state = makeState(pos.placements, { castling: pos.castling });
       const { action, ms } = timedSearch(state, pos.owner, 3);
 
       console.log('[perf] pos=%d depth=%d ms=%d', pos.id, 3, ms);
       expect(action, `pos ${pos.id}: selectAction returned null`).not.toBeNull();
-      expect(ms, `pos ${pos.id}: depth-3 exceeded ${GATE_MS} ms (got ${ms} ms)`).toBeLessThan(GATE_MS);
+      expect(ms, `pos ${pos.id}: depth-3 exceeded ${gate} ms (got ${ms} ms)`).toBeLessThan(gate);
     });
   }
 
-  // Depth-4: run and log, no gate (informational only)
   for (const pos of POSITIONS) {
-    test(`pos ${pos.id} (${pos.label}) depth-4 (log only)`, { timeout: 60_000 }, () => {
+    const gate = calcGate(pos.id, 4);
+    test(`pos ${pos.id} (${pos.label}) depth-4 < ${gate} ms`, { timeout: 60_000 }, () => {
       const state = makeState(pos.placements, { castling: pos.castling });
       const { action, ms } = timedSearch(state, pos.owner, 4);
 
       console.log('[perf] pos=%d depth=%d ms=%d', pos.id, 4, ms);
       expect(action, `pos ${pos.id}: selectAction returned null at depth-4`).not.toBeNull();
+      expect(ms, `pos ${pos.id}: depth-4 exceeded ${gate} ms (got ${ms} ms)`).toBeLessThan(gate);
     });
   }
 });
