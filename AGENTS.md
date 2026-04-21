@@ -8,14 +8,17 @@
 - Load only docs relevant to current task; don't read all
 - Never dump full context into every doc
 
-## TDD loop
+## TDD loop — MANDATORY, NEVER SKIP STEPS
 1. Write failing test in `tests/`
 2. Run test, confirm fails
 3. Write minimal code to pass
 4. Run test, confirm passes
 5. Refactor if needed, tests still green
 6. Update affected `docs/*.md` (bullets only)
-7. Commit
+7. Restart docker stack
+8. Commit
+
+**CRITICAL: Steps 1-8 must be completed IN ORDER. No skipping steps. No shortcuts. If you skip any step, you are violating the workflow.**
 
 ## Commits
 - Lowercase imperative, <50 chars
