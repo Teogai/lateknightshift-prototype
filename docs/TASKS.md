@@ -36,3 +36,4 @@
 - [2026-04-21] done: mobile responsive UI — 768px breakpoint, sidebar→top bar on mobile, board scales with clamp(), hand cards scroll horizontally, all screens responsive, map debug UI moved outside scroll; 294 tests green
 - [2026-04-21] done: fix mobile battle overflow — enemy panel text wrapping, bottom bar flex-wrap, debug bar smaller, board-col min-width 0; 293 tests green
 - [2026-04-21] done: swap deck/discard button positions + fix mobile keyword tooltip dismissal; 294 tests green
+- [2026-04-21] done: center hand cards on mobile; 294 tests green
