@@ -15,8 +15,23 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 /* --- Screens --- */
 .hidden { display: none !important; }
 
+/* Hide title on all screens except character select */
+#screen-map h1,
+#screen-room h1,
+#screen-defeat h1,
+#screen-victory h1,
+#screen-complete h1 {
+  display: none;
+}
+
 /* --- Character select --- */
-#screen-select { max-width: 320px; }
+#screen-select {
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
 #screen-select p { color: #aaa; margin-bottom: 1rem; }
 .char-btn {
   display: block; width: 100%; margin-bottom: 0.5rem;
@@ -29,12 +44,30 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 
 /* --- Game layout --- */
 #screen-game { display: flex; }
-#layout { display: flex; gap: 2rem; align-items: stretch; }
-#sidebar {
-  display: flex; flex-direction: column; gap: 0.75rem;
-  width: var(--sidebar-w); padding-top: 0.25rem; flex-shrink: 0;
+#layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+  width: 100%;
 }
-#board-col { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+#sidebar {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 100%;
+  padding-top: 0;
+}
+#board-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
 #bottom-bar { 
   display: flex; 
   gap: 1rem; 
@@ -258,10 +291,23 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 #action-hint { color: #aaa; font-size: 0.85rem; min-height: 1.2em; }
 
 /* --- Map screen (path track) --- */
-#screen-map { width: calc(100vw - 4rem); max-width: 900px; }
+#screen-map {
+  width: calc(100vw - 4rem);
+  max-width: 900px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
 #map-debug { margin-top: 1rem; }
 #map-header { color: #aaa; font-size: 0.9rem; margin-bottom: 1rem; text-align: center; }
-#map-content { overflow-x: auto; padding-bottom: 0.5rem; }
+#map-content {
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
 
 .path-track {
   display: flex;
@@ -357,7 +403,13 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 .lives-display { color: #e07070; font-weight: bold; }
 
 /* --- Room screen --- */
-#screen-room { max-width: none; }
+#screen-room {
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
 #room-content { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; margin-top: 0.5rem; }
 #room-content h2 { margin: 0; font-size: 1rem; }
 .reward-card-btn {
@@ -414,7 +466,8 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 /* --- Enemy sidebar panel --- */
 .enemy-panel {
   background: #1a1a2a; border: 1px solid #444; border-radius: 6px;
-  padding: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem;
+  padding: 0.75rem; display: flex; flex-direction: row; flex-wrap: wrap;
+  align-items: center; gap: 0.5rem;
 }
 .enemy-panel-name { font-size: 1rem; font-weight: bold; color: #eee; word-break: break-word; overflow-wrap: anywhere; }
 .enemy-type-badge {
@@ -429,7 +482,13 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 .ability-desc { font-size: 0.75rem; color: #aaa; line-height: 1.4; word-break: break-word; overflow-wrap: anywhere; }
 
 /* --- Victory screen --- */
-#screen-victory { max-width: 400px; text-align: center; }
+#screen-victory {
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
 #screen-victory h1 { color: #7fc97f; font-size: 2rem; margin-bottom: 0.5rem; }
 #victory-message { color: #aaa; margin: 0.5rem 0 1.5rem; }
 #btn-victory-continue {
@@ -449,8 +508,14 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 .transform-arrow { font-size: 2rem; color: #7fc97f; }
 
 /* --- Defeat screen --- */
-#screen-defeat { max-width: 480px; }
-#defeat-content { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.5rem; }
+#screen-defeat {
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+#defeat-content { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; margin-top: 0.5rem; }
 #defeat-content button {
   padding: 0.6rem 1rem; font-size: 0.95rem;
   background: #2a1010; color: #eee;
@@ -459,7 +524,13 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 #defeat-content button:hover { border-color: #e05555; }
 
 /* --- Complete screen --- */
-#screen-complete { max-width: 480px; }
+#screen-complete {
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
 #complete-message { color: #aaa; margin-bottom: 1rem; }
 #btn-play-again {
   padding: 0.6rem 1.4rem; font-size: 1rem;
@@ -644,6 +715,10 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
   #screen-map {
     width: 100%;
     padding: 0 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
   }
 
   .path-node {
@@ -678,6 +753,10 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
   #screen-room {
     width: 100%;
     padding: 0 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
   }
 
   .card-choices, .piece-choices {
@@ -712,6 +791,10 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
     width: 100%;
     padding: 0 1rem;
     max-width: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
   }
 
   #screen-victory h1 {
@@ -723,6 +806,10 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
     width: 100%;
     max-width: none;
     padding: 0 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
   }
 
   #screen-select h1 {
