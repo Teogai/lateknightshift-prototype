@@ -67,3 +67,19 @@ Files touched (in order):
 6. `tests/battle_state.test.js` — test play method validation and effects
 
 See `docs/CARDS.md` for the full card type list and rules.
+
+## Incomplete piece type map bugs
+
+Pattern: ad-hoc `{ piece: 'type' }` maps used in UI code for rendering piece images or converting piece names to type codes. Easy to miss `'king'` / `'k'` entries because it's not a reward piece.
+
+Files affected:
+- `js/ui.js` — `typeToName` in `renderSquarePickerForPiece` (missing `'k'`) + `typeMap` in event room handler (missing `'king'`)
+- `js/rewards.js` — `typeMap` in `renderSquarePicker` (missing `'king'`)
+
+Fix: always include all 6 piece types in any piece-name/type map:
+```js
+const typeToName = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' };
+const typeMap    = { pawn: 'p', knight: 'n', bishop: 'b', rook: 'r', queen: 'q', king: 'k' };
+```
+
+Test: `tests/event_reward_ui.test.js` iterates all 6 piece types through both event room (`handleRoomEntered`) and treasure room (`renderPieceRewardScreen`) flows, verifying no throw and board renders.

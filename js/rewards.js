@@ -195,7 +195,7 @@ export function renderPieceRewardScreen(choices, runState, onPlaced) {
 function renderSquarePicker(piece, rarity, runState, onPlaced) {
   const content = document.getElementById('room-content');
   if (!content) return;
-  const typeMap = { pawn: 'p', knight: 'n', bishop: 'b', rook: 'r', queen: 'q' };
+  const typeMap = { pawn: 'p', knight: 'n', bishop: 'b', rook: 'r', queen: 'q', king: 'k' };
   const label = piece.charAt(0).toUpperCase() + piece.slice(1);
   content.innerHTML = `<h2>Place your ${label} — click a rank 1–2 square</h2>`;
 

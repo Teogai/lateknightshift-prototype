@@ -807,7 +807,7 @@ export function handleRoomEntered(node) {
         // Consume the piece card
         runState.removeCard(index);
         // Show square picker for the piece
-        const typeMap = { pawn: 'p', knight: 'n', bishop: 'b', rook: 'r', queen: 'q' };
+        const typeMap = { pawn: 'p', knight: 'n', bishop: 'b', rook: 'r', queen: 'q', king: 'k' };
         const pieceType = typeMap[card.piece] || card.piece;
         renderSquarePickerForPiece(pieceType, advanceAfterRoom);
       }});
@@ -1318,7 +1318,7 @@ export function handleDebugFloor(floor) {
 function renderSquarePickerForPiece(pieceType, onPlaced) {
   const content = document.getElementById('room-content');
   if (!content) return;
-  const typeToName = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen' };
+  const typeToName = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' };
   const fullName = typeToName[pieceType] || pieceType;
   const label = fullName.charAt(0).toUpperCase() + fullName.slice(1);
   content.innerHTML = `<h2>Place your ${label} — click a rank 1–2 square</h2>`;
