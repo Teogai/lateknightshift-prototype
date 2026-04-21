@@ -139,7 +139,6 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 #action-hint { color: #aaa; font-size: 0.85rem; min-height: 1.2em; }
 
 /* --- Floor node type label --- */
-.path-node-type { font-size: 0.65rem; color: #888; display: block; margin-top: 0.1rem; }
 [data-type="elite"] .path-node-type { color: #d4a800; }
 [data-type="boss"]  .path-node-type { color: #e05555; }
 
