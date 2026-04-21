@@ -221,6 +221,8 @@ export class GameState {
       turn: this.turn,
       deck_size: this._state.deck.length,
       discard_size: this._state.discard.length,
+      deck: this._state.deck.map(c => ({ ...c })),
+      discard: this._state.discard.map(c => ({ ...c })),
       moved_this_turn: [...this.movedThisTurn],
       summoned_this_turn: [...this.summonedThisTurn],
       last_move: { from: this.lastMove.from, to: this.lastMove.to },

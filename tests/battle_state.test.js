@@ -89,7 +89,8 @@ test('playSummonCard removes card from game (not discard)', () => {
   const card = d.hand[idx];
   state.playSummonCard(idx, card.piece, 'h2');
   expect(state.toDict().discard_size).toBe(0);
-  expect(state._state.hand).not.toContainEqual(expect.objectContaining({ type: 'summon', piece: card.piece }));
+  expect(state.toDict().discard).toHaveLength(0);
+  expect(state.toDict().hand).not.toContainEqual(expect.objectContaining({ type: 'summon', piece: card.piece }));
 });
 
 test('playSummonCard on occupied square returns error', () => {
@@ -121,6 +122,13 @@ test('toDict includes redraw_countdown', () => {
 test('toDict does not include mana', () => {
   const d = freshGame().toDict();
   expect(d.mana).toBeUndefined();
+});
+
+test('toDict exposes deck and discard arrays', () => {
+  const state = freshGame();
+  const d = state.toDict();
+  expect(Array.isArray(d.deck)).toBe(true);
+  expect(Array.isArray(d.discard)).toBe(true);
 });
 
 test('applyPromotion on non-pawn square returns error', () => {
