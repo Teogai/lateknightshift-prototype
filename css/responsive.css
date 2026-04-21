@@ -69,25 +69,6 @@
     margin: 0 auto;
   }
 
-  #hand-scroll {
-    display: block;
-    width: 100%;
-    overflow-x: auto;
-    padding-bottom: 0.5rem;
-  }
-
-  #hand {
-    flex-wrap: nowrap;
-    justify-content: flex-start;
-    width: 100%;
-  }
-
-  #hand::before,
-  #hand::after {
-    content: '';
-    flex: 1 0 auto;
-  }
-
   .card {
     flex-shrink: 0;
   }
@@ -153,12 +134,12 @@
   }
 
   .path-node {
-    width: 72px;
+    width: 100px;
     padding: 0.5rem 0.25rem 0.4rem;
   }
 
   .path-node-label {
-    font-size: 0.5rem;
+    font-size: 1.1rem;
   }
 
   .path-node-icon {
@@ -166,7 +147,7 @@
   }
 
   .path-floor-num {
-    font-size: 0.55rem;
+    font-size: 0.85rem;
   }
 
   .path-enter-btn {
