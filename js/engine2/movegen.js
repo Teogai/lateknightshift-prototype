@@ -108,12 +108,15 @@ function attacksPseudo(board, fromR, fromC, piece, toR, toC) {
   }
 }
 
-/** True if path between (fromR,fromC) and (toR,toC) is clear (exclusive of endpoints). */
+/** True if path between (fromR,fromC) and (toR,toC) is clear (exclusive of endpoints).
+ *  Ghost pieces do not block sliding paths.
+ */
 function clearPath(board, fromR, fromC, toR, toC) {
   const stepR = Math.sign(toR - fromR), stepC = Math.sign(toC - fromC);
   let r = fromR + stepR, c = fromC + stepC;
   while (r !== toR || c !== toC) {
-    if (board[r][c]) return false;
+    const occupant = board[r][c];
+    if (occupant && !occupant.tags?.has('ghost')) return false;
     r += stepR; c += stepC;
   }
   return true;
@@ -288,9 +291,9 @@ export function generateLegalActions(state, owner) {
       const piece = board[r][c];
       if (!piece || piece.owner !== owner) continue;
 
-      // P5: frozen pieces cannot act (they can still be captured by opponents)
-      if (piece.tags?.has('frozen')) {
-        console.log('[engine2/movegen] skip frozen piece type=%s sq=%s', piece.type, rcToSq(r, c));
+      // P5: frozen/stunned pieces cannot act (they can still be captured by opponents)
+      if (piece.tags?.has('frozen') || piece.tags?.has('stunned')) {
+        console.log('[engine2/movegen] skip frozen/stunned piece type=%s sq=%s', piece.type, rcToSq(r, c));
         continue;
       }
 

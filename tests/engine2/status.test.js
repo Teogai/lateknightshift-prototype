@@ -8,6 +8,9 @@ import { GameState } from '../../js/engine2/state.js';
 import { attachEffect } from '../../js/engine2/effects.js';
 import { generateLegalActions } from '../../js/engine2/movegen.js';
 import { makeShieldEffect } from '../../js/engine2/effect_types/shield.js';
+import { GameState as BattleState } from '../../js/battle_state.js';
+import { unblockCard } from '../../js/cards2/move_cards.js';
+import { set as setSq } from '../../js/engine2/board.js';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -244,5 +247,132 @@ describe('frozen tag', () => {
       log[0]();
       expect(frozen.tags.has('frozen')).toBe(true);
     });
+  });
+});
+
+// ─── stunned tag ──────────────────────────────────────────────────────────────
+
+describe('stunned tag', () => {
+  let state;
+
+  beforeEach(() => {
+    _id = 0;
+    state = new GameState();
+  });
+
+  it('stunned piece generates no legal actions', () => {
+    const stunned = makePiece('rook', 'player', ['stunned']);
+    const enemyKing = makePiece('king', 'enemy');
+    place(state, 'd4', stunned);
+    place(state, 'h8', enemyKing);
+    state.turn = 'player';
+
+    const actions = generateLegalActions(state, 'player');
+    const fromD4 = actions.filter(a => a.source === 'd4');
+    expect(fromD4).toHaveLength(0);
+  });
+
+  it('non-stunned pieces generate actions normally alongside stunned pieces', () => {
+    const stunned = makePiece('rook', 'player', ['stunned']);
+    const normal = makePiece('bishop', 'player');
+    const enemyKing = makePiece('king', 'enemy');
+    place(state, 'd4', stunned);
+    place(state, 'c1', normal);
+    place(state, 'h8', enemyKing);
+    state.turn = 'player';
+
+    const actions = generateLegalActions(state, 'player');
+    const fromD4 = actions.filter(a => a.source === 'd4');
+    const fromC1 = actions.filter(a => a.source === 'c1');
+    expect(fromD4).toHaveLength(0);
+    expect(fromC1.length).toBeGreaterThan(0);
+  });
+
+  it('stunned piece can still be captured by opponent', () => {
+    const stunned = makePiece('rook', 'player', ['stunned']);
+    const enemy = makePiece('rook', 'enemy');
+    const playerKing = makePiece('king', 'player');
+    place(state, 'd4', stunned);
+    place(state, 'd8', enemy);
+    place(state, 'e1', playerKing);
+    state.turn = 'enemy';
+
+    const actions = generateLegalActions(state, 'enemy');
+    const captures = actions.filter(a => a.targets[0] === 'd4');
+    expect(captures.length).toBeGreaterThan(0);
+  });
+});
+
+// ─── ghost tag ────────────────────────────────────────────────────────────────
+
+describe('ghost tag', () => {
+  let state;
+
+  beforeEach(() => {
+    _id = 0;
+    state = new GameState();
+  });
+
+  it('ghost piece does not block sliding moves', () => {
+    const rook = makePiece('rook', 'player');
+    const ghostPawn = makePiece('pawn', 'enemy', ['ghost']);
+    const enemyKing = makePiece('king', 'enemy');
+    place(state, 'a1', rook);
+    place(state, 'a4', ghostPawn);
+    place(state, 'a8', enemyKing);
+    state.turn = 'player';
+
+    const actions = generateLegalActions(state, 'player');
+    const fromA1 = actions.filter(a => a.source === 'a1');
+    const targets = fromA1.map(a => a.targets[0]);
+    expect(targets).toContain('a5');
+    expect(targets).toContain('a6');
+    expect(targets).toContain('a7');
+    expect(targets).toContain('a8');
+  });
+
+  it('ghost piece can still be captured', () => {
+    const rook = makePiece('rook', 'player');
+    const ghostPawn = makePiece('pawn', 'enemy', ['ghost']);
+    place(state, 'a1', rook);
+    place(state, 'a4', ghostPawn);
+    state.turn = 'player';
+
+    const actions = generateLegalActions(state, 'player');
+    const fromA1 = actions.filter(a => a.source === 'a1');
+    const targets = fromA1.map(a => a.targets[0]);
+    expect(targets).toContain('a4');
+  });
+
+  it('unblock card applies ghost tag and ghostTurns=5', () => {
+    const bs = new BattleState('knight', 'pawn_pusher');
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) bs._state.board[r][c] = null;
+    const pawn = makePiece('pawn', 'player');
+    setSq(bs._state.board, 'e4', pawn);
+    bs._state.hand = [unblockCard()];
+    bs._state.deck = [];
+    bs._state.discard = [];
+
+    const result = bs.playUnblockCard(0, 'e4');
+    expect(result.error).toBeUndefined();
+    expect(pawn.tags.has('ghost')).toBe(true);
+    expect(pawn.data.ghostTurns).toBe(5);
+  });
+
+  it('_decayGhostStatuses decrements counter and removes ghost when expired', () => {
+    const bs = new BattleState('knight', 'pawn_pusher');
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) bs._state.board[r][c] = null;
+    const pawn = makePiece('pawn', 'enemy');
+    pawn.tags.add('ghost');
+    pawn.data.ghostTurns = 2;
+    setSq(bs._state.board, 'e4', pawn);
+
+    bs._decayGhostStatuses('enemy');
+    expect(pawn.tags.has('ghost')).toBe(true);
+    expect(pawn.data.ghostTurns).toBe(1);
+
+    bs._decayGhostStatuses('enemy');
+    expect(pawn.tags.has('ghost')).toBe(false);
+    expect(pawn.data.ghostTurns).toBeUndefined();
   });
 });

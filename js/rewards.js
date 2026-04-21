@@ -1,5 +1,5 @@
 import { CARD_CATALOG, curseCard, STARTER_DECKS } from './cards2/move_cards.js';
-import { CARD_RARITY_WEIGHTS, PIECE_RARITY_WEIGHTS, REWARD_CHOICES, PIECE_REWARD_CHOICES } from './config.js';
+import { CARD_RARITY_WEIGHTS, PIECE_RARITY_WEIGHTS, REWARD_CHOICES, PIECE_REWARD_CHOICES } from '../config/game.js';
 import { makeCardEl } from './ui.js';
 import { CHARACTER_PIECES } from './engine2/constants2.js';
 
@@ -26,11 +26,15 @@ function weightedSample(items) {
 }
 
 // Non-starter cards for a given character, grouped by rarity
+function cardKey(c) {
+  return c.type + (c.piece || '') + (c.moveVariant || '');
+}
+
 export function getRewardPool(character) {
-  const starterTypes = new Set((STARTER_DECKS[character] || []).map(c => c.type + (c.piece || '')));
+  const starterTypes = new Set((STARTER_DECKS[character] || []).map(cardKey));
   return CARD_CATALOG.filter(({ card }) => {
     const c = card();
-    return !starterTypes.has(c.type + (c.piece || ''));
+    return !starterTypes.has(cardKey(c));
   });
 }
 
@@ -47,7 +51,7 @@ export function pickCardChoices(count = REWARD_CHOICES, character = null) {
     // Filter pool to unused entries
     const remaining = pool.filter(e => {
       const c = e.card();
-      return !usedTypes.has(c.type + (c.piece || ''));
+      return !usedTypes.has(cardKey(c));
     });
     if (!remaining.length) break;
 
@@ -57,7 +61,7 @@ export function pickCardChoices(count = REWARD_CHOICES, character = null) {
     const candidates = byRarity.length ? byRarity : remaining;
     const entry = candidates[Math.floor(Math.random() * candidates.length)];
     const card = entry.card();
-    usedTypes.add(card.type + (card.piece || ''));
+    usedTypes.add(cardKey(card));
     choices.push({ card, rarity: entry.rarity });
   }
   return choices;
@@ -89,7 +93,7 @@ export function pickPieceChoices(count = PIECE_REWARD_CHOICES) {
 
 // --- Render functions ---
 
-export function renderCardRewardScreen(choices, onChosen) {
+export function renderCardRewardScreen(choices, onChosen, onReroll) {
   const content = document.getElementById('room-content');
   if (!content) return;
   content.innerHTML = '<h2>Choose a card reward</h2>';
@@ -100,6 +104,14 @@ export function renderCardRewardScreen(choices, onChosen) {
     row.appendChild(el);
   });
   content.appendChild(row);
+
+  if (onReroll) {
+    const rerollBtn = document.createElement('button');
+    rerollBtn.textContent = 'Debug: Reroll';
+    rerollBtn.className = 'debug-btn';
+    rerollBtn.addEventListener('click', onReroll);
+    content.appendChild(rerollBtn);
+  }
 }
 
 export function renderPieceRewardScreen(choices, runState, onPlaced) {

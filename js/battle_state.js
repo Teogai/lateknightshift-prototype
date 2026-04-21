@@ -16,9 +16,12 @@ import { PIECE_DEFS } from './engine2/pieces.js';
 import { buildStarterDeck, dealHand } from './cards2/move_cards.js';
 import { ENEMIES, VALID_ENEMIES } from './enemies2.js';
 import { VALID_CHARACTERS, CHARACTER_PIECES, HAND_SIZE, REDRAW_COUNTDOWN_START, VALID_PROMO } from './engine2/constants2.js';
+import { attachEffect } from './engine2/effects.js';
+import { makeShieldEffect } from './engine2/effect_types/shield.js';
 
 export { VALID_ENEMIES } from './enemies2.js';
 export { VALID_CHARACTERS, CHARACTER_PIECES } from './engine2/constants2.js';
+export { rcToSq } from './engine2/board.js';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -30,11 +33,13 @@ function ownerToColor(owner) {
   return owner === 'player' ? 'white' : owner === 'neutral' ? 'neutral' : 'black';
 }
 
+export const PIECE_VALUES = { pawn: 1, knight: 3, bishop: 3, rook: 5, queen: 9, king: 99, duck: 0 };
+
 function colorToOwner(color) {
   return color === 'white' ? 'player' : color === 'neutral' ? 'neutral' : 'enemy';
 }
 
-/** Convert engine2 board to the {sq:{type,color}} dict the UI expects. */
+/** Convert engine2 board to the {sq:{type,color,tags}} dict the UI expects. */
 function boardToDict(board) {
   const result = {};
   for (let r = 0; r < 8; r++) {
@@ -42,7 +47,7 @@ function boardToDict(board) {
       const piece = board[r][c];
       if (piece) {
         const sq = rcToSq(r, c);
-        result[sq] = { type: piece.type, color: ownerToColor(piece.owner) };
+        result[sq] = { type: piece.type, color: ownerToColor(piece.owner), tags: [...piece.tags] };
       }
     }
   }
@@ -458,6 +463,135 @@ export class GameState {
     return { ok: true };
   }
 
+  // ─── status decay ──────────────────────────────────────────────────────────
+
+  _decayGhostStatuses(owner) {
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const piece = this._state.board[r][c];
+        if (!piece || piece.owner !== owner) continue;
+        if (!piece.tags.has('ghost')) continue;
+        const turns = piece.data.ghostTurns ?? 1;
+        if (turns <= 1) {
+          piece.tags.delete('ghost');
+          delete piece.data.ghostTurns;
+        } else {
+          piece.data.ghostTurns = turns - 1;
+        }
+      }
+    }
+  }
+
+  // ─── new card play methods ─────────────────────────────────────────────────
+
+  playSummonDuckCard(cardIndex, toSq) {
+    if (cardIndex < 0 || cardIndex >= this._state.hand.length) return { error: 'invalid card index' };
+    const card = this._state.hand[cardIndex];
+    if (card.type !== 'summon_duck') return { error: 'not a summon_duck card' };
+    if (get(this._state.board, toSq)) return { error: 'square occupied' };
+
+    set(this._state.board, toSq, makePiece('duck', 'neutral'));
+    this._state.hand.splice(cardIndex, 1);
+    this.lastMove = { from: null, to: toSq };
+
+    const winner = checkKingCaptured(this._state.board);
+    if (winner) this.turn = winner;
+
+    return { ok: true };
+  }
+
+  playMoveDuckCard(cardIndex, fromSq, toSq) {
+    if (cardIndex < 0 || cardIndex >= this._state.hand.length) return { error: 'invalid card index' };
+    const card = this._state.hand[cardIndex];
+    if (card.type !== 'move_duck') return { error: 'not a move_duck card' };
+
+    const piece = get(this._state.board, fromSq);
+    if (!piece || piece.type !== 'duck') return { error: 'no duck on that square' };
+    if (get(this._state.board, toSq)) return { error: 'destination occupied' };
+
+    set(this._state.board, fromSq, null);
+    set(this._state.board, toSq, piece);
+
+    this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
+    this.lastMove = { from: fromSq, to: toSq };
+
+    return { ok: true };
+  }
+
+  playStunCard(cardIndex, sq) {
+    if (cardIndex < 0 || cardIndex >= this._state.hand.length) return { error: 'invalid card index' };
+    const card = this._state.hand[cardIndex];
+    if (card.type !== 'stun') return { error: 'not a stun card' };
+
+    const piece = get(this._state.board, sq);
+    if (!piece) return { error: 'no piece on that square' };
+
+    piece.tags.add('stunned');
+    this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
+
+    return { ok: true };
+  }
+
+  playShieldCard(cardIndex, sq) {
+    if (cardIndex < 0 || cardIndex >= this._state.hand.length) return { error: 'invalid card index' };
+    const card = this._state.hand[cardIndex];
+    if (card.type !== 'shield') return { error: 'not a shield card' };
+
+    const piece = get(this._state.board, sq);
+    if (!piece) return { error: 'no piece on that square' };
+
+    piece.tags.add('shielded');
+    const shieldFx = makeShieldEffect(piece.id);
+    attachEffect(this._state, { piece: piece.id }, shieldFx);
+
+    this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
+
+    return { ok: true };
+  }
+
+  playSacrificeCard(cardIndex, fromSq, toSq) {
+    if (cardIndex < 0 || cardIndex >= this._state.hand.length) return { error: 'invalid card index' };
+    const card = this._state.hand[cardIndex];
+    if (card.type !== 'sacrifice') return { error: 'not a sacrifice card' };
+
+    const friendly = get(this._state.board, fromSq);
+    if (!friendly || friendly.owner !== 'player') return { error: 'select a friendly piece to sacrifice' };
+
+    const enemy = get(this._state.board, toSq);
+    if (!enemy || enemy.owner === 'player') return { error: 'select an enemy piece to destroy' };
+
+    const friendlyVal = PIECE_VALUES[friendly.type] ?? 0;
+    const enemyVal = PIECE_VALUES[enemy.type] ?? 0;
+    if (enemyVal >= friendlyVal) return { error: 'target must be weaker than sacrificed piece' };
+
+    set(this._state.board, fromSq, null);
+    set(this._state.board, toSq, null);
+
+    this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
+    this.lastMove = { from: fromSq, to: toSq };
+
+    const winner = checkKingCaptured(this._state.board);
+    if (winner) this.turn = winner;
+
+    return { ok: true };
+  }
+
+  playUnblockCard(cardIndex, sq) {
+    if (cardIndex < 0 || cardIndex >= this._state.hand.length) return { error: 'invalid card index' };
+    const card = this._state.hand[cardIndex];
+    if (card.type !== 'unblock') return { error: 'not an unblock card' };
+
+    const piece = get(this._state.board, sq);
+    if (!piece) return { error: 'no piece on that square' };
+
+    piece.tags.add('ghost');
+    piece.data.ghostTurns = 5;
+
+    this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
+
+    return { ok: true };
+  }
+
   // ─── enemy turn ────────────────────────────────────────────────────────────
 
   _applyEnemyAction(action) {
@@ -477,6 +611,7 @@ export class GameState {
     this.turn = 'enemy';
     this.summonedThisTurn.clear();
     this.movedThisTurn.clear();
+    this._decayGhostStatuses('enemy');
 
     if (!this._enemyAI) {
       return { pendingMoves: [], warnNext: false };
@@ -568,6 +703,7 @@ export class GameState {
     if (this.turn !== 'player_won' && this.turn !== 'enemy_won') {
       this.turn = 'player';
       this.redrawCountdown = Math.max(0, this.redrawCountdown - 1);
+      this._decayGhostStatuses('player');
     }
 
     return { ok: true };

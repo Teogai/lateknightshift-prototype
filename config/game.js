@@ -1,3 +1,9 @@
+/**
+ * config/game.js
+ * Global game settings and rarity weights.
+ * Pure data — no logic, no imports from js/.
+ */
+
 export const MAP_CONFIG = {
   totalFloors: 16,
   treasureFloor: 9,
@@ -21,3 +27,7 @@ export const PIECE_RARITY_WEIGHTS = {
 export const LIVES = 1;
 export const REWARD_CHOICES = 3;
 export const PIECE_REWARD_CHOICES = 3;
+
+export const HAND_SIZE = 6;
+export const REDRAW_COUNTDOWN_START = 4;
+export const VALID_PROMO = new Set(['q', 'r', 'b', 'n']);

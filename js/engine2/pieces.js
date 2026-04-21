@@ -57,9 +57,12 @@ function slideMoves(board, fromR, fromC, dr, dc, owner) {
       if (occupant.owner !== owner && !occupant.tags?.has('uncapturable')) {
         moves.push({ sq, capture: occupant }); // capture
       }
-      break; // blocked regardless
+      // Ghost pieces do not block sliding moves
+      if (!occupant.tags?.has('ghost')) break;
+      // Continue past ghost
+    } else {
+      moves.push({ sq });
     }
-    moves.push({ sq });
     r += dr; c += dc;
   }
   return moves;

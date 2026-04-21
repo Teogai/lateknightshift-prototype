@@ -2,40 +2,66 @@
  * cards2/move_cards.js
  * Card factories for move/summon/curse cards (engine2 compatible).
  * Also exports CARD_CATALOG, STARTER_DECKS, buildStarterDeck, dealHand.
+ *
+ * Card data is imported from config/cards.js; this file wires factory functions.
  */
 
-export function moveCard(cost = 1) {
-  return { name: 'Move', type: 'move', cost };
+import { CARD_DEFS, CARD_FACTORY_KEYS, STARTER_DECK_DEFS } from '../../config/cards.js';
+
+export function moveCard() {
+  return { name: 'Move', type: 'move' };
 }
 
-export function summonCard(piece, cost) {
-  const defaultCosts = { pawn: 2, knight: 3, bishop: 3, rook: 3, queen: 3 };
-  const c = cost !== undefined ? cost : (defaultCosts[piece] ?? 2);
-  return { name: `Summon ${piece.charAt(0).toUpperCase() + piece.slice(1)}`, type: 'summon', piece, cost: c };
+export function summonCard(piece) {
+  return { name: `Summon ${piece.charAt(0).toUpperCase() + piece.slice(1)}`, type: 'summon', piece };
 }
 
 export function knightMoveCard() {
-  return { name: 'Knight Move', type: 'move', moveVariant: 'knight', cost: 2 };
+  return { name: 'Knight Move', type: 'move', moveVariant: 'knight' };
 }
 
 export function bishopMoveCard() {
-  return { name: 'Bishop Move', type: 'move', moveVariant: 'bishop', cost: 2 };
+  return { name: 'Bishop Move', type: 'move', moveVariant: 'bishop' };
 }
 
 export function rookMoveCard() {
-  return { name: 'Rook Move', type: 'move', moveVariant: 'rook', cost: 3 };
+  return { name: 'Rook Move', type: 'move', moveVariant: 'rook' };
 }
 
 export function queenMoveCard() {
-  return { name: 'Queen Move', type: 'move', moveVariant: 'queen', cost: 3 };
+  return { name: 'Queen Move', type: 'move', moveVariant: 'queen' };
 }
 
 export function pawnBoostCard() {
-  return { name: 'Pawn Boost', type: 'move', moveVariant: 'pawn_boost', cost: 1 };
+  return { name: 'Pawn Boost', type: 'move', moveVariant: 'pawn_boost' };
 }
 
 export function curseCard() {
-  return { name: 'Curse', type: 'curse', cost: 0, unplayable: true };
+  return { name: 'Curse', type: 'curse', unplayable: true };
+}
+
+export function summonDuckCard() {
+  return { name: 'Summon Duck', type: 'summon_duck' };
+}
+
+export function moveDuckCard() {
+  return { name: 'Move Duck', type: 'move_duck' };
+}
+
+export function stunCard() {
+  return { name: 'Stun', type: 'stun' };
+}
+
+export function shieldCard() {
+  return { name: 'Shield', type: 'shield' };
+}
+
+export function sacrificeCard() {
+  return { name: 'Sacrifice', type: 'sacrifice' };
+}
+
+export function unblockCard() {
+  return { name: 'Unblock', type: 'unblock' };
 }
 
 // Returns upgraded copy of a card (never mutates original)
@@ -43,39 +69,74 @@ export function upgradeCard(card) {
   const c = { ...card };
   if (c.type === 'move' && !c.moveVariant) {
     c.multiMove = true; // upgraded Move: move 2 pieces
-  } else if (c.type === 'summon' && c.piece === 'pawn') {
-    c.cost = 1;
-  } else if (c.type === 'move' && c.moveVariant === 'pawn_boost') {
-    c.cost = Math.max(1, c.cost - 1);
-  } else if (c.type === 'move' || c.type === 'summon') {
-    c.cost = Math.max(1, c.cost - 1);
   }
   c.upgraded = true;
   return c;
 }
 
-export const CARD_CATALOG = [
-  { card: moveCard,                   rarity: 'common' },
-  { card: () => summonCard('pawn'),   rarity: 'common' },
-  { card: () => summonCard('knight'), rarity: 'common' },
-  { card: () => summonCard('bishop'), rarity: 'common' },
-  { card: knightMoveCard,             rarity: 'common' },
-  { card: bishopMoveCard,             rarity: 'common' },
-  { card: pawnBoostCard,              rarity: 'common' },
-  { card: () => summonCard('rook'),   rarity: 'uncommon' },
-  { card: rookMoveCard,               rarity: 'uncommon' },
-  { card: () => summonCard('queen'),  rarity: 'rare' },
-  { card: queenMoveCard,              rarity: 'rare' },
-];
+// ─── factory wiring ───────────────────────────────────────────────────────────
 
-export const STARTER_DECKS = {
-  knight: [
-    moveCard(1), moveCard(1), moveCard(1), moveCard(1), moveCard(1),
-    moveCard(1), moveCard(1),
-    summonCard('pawn'), summonCard('pawn'),
-    knightMoveCard(),
-  ],
+const _factories = {
+  moveCard,
+  summonCard,
+  knightMoveCard,
+  bishopMoveCard,
+  rookMoveCard,
+  queenMoveCard,
+  pawnBoostCard,
+  summonDuckCard,
+  moveDuckCard,
+  stunCard,
+  shieldCard,
+  sacrificeCard,
+  unblockCard,
 };
+
+function makeCardInstance(def) {
+  const key = CARD_FACTORY_KEYS[def.id];
+  const factory = _factories[key];
+  let card;
+  if (def.type === 'summon') {
+    card = factory(def.piece);
+  } else {
+    card = factory();
+  }
+  if (def.image) card.image = def.image;
+  if (def.desc) card.desc = def.desc;
+  return card;
+}
+
+export const CARD_CATALOG = CARD_DEFS.map(def => {
+  const key = CARD_FACTORY_KEYS[def.id];
+  const factory = _factories[key];
+  let cardFn;
+  if (def.type === 'summon') {
+    cardFn = () => factory(def.piece);
+  } else {
+    cardFn = factory;
+  }
+  return {
+    card: () => {
+      const c = cardFn();
+      if (def.image) c.image = def.image;
+      if (def.desc) c.desc = def.desc;
+      return c;
+    },
+    rarity: def.rarity,
+  };
+});
+
+export const STARTER_DECKS = {};
+for (const [character, entries] of Object.entries(STARTER_DECK_DEFS)) {
+  STARTER_DECKS[character] = entries.flatMap(entry => {
+    const def = CARD_DEFS.find(c => c.id === entry.id);
+    const cards = [];
+    for (let i = 0; i < entry.count; i++) {
+      cards.push(makeCardInstance(def));
+    }
+    return cards;
+  });
+}
 
 export function buildStarterDeck(character) {
   const template = STARTER_DECKS[character];

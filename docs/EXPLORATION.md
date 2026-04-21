@@ -48,3 +48,22 @@ function makeStateWithHand(card, placements) {
 ```
 
 Note: `battle_state.js` `toDict()` returns `{ board, hand, turn, ... }` where `board[sq]` has `{ type, color: 'white'|'black' }` (not `owner`). Tests should import `makePiece`/`set` from engine2 directly for board manipulation.
+
+## Add a new card (any type)
+
+Pattern: adding a completely new card type (e.g. stun, shield, a new summon).
+
+Rules to know first (see `docs/CARDS.md`):
+- No mana / no cost on any card
+- Summon cards (type `summon` or `summon_duck`) must disappear after use (removed from game, not discarded)
+- All other cards go to discard after use
+
+Files touched (in order):
+1. `config/cards.js` — add entry to `CARD_DEFS` with id, name, type, rarity, desc, image
+2. `js/cards2/move_cards.js` — add factory function, wire in `CARD_FACTORY_KEYS`, add to `CARD_CATALOG` builder
+3. `js/battle_state.js` — add `playXxxCard(cardIndex, ...)` method
+4. `js/ui.js` — add `handleCardClick` hint branch + `handleSquareClick` phase handlers + render highlights
+5. `tests/cards2/move_cards.test.js` — test card shape + catalog entry
+6. `tests/battle_state.test.js` — test play method validation and effects
+
+See `docs/CARDS.md` for the full card type list and rules.

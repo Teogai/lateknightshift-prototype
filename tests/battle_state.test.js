@@ -1,8 +1,8 @@
 import { describe, test, expect } from 'vitest';
 import { GameState, knightAttacks } from '../js/battle_state.js';
-import { pawnBoostCard } from '../js/cards2/move_cards.js';
+import { pawnBoostCard, summonDuckCard, moveDuckCard, stunCard, shieldCard, sacrificeCard, unblockCard } from '../js/cards2/move_cards.js';
 import { makePiece } from '../js/engine2/pieces.js';
-import { set } from '../js/engine2/board.js';
+import { get, set } from '../js/engine2/board.js';
 
 function freshGame(character = 'knight', enemy = 'pawn_pusher') {
   return new GameState(character, enemy);
@@ -79,6 +79,17 @@ test('playSummonCard places a piece on the board', () => {
   const result = state.playSummonCard(idx, card.piece, 'h2');
   expect(result.error).toBeUndefined();
   expect(state.toDict().board['h2']).toBeDefined();
+});
+
+test('playSummonCard removes card from game (not discard)', () => {
+  const state = freshGame();
+  const d = state.toDict();
+  const idx = d.hand.findIndex(c => c.type === 'summon');
+  if (idx === -1) return;
+  const card = d.hand[idx];
+  state.playSummonCard(idx, card.piece, 'h2');
+  expect(state.toDict().discard_size).toBe(0);
+  expect(state._state.hand).not.toContainEqual(expect.objectContaining({ type: 'summon', piece: card.piece }));
 });
 
 test('playSummonCard on occupied square returns error', () => {
@@ -296,5 +307,140 @@ describe('pawn boost', () => {
     const result = state.playPawnBoostCard(0, 'a7', 'a8');
     expect(result.error).toBeUndefined();
     expect(result.needs_promotion).toEqual(['a8']);
+  });
+});
+
+describe('new card play methods', () => {
+  function makeStateWithCards(cards, placements) {
+    const state = new GameState('knight', 'pawn_pusher');
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) state._state.board[r][c] = null;
+    for (const { sq, type, owner } of placements) {
+      set(state._state.board, sq, makePiece(type, owner));
+    }
+    state._state.hand = cards;
+    state._state.deck = [];
+    state._state.discard = [];
+    return state;
+  }
+
+  test('playSummonDuckCard places duck on empty square', () => {
+    const state = makeStateWithCards([summonDuckCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+    ]);
+    const result = state.playSummonDuckCard(0, 'd4');
+    expect(result.error).toBeUndefined();
+    const board = state.toDict().board;
+    expect(board['d4']).toBeDefined();
+    expect(board['d4'].type).toBe('duck');
+    expect(board['d4'].color).toBe('neutral');
+  });
+
+  test('playSummonDuckCard removes card from game (not discard)', () => {
+    const state = makeStateWithCards([summonDuckCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+    ]);
+    state.playSummonDuckCard(0, 'd4');
+    expect(state.toDict().discard_size).toBe(0);
+    expect(state._state.hand).toHaveLength(0);
+  });
+
+  test('playSummonDuckCard fails on occupied square', () => {
+    const state = makeStateWithCards([summonDuckCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+    ]);
+    const result = state.playSummonDuckCard(0, 'e1');
+    expect(result.error).toBeDefined();
+  });
+
+  test('playMoveDuckCard moves duck from one square to another', () => {
+    const state = makeStateWithCards([moveDuckCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'd4', type: 'duck', owner: 'neutral' },
+    ]);
+    const result = state.playMoveDuckCard(0, 'd4', 'f5');
+    expect(result.error).toBeUndefined();
+    const board = state.toDict().board;
+    expect(board['d4']).toBeUndefined();
+    expect(board['f5']).toBeDefined();
+    expect(board['f5'].type).toBe('duck');
+  });
+
+  test('playMoveDuckCard fails if no duck at source', () => {
+    const state = makeStateWithCards([moveDuckCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+    ]);
+    const result = state.playMoveDuckCard(0, 'd4', 'f5');
+    expect(result.error).toBeDefined();
+  });
+
+  test('playStunCard adds stunned tag', () => {
+    const state = makeStateWithCards([stunCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'd4', type: 'rook', owner: 'enemy' },
+    ]);
+    const result = state.playStunCard(0, 'd4');
+    expect(result.error).toBeUndefined();
+    expect(get(state._state.board, 'd4').tags.has('stunned')).toBe(true);
+  });
+
+  test('playShieldCard adds shielded tag and attaches effect', () => {
+    const state = makeStateWithCards([shieldCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'd4', type: 'rook', owner: 'player' },
+    ]);
+    const result = state.playShieldCard(0, 'd4');
+    expect(result.error).toBeUndefined();
+    const piece = get(state._state.board, 'd4');
+    expect(piece.tags.has('shielded')).toBe(true);
+    expect(state._state._effects).toBeDefined();
+    expect(state._state._effects.pieces.has(piece.id)).toBe(true);
+  });
+
+  test('playSacrificeCard destroys friendly and weaker enemy', () => {
+    const state = makeStateWithCards([sacrificeCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'd4', type: 'rook', owner: 'player' },
+      { sq: 'd5', type: 'pawn', owner: 'enemy' },
+    ]);
+    const result = state.playSacrificeCard(0, 'd4', 'd5');
+    expect(result.error).toBeUndefined();
+    const board = state.toDict().board;
+    expect(board['d4']).toBeUndefined();
+    expect(board['d5']).toBeUndefined();
+  });
+
+  test('playSacrificeCard fails if enemy is stronger or equal', () => {
+    const state = makeStateWithCards([sacrificeCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'd4', type: 'pawn', owner: 'player' },
+      { sq: 'd5', type: 'rook', owner: 'enemy' },
+    ]);
+    const result = state.playSacrificeCard(0, 'd4', 'd5');
+    expect(result.error).toBeDefined();
+    const board = state.toDict().board;
+    expect(board['d4']).toBeDefined();
+    expect(board['d5']).toBeDefined();
+  });
+
+  test('playUnblockCard adds ghost tag and sets ghostTurns', () => {
+    const state = makeStateWithCards([unblockCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'd4', type: 'rook', owner: 'player' },
+    ]);
+    const result = state.playUnblockCard(0, 'd4');
+    expect(result.error).toBeUndefined();
+    const piece = get(state._state.board, 'd4');
+    expect(piece.tags.has('ghost')).toBe(true);
+    expect(piece.data.ghostTurns).toBe(5);
   });
 });

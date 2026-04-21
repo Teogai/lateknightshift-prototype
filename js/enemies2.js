@@ -8,6 +8,7 @@
  */
 
 import { selectAction } from './ai2/search.js';
+import { ENEMIES, VALID_ENEMIES, REGULAR_ENEMIES, ELITE_ENEMY, ELITE_2_ENEMY, BOSS_ENEMY } from '../config/enemies.js';
 
 // ─── AI factories ─────────────────────────────────────────────────────────────
 
@@ -51,201 +52,17 @@ function doubleMoveAI(personality) {
   };
 }
 
-// ─── enemy definitions ────────────────────────────────────────────────────────
+// Re-export enemy data for backward compatibility
+export { ENEMIES, VALID_ENEMIES, REGULAR_ENEMIES, ELITE_ENEMY, ELITE_2_ENEMY, BOSS_ENEMY } from '../config/enemies.js';
 
-export const ENEMIES = {
-  pawn_pusher: {
-    name: 'Pawn Pusher',
-    specialAbility: { name: 'Pawn Rush', description: 'Aggressively advances pawns toward promotion.' },
-    pieces: [
-      { type: 'king', owner: 'enemy', sq: 'e8' },
-      { type: 'pawn', owner: 'enemy', sq: 'a7' },
-      { type: 'pawn', owner: 'enemy', sq: 'c7' },
-      { type: 'pawn', owner: 'enemy', sq: 'd7' },
-      { type: 'pawn', owner: 'enemy', sq: 'e7' },
-      { type: 'pawn', owner: 'enemy', sq: 'g7' },
-    ],
-    personality: { material: 1.0, pawn_advance: 2.0, king_safety: 0.8, mobility: 0.1, aggression: 0.5 },
-    createAI() { return defaultAI(this.personality); },
-  },
-  knight_rider: {
-    name: 'Knight Rider',
-    specialAbility: { name: 'Horse Power', description: 'Leverages knight mobility for rapid flanking attacks.' },
-    pieces: [
-      { type: 'king',   owner: 'enemy', sq: 'e8' },
-      { type: 'knight', owner: 'enemy', sq: 'b8' },
-      { type: 'knight', owner: 'enemy', sq: 'g8' },
-      { type: 'pawn',   owner: 'enemy', sq: 'b7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'e7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'g7' },
-    ],
-    personality: { material: 1.0, king_safety: 0.6, mobility: 2.0, pawn_advance: 0.2, aggression: 1.2 },
-    createAI() { return defaultAI(this.personality); },
-  },
-  bishop_pair: {
-    name: 'Bishop Pair',
-    specialAbility: { name: 'Diagonal Control', description: 'Coordinates two bishops to dominate open diagonals.' },
-    pieces: [
-      { type: 'king',   owner: 'enemy', sq: 'e8' },
-      { type: 'bishop', owner: 'enemy', sq: 'c8' },
-      { type: 'bishop', owner: 'enemy', sq: 'f8' },
-      { type: 'pawn',   owner: 'enemy', sq: 'e7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'c7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'f7' },
-    ],
-    personality: { material: 1.2, king_safety: 0.9, mobility: 1.5, aggression: 1.0 },
-    createAI() { return defaultAI(this.personality); },
-  },
-  phalanx: {
-    name: 'Phalanx',
-    specialAbility: { name: 'Wall Formation', description: 'Advances a fortified king flanked by protecting knights.' },
-    pieces: [
-      { type: 'king',   owner: 'enemy', sq: 'e7' },
-      { type: 'bishop', owner: 'enemy', sq: 'd7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'c7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'f7' },
-      { type: 'knight', owner: 'enemy', sq: 'c6' },
-      { type: 'knight', owner: 'enemy', sq: 'f6' },
-      { type: 'pawn',   owner: 'enemy', sq: 'd6' },
-      { type: 'pawn',   owner: 'enemy', sq: 'e6' },
-    ],
-    personality: { material: 1.0, king_safety: 0.5, mobility: 1.5, aggression: 1.2 },
-    createAI() { return defaultAI(this.personality); },
-  },
-  iron_line: {
-    name: 'Iron Line',
-    specialAbility: { name: 'Iron Defense', description: 'Holds a heavy defensive line anchored by rook and bishop.' },
-    pieces: [
-      { type: 'king',   owner: 'enemy', sq: 'e8' },
-      { type: 'rook',   owner: 'enemy', sq: 'a8' },
-      { type: 'bishop', owner: 'enemy', sq: 'f8' },
-      { type: 'pawn',   owner: 'enemy', sq: 'a7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'b7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'd7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'e7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'f7' },
-      { type: 'knight', owner: 'enemy', sq: 'c6' },
-      { type: 'pawn',   owner: 'enemy', sq: 'c5' },
-    ],
-    personality: { material: 1.5, king_safety: 1.0, mobility: 1.0, aggression: 1.5 },
-    createAI() { return defaultAI(this.personality); },
-  },
-  cavalry_charge: {
-    name: 'Cavalry Charge',
-    specialAbility: { name: 'Four Horsemen', description: 'Deploys four knights in a sweeping cavalry rush.' },
-    pieces: [
-      { type: 'king',   owner: 'enemy', sq: 'e8' },
-      { type: 'knight', owner: 'enemy', sq: 'b8' },
-      { type: 'knight', owner: 'enemy', sq: 'c8' },
-      { type: 'knight', owner: 'enemy', sq: 'f8' },
-      { type: 'knight', owner: 'enemy', sq: 'g8' },
-      { type: 'pawn',   owner: 'enemy', sq: 'a7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'b7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'c7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'd7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'e7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'f7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'g7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'h7' },
-      { type: 'duck',   owner: 'neutral', sq: 'd4' },
-      { type: 'duck',   owner: 'neutral', sq: 'e4' },
-      { type: 'duck',   owner: 'neutral', sq: 'd5' },
-      { type: 'duck',   owner: 'neutral', sq: 'e5' },
-    ],
-    personality: { material: 1.0, king_safety: 0.5, mobility: 2.5, aggression: 1.5 },
-    createAI() { return defaultAI(this.personality); },
-  },
-  high_command: {
-    name: 'High Command',
-    specialAbility: { name: 'Siege Tactics', description: 'Commands a mixed heavy army with relentless pressure.' },
-    pieces: [
-      { type: 'king',   owner: 'enemy', sq: 'g8' },
-      { type: 'bishop', owner: 'enemy', sq: 'c8' },
-      { type: 'rook',   owner: 'enemy', sq: 'f8' },
-      { type: 'pawn',   owner: 'enemy', sq: 'a7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'b7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'c7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'f7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'g7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'h7' },
-      { type: 'knight', owner: 'enemy', sq: 'c6' },
-      { type: 'knight', owner: 'enemy', sq: 'f6' },
-      { type: 'pawn',   owner: 'enemy', sq: 'e6' },
-      { type: 'pawn',   owner: 'enemy', sq: 'd5' },
-    ],
-    personality: { material: 1.3, king_safety: 0.8, mobility: 1.2, aggression: 1.4 },
-    createAI() { return defaultAI(this.personality); },
-  },
-  duelist: {
-    name: 'Duelist',
-    specialAbility: { name: 'Double Strike', description: 'Every other turn, takes two moves instead of one.' },
-    pieces: [
-      { type: 'bishop', owner: 'enemy', sq: 'c8' },
-      { type: 'knight', owner: 'enemy', sq: 'd8' },
-      { type: 'king',   owner: 'enemy', sq: 'e8' },
-      { type: 'bishop', owner: 'enemy', sq: 'f8' },
-      { type: 'pawn',   owner: 'enemy', sq: 'c7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'd7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'e7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'f7' },
-    ],
-    personality: { material: 1.2, king_safety: 0.8, mobility: 1.5, aggression: 1.2 },
-    createAI() { return doubleMoveAI(this.personality); },
-  },
-  duelist_2: {
-    name: 'Duelist II',
-    specialAbility: { name: 'Double Strike+', description: 'Double-move threat backed by rook and queen firepower.' },
-    pieces: [
-      { type: 'rook',   owner: 'enemy', sq: 'a8' },
-      { type: 'queen',  owner: 'enemy', sq: 'b8' },
-      { type: 'bishop', owner: 'enemy', sq: 'c8' },
-      { type: 'knight', owner: 'enemy', sq: 'd8' },
-      { type: 'king',   owner: 'enemy', sq: 'e8' },
-      { type: 'bishop', owner: 'enemy', sq: 'f8' },
-      { type: 'pawn',   owner: 'enemy', sq: 'a7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'c7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'd7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'e7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'f7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'g7' },
-    ],
-    personality: { material: 1.5, king_safety: 1.0, mobility: 1.5, aggression: 1.5 },
-    createAI() { return doubleMoveAI(this.personality); },
-  },
-  boss_duelist: {
-    name: 'Boss Duelist',
-    specialAbility: { name: 'Grand Finale', description: 'Commands the full chess army with relentless double moves.' },
-    pieces: [
-      { type: 'rook',   owner: 'enemy', sq: 'a8' },
-      { type: 'knight', owner: 'enemy', sq: 'b8' },
-      { type: 'bishop', owner: 'enemy', sq: 'c8' },
-      { type: 'queen',  owner: 'enemy', sq: 'd8' },
-      { type: 'king',   owner: 'enemy', sq: 'e8' },
-      { type: 'bishop', owner: 'enemy', sq: 'f8' },
-      { type: 'knight', owner: 'enemy', sq: 'g8' },
-      { type: 'rook',   owner: 'enemy', sq: 'h8' },
-      { type: 'pawn',   owner: 'enemy', sq: 'a7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'b7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'c7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'd7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'e7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'f7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'g7' },
-      { type: 'pawn',   owner: 'enemy', sq: 'h7' },
-    ],
-    personality: { material: 1.5, king_safety: 1.2, mobility: 1.0, pawn_advance: 0.8, aggression: 1.5 },
-    createAI() { return doubleMoveAI(this.personality); },
-  },
-};
-
-export const VALID_ENEMIES = new Set(Object.keys(ENEMIES));
-
-// Regular enemies pool
-export const REGULAR_ENEMIES = ['pawn_pusher', 'knight_rider', 'bishop_pair'];
-// Elite enemies
-export const ELITE_ENEMY = 'duelist';
-export const ELITE_2_ENEMY = 'duelist_2';
-// Boss enemy
-export const BOSS_ENEMY = 'boss_duelist';
+// Attach createAI to each enemy definition at runtime so existing code keeps working
+for (const key of Object.keys(ENEMIES)) {
+  const def = ENEMIES[key];
+  if (def.aiType === 'doubleMove') {
+    def.createAI = function() { return doubleMoveAI(this.personality); };
+  } else {
+    def.createAI = function() { return defaultAI(this.personality); };
+  }
+}
 
 console.log('[enemies2] loaded enemies=%d', Object.keys(ENEMIES).length);

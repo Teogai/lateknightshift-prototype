@@ -1,20 +1,39 @@
 # CARDS
 
-- See `GAME_DESIGN.md` for card rules
-- Format per card: `- <name> | cost <n> | type <move/summon/signature> | effect: <one-liner>`
+## Rules
+- No mana; all cards are free to play
+- Playing a card auto-ends the player turn (enemy moves immediately)
+- Hand persists between turns (unused cards stay; no auto-discard)
+- Player cannot pass; must play a card or use Redraw
+- Summon cards disappear after use (removed from game, not discarded)
+- Other cards go to discard after use
+- Hand size and redraw countdown: see `config/game.js`
 
-## Implemented
+## Card types
 
-- Move | cost 1 | type move | effect: move any friendly piece to a legal square (each piece once per turn)
-- Summon Pawn | cost 2 | type summon | effect: place pawn on ranks 1–2 (cannot move same turn)
-- Summon Knight | cost 3 | type summon | effect: place knight on ranks 1–2 (cannot move same turn)
-- Summon Bishop | cost 3 | type summon | effect: place bishop on ranks 1–2 (cannot move same turn)
-- Summon Rook | cost 3 | type summon | effect: place rook on ranks 1–2 (cannot move same turn)
-- Summon Queen | cost 3 | type summon | effect: place queen on ranks 1–2 (cannot move same turn)
-- Knight Move | cost 2 | type signature | effect: move any friendly piece to any knight-jump square (ignores blockers)
-- Pawn Boost | cost 1 | type move | effect: move a pawn forward any number of squares (sliding, can capture)
+| Type | Description | Removed after use? |
+|------|-------------|-------------------|
+| `move` | Move any friendly piece to a legal square | Discard |
+| `move` (variant) | Knight / Bishop / Rook / Queen / Pawn Boost geometric moves | Discard |
+| `summon` | Place a piece (pawn/knight/bishop/rook/queen) on rank 1-2 | **Removed** |
+| `summon_duck` | Place a duck on any empty square | **Removed** |
+| `move_duck` | Move any duck to any empty square | Discard |
+| `stun` | Apply `stunned` tag to any piece | Discard |
+| `shield` | Apply `shielded` tag to any piece | Discard |
+| `sacrifice` | Destroy a friendly piece and a weaker enemy piece | Discard |
+| `unblock` | Apply `ghost` tag for 5 turns | Discard |
+| `curse` | Unplayable dead card | — |
 
-## Starter decks (10 cards each)
+## Card data
+- Definitions: `config/cards.js` (id, name, type, rarity, desc, image)
+- Factories: `js/cards2/move_cards.js`
+- Catalog / starter decks: `js/cards2/move_cards.js` (`CARD_CATALOG`, `STARTER_DECKS`)
 
-### The Knight
-- 7x Move(1), 2x Summon Pawn(1), 1x Knight Move(2)
+## How to add a new card
+
+1. `config/cards.js` — add entry to `CARD_DEFS` with id, name, type, rarity, desc, image
+2. `js/cards2/move_cards.js` — add factory function, wire in `CARD_FACTORY_KEYS`, add to `CARD_CATALOG` builder if needed
+3. `js/battle_state.js` — add `playXxxCard(cardIndex, ...)` method
+4. `js/ui.js` — add `handleCardClick` hint branch + `handleSquareClick` phase handlers + render highlights
+5. `tests/cards2/move_cards.test.js` — test card shape + catalog entry
+6. `tests/battle_state.test.js` — test play method validation and effects

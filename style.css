@@ -30,6 +30,8 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 #debug-bar button { padding: 0.3rem 0.7rem; font-size: 0.75rem; background: #2a1a1a; color: #cc8888; border: 1px solid #663333; border-radius: 4px; cursor: pointer; }
 #debug-bar button:hover { background: #3a2020; }
 #debug-bar button.active { background: #551111; border-color: #cc4444; color: #ffaaaa; }
+.debug-btn { padding: 0.3rem 0.7rem; font-size: 0.75rem; background: #2a1a1a; color: #cc8888; border: 1px solid #663333; border-radius: 4px; cursor: pointer; }
+.debug-btn:hover { background: #3a2020; }
 
 /* --- Board --- */
 #board {
@@ -63,7 +65,6 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 .your-turn  { color: #7fc97f; }
 .enemy-turn { color: #f4a460; }
 .game-over  { color: #e05555; font-size: 1.2rem; }
-#mana-display { color: #88ccff; font-size: 0.95rem; margin-top: auto; }
 #deck-info { color: #888; font-size: 0.8rem; text-align: center; }
 
 /* --- Hand --- */
@@ -87,17 +88,108 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 .card.selected.rarity-rare { border-color: #f0e040; box-shadow: inset 0 0 0 3px #cc8800; }
 .card-art { height: 65px; width: 100%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 .card-piece-img { max-height: 50px; max-width: 50px; object-fit: contain; }
+.card-art-img   { width: 60px; height: 60px; object-fit: contain; }
 .card-name {
   padding: 0.3rem 0.4rem 0.1rem;
   font-size: 0.78rem; font-weight: bold; color: #eee;
   line-height: 1.2;
 }
 .card-name.upgraded { color: #6ddc6d; }
+.card-desc {
+  padding: 0.15rem 0.4rem 0.3rem;
+  font-size: 0.7rem;
+  color: #bbb;
+  line-height: 1.3;
+  min-height: 2.4em;
+}
+.keyword {
+  display: inline;
+  font-weight: bold;
+  cursor: help;
+  text-transform: capitalize;
+}
+.keyword-tooltip {
+  background: #1a1a2a;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.72rem;
+  color: #eee;
+  max-width: 160px;
+  line-height: 1.3;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+.piece-status-badges {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 40px;
+}
+.status-badge {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  border: 1px solid rgba(0,0,0,0.4);
+}
 .card-cost {
   padding: 0.1rem 0.4rem 0.4rem;
   font-size: 0.75rem; color: #aaa;
 }
 .card-cost.upgraded { color: #6ddc6d; }
+
+/* Card description */
+.card-desc {
+  padding: 0.15rem 0.4rem 0.3rem;
+  font-size: 0.7rem;
+  color: #bbb;
+  line-height: 1.3;
+  min-height: 2.4em;
+}
+
+/* Keywords */
+.keyword {
+  display: inline;
+  font-weight: bold;
+  cursor: help;
+  text-transform: capitalize;
+}
+
+/* Keyword tooltip */
+.keyword-tooltip {
+  background: #1a1a2a;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.72rem;
+  color: #eee;
+  max-width: 160px;
+  line-height: 1.3;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+/* Piece status badges */
+.piece-status-badges {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 40px;
+}
+.status-badge {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  border: 1px solid rgba(0,0,0,0.4);
+}
 
 /* --- End turn button --- */
 #btn-end-turn {

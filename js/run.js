@@ -1,4 +1,4 @@
-import { LIVES } from './config.js';
+import { LIVES } from '../config/game.js';
 import { buildStarterDeck, upgradeCard as _upgradeCard } from './cards2/move_cards.js';
 import { generateNodes } from './map.js';
 

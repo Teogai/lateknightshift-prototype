@@ -30,3 +30,6 @@
 - [2026-04-21] done: p13 migrate+cleanup — cards2/move_cards.js, enemies2.js, battle_state.js adapter; ui.js/run.js/rewards.js updated; old engine.js/ai.js/cards.js/enemies.js + engine/ deleted; old tests deleted; 246 tests green
 - [2026-04-20] done: pp perf harness — 5 reference positions × depth-3/4; all depth-3 < 1000 ms; BUDGET.md filled; 256 tests green
 - [2026-04-21] done: pawn boost common card — pawn-only forward sliding move any distance, capture+promotion, ui+tests; 268 tests green
+- [2026-04-21] done: debug reroll button on card reward screen — renderCardRewardScreen onReroll callback, regenerates choices; 268 tests green
+- [2026-04-21] done: fix reward pool key to include moveVariant — pawn boost and other variant move cards now appear in rewards; 269 tests green
+- [2026-04-21] done: remove card cost, fix summon removal, consolidate docs — no mana system, all summon cards disappear after use, docs split by domain (CARDS.md, CHARACTERS.md, ENEMIES.md), AGENTS.md updated; 293 tests green

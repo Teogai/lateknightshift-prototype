@@ -2,6 +2,9 @@
 
 ## Read first
 - `docs/ARCHITECTURE.md` — file-purpose map, locate code
+- `docs/CARDS.md` — card rules, types, and how to add new cards
+- `docs/CHARACTERS.md` — character system
+- `docs/ENEMIES.md` — enemy roster, AI types, personalities
 - Load only docs relevant to current task; don't read all
 - Never dump full context into every doc
 
@@ -27,6 +30,7 @@
 ## Decisions
 - single-file vanilla frontend - no bundler, fast iteration
 - modular docs by concern - read only what task needs
+- when a task is complex, split it into subtasks and use agents to do each task with shared context so that context of main session is not too big.
 - pseudo_legal_moves for enemy AI - enables king-capture win condition
 - enemy always prefers king capture - consistent with no-checkmate rule
 - migrate to frontend-only JS - single language, lower token cost per task
@@ -44,6 +48,8 @@
 - TDD order enforced: write failing test before production code - avoids stashing changes to verify pre-existing failures
 - AI auto-promotes pawns to queen in makeMove; pawnAdvanceScore credits queens with r=7 pawn value so pawn-push personality doesn't lose score by promoting
 - direct king capture preempts tiebreak in selectMove - prevents AI picking a mate-in-N with higher immediate eval over a mate-in-1
+- no mana / no card cost — see docs/CARDS.md
+- summon cards disappear after use (removed from game, not discarded) — see docs/CARDS.md
 - Wildfrost turn model: 1 card/turn auto-ends turn, hand persists, no mana, redraw countdown starts at 4 — deliberate tempo decisions over resource management
 
 ## Modules
@@ -59,6 +65,7 @@
 - After non-trivial exploration, record findings in `docs/EXPLORATION.md` (pattern name, files touched, key snippets) so future sessions skip re-exploration
 
 ## Comms
+- If anything is unclear, do not assume — always ask to clarify
 - Terse. No filler. Skip "Let me...", "I'll now...", "Great!"
 - One-line question when blocked
 - Report done per task, one line

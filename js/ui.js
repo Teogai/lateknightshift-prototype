@@ -1,4 +1,4 @@
-import { GameState, knightAttacks, VALID_ENEMIES } from './battle_state.js';
+import { GameState, knightAttacks, VALID_ENEMIES, rcToSq, PIECE_VALUES } from './battle_state.js';
 import { RunState } from './run.js';
 import { FIXED_PATH } from './map.js';
 import {
@@ -30,6 +30,88 @@ const PIECES = {
     duck:   './pieces/duck.png',
   },
 };
+
+const KEYWORD_REGISTRY = {
+  duck:       { color: '#ffcc44', desc: 'Duck: cannot be captured.' },
+  pawn:       { color: '#dddddd', desc: 'Pawn: moves forward, captures diagonal.' },
+  knight:     { color: '#dddddd', desc: 'Knight: jumps in L-shape.' },
+  bishop:     { color: '#dddddd', desc: 'Bishop: moves diagonally.' },
+  rook:       { color: '#dddddd', desc: 'Rook: moves straight.' },
+  queen:      { color: '#dddddd', desc: 'Queen: moves diagonal or straight.' },
+  king:       { color: '#ffdd44', desc: 'King: moves 1 square. Lose if captured.' },
+  piece:      { color: '#dddddd', desc: 'Any chess piece.' },
+  stun:       { color: '#ff6666', desc: 'Stun: cannot move.' },
+  ghost:      { color: '#aa88ff', desc: 'Ghost: does not block sliding moves.' },
+  shield:     { color: '#44aaff', desc: 'Shield: blocks first capture.' },
+  frozen:     { color: '#88ccff', desc: 'Frozen: cannot move.' },
+  wounded:    { color: '#ff4444', desc: 'Wounded: from damage tiles.' },
+  uncapturable: { color: '#aaaaaa', desc: 'Uncapturable: cannot be taken.' },
+};
+
+const STATUS_BADGE_COLORS = {
+  stunned: '#ff6666',
+  ghost: '#aa88ff',
+  shielded: '#44aaff',
+  frozen: '#88ccff',
+  wounded: '#ff4444',
+};
+
+let _tooltipEl = null;
+function _ensureTooltip() {
+  if (_tooltipEl) return _tooltipEl;
+  const el = document.createElement('div');
+  el.className = 'keyword-tooltip';
+  el.style.position = 'fixed';
+  el.style.display = 'none';
+  el.style.pointerEvents = 'none';
+  el.style.zIndex = '200';
+  document.body.appendChild(el);
+  _tooltipEl = el;
+  return el;
+}
+
+function _showTooltip(text, color, targetRect) {
+  const tip = _ensureTooltip();
+  tip.textContent = text;
+  tip.style.display = 'block';
+  tip.style.borderColor = color;
+  const x = targetRect.right + 8;
+  const y = targetRect.top;
+  tip.style.left = x + 'px';
+  tip.style.top = y + 'px';
+}
+
+function _hideTooltip() {
+  if (_tooltipEl) _tooltipEl.style.display = 'none';
+}
+
+function _parseCardDesc(desc, container) {
+  if (!desc) return;
+  const regex = /\{(\w+)\}/g;
+  let lastIdx = 0;
+  let match;
+  while ((match = regex.exec(desc)) !== null) {
+    const before = desc.slice(lastIdx, match.index);
+    if (before) container.appendChild(document.createTextNode(before));
+    const key = match[1];
+    const info = KEYWORD_REGISTRY[key];
+    const span = document.createElement('span');
+    span.className = 'keyword' + (info ? ` keyword-${key}` : '');
+    if (info) span.style.color = info.color;
+    span.textContent = key;
+    if (info) {
+      span.addEventListener('mouseenter', () => {
+        const rect = span.getBoundingClientRect();
+        _showTooltip(info.desc, info.color, rect);
+      });
+      span.addEventListener('mouseleave', _hideTooltip);
+    }
+    container.appendChild(span);
+    lastIdx = regex.lastIndex;
+  }
+  const after = desc.slice(lastIdx);
+  if (after) container.appendChild(document.createTextNode(after));
+}
 
 const ALL_SCREENS = ['screen-select', 'screen-map', 'screen-game', 'screen-room', 'screen-defeat', 'screen-victory', 'screen-complete'];
 
@@ -130,7 +212,7 @@ export function renderBoard() {
         if (sqName === enemyAttackerSq) div.classList.add('check-attacker');
       }
 
-      if ((uiState.phase === 'from_selected' || uiState.phase === 'knight_from_selected' || uiState.phase === 'geometric_from_selected' || uiState.phase === 'pawn_boost_from_selected' || uiState.phase === 'debug_from_selected') && uiState.fromSq === sqName) {
+      if ((uiState.phase === 'from_selected' || uiState.phase === 'knight_from_selected' || uiState.phase === 'geometric_from_selected' || uiState.phase === 'pawn_boost_from_selected' || uiState.phase === 'debug_from_selected' || uiState.phase === 'move_duck_from_selected' || uiState.phase === 'sacrifice_target_selected') && uiState.fromSq === sqName) {
         div.classList.add('selected-from');
       }
       if (uiState.knightTargets.includes(sqName))   div.classList.add('knight-target');
@@ -151,6 +233,21 @@ export function renderBoard() {
           div.classList.add('already-moved');
         }
         div.appendChild(img);
+        // Status badges
+        if (piece.tags && piece.tags.length > 0) {
+          const badges = document.createElement('div');
+          badges.className = 'piece-status-badges';
+          for (const tag of piece.tags) {
+            const color = STATUS_BADGE_COLORS[tag];
+            if (!color) continue;
+            const dot = document.createElement('span');
+            dot.className = 'status-badge';
+            dot.style.backgroundColor = color;
+            dot.title = tag;
+            badges.appendChild(dot);
+          }
+          if (badges.children.length > 0) div.appendChild(badges);
+        }
       }
       div.addEventListener('click', () => handleSquareClick(sqName));
       boardEl.appendChild(div);
@@ -169,12 +266,6 @@ function cardArtColor(card) {
   return CARD_ART_COLORS[card.type] || '#3a3a3a';
 }
 
-function getCardPiece(card) {
-  if (card.type === 'summon') return card.piece;
-  if (card.type === 'move' && card.moveVariant) return card.moveVariant;
-  return null;
-}
-
 export function makeCardEl(card, { onClick } = {}) {
   const div = document.createElement('div');
   div.className = 'card';
@@ -189,19 +280,27 @@ export function makeCardEl(card, { onClick } = {}) {
   const art = document.createElement('div');
   art.className = 'card-art';
   art.style.background = cardArtColor(card);
-  const piece = getCardPiece(card);
-  if (piece) {
-    const img = document.createElement('img');
-    img.src = PIECES.white[piece];
-    img.className = 'card-piece-img';
-    img.alt = piece;
-    art.appendChild(img);
+  if (card.image) {
+    const cardImg = document.createElement('img');
+    cardImg.src = card.image;
+    cardImg.className = 'card-art-img';
+    cardImg.alt = card.name;
+    cardImg.onerror = () => {
+      if (cardImg.parentNode) cardImg.remove();
+    };
+    art.appendChild(cardImg);
   }
   div.appendChild(art);
   const name = document.createElement('div');
   name.className = 'card-name' + (card.upgraded ? ' upgraded' : '');
   name.textContent = card.name;
   div.appendChild(name);
+  if (card.desc) {
+    const descEl = document.createElement('div');
+    descEl.className = 'card-desc';
+    _parseCardDesc(card.desc, descEl);
+    div.appendChild(descEl);
+  }
   if (card.type === 'curse') {
     const unplayable = document.createElement('div');
     unplayable.className = 'card-cost';
@@ -332,13 +431,16 @@ function showBattleReward() {
     showScreen('screen-room');
     renderPieceRewardScreen(choices, runState, () => advanceAfterRoom());
   } else {
-    const choices = pickCardChoices(3, runState.character);
+    const showCardReward = () => {
+      const choices = pickCardChoices(3, runState.character);
+      renderCardRewardScreen(choices, (i, card) => {
+        runState.addRewardCard(card);
+        advanceAfterRoom();
+      }, showCardReward);
+    };
     runState.phase = 'room';
     showScreen('screen-room');
-    renderCardRewardScreen(choices, (i, card) => {
-      runState.addRewardCard(card);
-      advanceAfterRoom();
-    });
+    showCardReward();
   }
 }
 
@@ -639,6 +741,31 @@ export function handleCardClick(index, card) {
       validRanks.map(r => f + r)
     ).filter(sq => !d.board[sq]);
     setHint(`Click a highlighted square to summon ${card.piece}`);
+  } else if (card.type === 'summon_duck') {
+    uiState.phase = 'summon_duck_selected';
+    uiState.summonTargets = [];
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const sqName = rcToSq(r, c);
+        if (!d.board[sqName]) uiState.summonTargets.push(sqName);
+      }
+    }
+    setHint('Click any empty square to place duck');
+  } else if (card.type === 'move_duck') {
+    uiState.phase = 'move_duck_selected';
+    setHint('Click a duck to move');
+  } else if (card.type === 'stun') {
+    uiState.phase = 'stun_selected';
+    setHint('Click any piece to stun');
+  } else if (card.type === 'shield') {
+    uiState.phase = 'shield_selected';
+    setHint('Click any piece to shield');
+  } else if (card.type === 'sacrifice') {
+    uiState.phase = 'sacrifice_selected';
+    setHint('Click a friendly piece to sacrifice');
+  } else if (card.type === 'unblock') {
+    uiState.phase = 'unblock_selected';
+    setHint('Click any piece to make ghost');
   }
   render();
 }
@@ -852,6 +979,142 @@ export function handleSquareClick(sq) {
       resetUiState(); setHint(''); render();
       playoutEnemyTurn();
     }
+  }
+
+  if (uiState.phase === 'summon_duck_selected') {
+    if (!uiState.summonTargets.includes(sq)) {
+      setHint('Invalid square'); return;
+    }
+    if (d.board[sq]) { setHint('Square occupied'); return; }
+    const result = gameState.playSummonDuckCard(uiState.selectedCardIndex, sq);
+    if (result.error) { setHint(result.error); return; }
+    resetUiState(); setHint(''); render();
+    playoutEnemyTurn();
+    return;
+  }
+
+  if (uiState.phase === 'move_duck_selected') {
+    const piece = d.board[sq];
+    if (piece && piece.type === 'duck') {
+      uiState.fromSq = sq;
+      uiState.phase = 'move_duck_from_selected';
+      uiState.legalDests = [];
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const dest = 'abcdefgh'[c] + (r + 1);
+          if (!d.board[dest]) uiState.legalDests.push(dest);
+        }
+      }
+      setHint('Click a square to move duck to');
+      render();
+    } else {
+      setHint('Pick a duck');
+    }
+    return;
+  }
+
+  if (uiState.phase === 'move_duck_from_selected') {
+    if (sq === uiState.fromSq) {
+      uiState.phase = 'move_duck_selected';
+      uiState.fromSq = null;
+      uiState.legalDests = [];
+      setHint('Click a duck to move');
+      render(); return;
+    }
+    if (!uiState.legalDests.includes(sq)) {
+      setHint('Invalid destination'); return;
+    }
+    const result = gameState.playMoveDuckCard(uiState.selectedCardIndex, uiState.fromSq, sq);
+    if (result.error) { setHint(result.error); return; }
+    resetUiState(); setHint(''); render();
+    playoutEnemyTurn();
+    return;
+  }
+
+  if (uiState.phase === 'stun_selected') {
+    const piece = d.board[sq];
+    if (piece) {
+      const result = gameState.playStunCard(uiState.selectedCardIndex, sq);
+      if (result.error) { setHint(result.error); return; }
+      resetUiState(); setHint(''); render();
+      playoutEnemyTurn();
+    } else {
+      setHint('Pick a piece');
+    }
+    return;
+  }
+
+  if (uiState.phase === 'shield_selected') {
+    const piece = d.board[sq];
+    if (piece) {
+      const result = gameState.playShieldCard(uiState.selectedCardIndex, sq);
+      if (result.error) { setHint(result.error); return; }
+      resetUiState(); setHint(''); render();
+      playoutEnemyTurn();
+    } else {
+      setHint('Pick a piece');
+    }
+    return;
+  }
+
+  if (uiState.phase === 'sacrifice_selected') {
+    const piece = d.board[sq];
+    if (piece && piece.color === 'white') {
+      uiState.fromSq = sq;
+      uiState.phase = 'sacrifice_target_selected';
+      const sacrificedVal = PIECE_VALUES[piece.type] ?? 0;
+      uiState.legalDests = [];
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const dest = 'abcdefgh'[c] + (r + 1);
+          const enemy = d.board[dest];
+          if (enemy && enemy.color === 'black') {
+            const enemyVal = PIECE_VALUES[enemy.type] ?? 0;
+            if (enemyVal < sacrificedVal) uiState.legalDests.push(dest);
+          }
+        }
+      }
+      if (uiState.legalDests.length === 0) {
+        setHint('No weaker enemy pieces');
+        resetUiState(); render(); return;
+      }
+      setHint('Click a weaker enemy piece to destroy');
+      render();
+    } else {
+      setHint('Pick a friendly piece');
+    }
+    return;
+  }
+
+  if (uiState.phase === 'sacrifice_target_selected') {
+    if (sq === uiState.fromSq) {
+      uiState.phase = 'sacrifice_selected';
+      uiState.fromSq = null;
+      uiState.legalDests = [];
+      setHint('Click a friendly piece to sacrifice');
+      render(); return;
+    }
+    if (!uiState.legalDests.includes(sq)) {
+      setHint('Invalid target'); return;
+    }
+    const result = gameState.playSacrificeCard(uiState.selectedCardIndex, uiState.fromSq, sq);
+    if (result.error) { setHint(result.error); return; }
+    resetUiState(); setHint(''); render();
+    playoutEnemyTurn();
+    return;
+  }
+
+  if (uiState.phase === 'unblock_selected') {
+    const piece = d.board[sq];
+    if (piece) {
+      const result = gameState.playUnblockCard(uiState.selectedCardIndex, sq);
+      if (result.error) { setHint(result.error); return; }
+      resetUiState(); setHint(''); render();
+      playoutEnemyTurn();
+    } else {
+      setHint('Pick a piece');
+    }
+    return;
   }
 }
 
