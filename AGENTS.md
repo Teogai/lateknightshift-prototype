@@ -23,6 +23,7 @@
 - Run `npm test` before every commit
 - Update relevant md before commit
 - **Commit all changed files after every completed task**
+- **NEVER skip commit after completing a task — this is non-negotiable**
 
 ## Log formats
 - `docs/TASKS.md`: `[YYYY-MM-DD] done: <x>` / `[YYYY-MM-DD] todo: <x>`
@@ -56,8 +57,14 @@
 - One clear responsibility per file
 - Soft limit: ~300 lines per module
 - When a file approaches that limit, split by concern before adding more code
+- If you open a file that already exceeds the ~300-line limit, split it BEFORE making your intended change
 - Name new files so Claude Code can load only what's relevant to the task
 - Use barrel re-exports in the parent file to keep public API unchanged after splits
+
+## CSS
+- Single style.css is forbidden past 300 lines
+- Split into css/<concern>.css files, load all in index.html
+- When editing any CSS, check total lines — split if over limit
 
 ## Doc rules
 - Flat bullets, no prose, <200 lines per file

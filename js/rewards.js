@@ -4,12 +4,12 @@ import { makeCardEl } from './ui.js';
 import { CHARACTER_PIECES } from './engine2/constants2.js';
 
 const WHITE_PIECES = {
-  king:   './pieces/Chess_klt60.png',
-  queen:  './pieces/Chess_qlt60.png',
-  rook:   './pieces/Chess_rlt60.png',
-  bishop: './pieces/Chess_blt60.png',
-  knight: './pieces/Chess_nlt60.png',
-  pawn:   './pieces/Chess_plt60.png',
+  king:   './img/Chess_klt60.png',
+  queen:  './img/Chess_qlt60.png',
+  rook:   './img/Chess_rlt60.png',
+  bishop: './img/Chess_blt60.png',
+  knight: './img/Chess_nlt60.png',
+  pawn:   './img/Chess_plt60.png',
 };
 const PIECE_FULL_NAME = { k: 'king', q: 'queen', r: 'rook', b: 'bishop', n: 'knight', p: 'pawn' };
 

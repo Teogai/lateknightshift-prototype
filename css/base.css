@@ -1,0 +1,151 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { overflow-x: hidden; }
+
+:root {
+  --sq-size: 52px;
+  --card-w: 110px;
+  --card-h: 150px;
+  --sidebar-w: 180px;
+}
+
+body { font-family: system-ui, sans-serif; background: #111; color: #eee; margin: 0; padding: 2rem; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+h1 { font-size: 1.1rem; margin-bottom: 1rem; }
+
+/* --- Screens --- */
+.hidden { display: none !important; }
+
+/* Hide title on all screens except character select */
+#screen-map h1,
+#screen-room h1,
+#screen-defeat h1,
+#screen-victory h1,
+#screen-complete h1 {
+  display: none;
+}
+
+/* --- Character select --- */
+#screen-select {
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+#screen-select p { color: #aaa; margin-bottom: 1rem; }
+.char-btn {
+  display: block; width: 100%; margin-bottom: 0.5rem;
+  padding: 0.6rem 1rem; font-size: 1rem;
+  background: #1e2a1e; color: #eee;
+  border: 1px solid #4a7a4a; border-radius: 4px; cursor: pointer;
+}
+.char-btn:hover { background: #2a3d2a; }
+#select-error { color: #e05555; font-size: 0.85rem; min-height: 1.2em; }
+
+/* --- Game layout --- */
+#screen-game { display: flex; }
+#layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+  width: 100%;
+}
+#sidebar {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 100%;
+  padding-top: 0;
+}
+#board-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+#bottom-bar { 
+  display: flex; 
+  gap: 1rem; 
+  align-items: center; 
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 0.25rem; 
+}
+#center-actions { 
+  display: flex; 
+  gap: 1rem; 
+  align-items: center; 
+}
+#debug-bar { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.25rem; border-top: 1px solid #332222; padding-top: 0.25rem; }
+#debug-bar button { padding: 0.3rem 0.7rem; font-size: 0.75rem; background: #2a1a1a; color: #cc8888; border: 1px solid #663333; border-radius: 4px; cursor: pointer; }
+#debug-bar button:hover { background: #3a2020; }
+#debug-bar button.active { background: #551111; border-color: #cc4444; color: #ffaaaa; }
+.debug-btn { padding: 0.3rem 0.7rem; font-size: 0.75rem; background: #2a1a1a; color: #cc8888; border: 1px solid #663333; border-radius: 4px; cursor: pointer; }
+.debug-btn:hover { background: #3a2020; }
+
+/* --- Sidebar / status --- */
+#status-bar { font-weight: bold; font-size: 1rem; min-height: 1.4em; text-align: center; }
+.your-turn  { color: #7fc97f; }
+.enemy-turn { color: #f4a460; }
+.game-over  { color: #e05555; font-size: 1.2rem; }
+#deck-info { color: #888; font-size: 0.8rem; text-align: center; }
+
+/* Pile buttons */
+.pile-btn {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  background: #2a2a3a;
+  color: #eee;
+  border: 1px solid #555;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.pile-btn:hover {
+  background: #3a3a4a;
+  border-color: #777;
+}
+
+/* --- End turn button --- */
+#btn-end-turn {
+  padding: 0.5rem 1rem; font-size: 0.95rem;
+  background: #1e3a1e; color: #eee;
+  border: 1px solid #4a7a4a; border-radius: 4px; cursor: pointer;
+  margin-top: 0.25rem;
+}
+#btn-end-turn:hover:not(:disabled) { background: #2a4a2a; }
+#btn-end-turn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* --- Redraw button --- */
+#btn-redraw {
+  padding: 0.8rem 1.5rem; font-size: 1.05rem; font-weight: bold;
+  background: #1e2a3a; color: #eee;
+  border: 2px solid #4a5a6a; border-radius: 4px; cursor: pointer;
+  transition: all 0.3s ease;
+}
+#btn-redraw:hover:not(:disabled) { background: #2a3a4a; }
+#btn-redraw:disabled { opacity: 0.5; cursor: not-allowed; }
+#btn-redraw.ready {
+  background: #d4a935; color: #111;
+  border-color: #e0b440; font-weight: bold;
+}
+#btn-redraw.ready:hover { background: #e0b440; }
+
+#action-hint { color: #aaa; font-size: 0.85rem; min-height: 1.2em; }
+
+/* --- Floor node type label --- */
+.path-node-type { font-size: 0.65rem; color: #888; display: block; margin-top: 0.1rem; }
+[data-type="elite"] .path-node-type { color: #d4a800; }
+[data-type="boss"]  .path-node-type { color: #e05555; }
+
+/* --- Transform result --- */
+.transform-result-row { display: flex; align-items: center; gap: 1.5rem; justify-content: center; margin: 1rem 0; }
+.transform-arrow { font-size: 2rem; color: #7fc97f; }
+
+/* --- Lives display --- */
+.lives-display { color: #e07070; font-weight: bold; }

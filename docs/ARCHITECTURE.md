@@ -13,9 +13,17 @@
 - `js/enemies2.js` — imports ENEMIES from config/enemies.js; attaches createAI() factories at load time
 - `js/ui.js` — DOM render functions, interaction handlers, uiState, screen flow
 - `js/main.js` — entry point, event listener wiring
-- `style.css` — all styles
-- `index.html` — HTML shell only; loads style.css + main.js
-- `pieces/` — chess piece PNG assets
+- `css/base.css` — reset, variables, layout, buttons, status
+- `css/board.css` — board squares, pieces, placement board, status badges
+- `css/cards.css` — hand, card styling, card grid, keywords, tooltips
+- `css/map.css` — map screen, path track, nodes, connectors
+- `css/room.css` — room screen, reward buttons, piece choices
+- `css/enemy.css` — enemy panel, type badges, abilities
+- `css/screens.css` — victory, defeat, complete screens
+- `css/modals.css` — promotion modal, pile viewer modal
+- `css/responsive.css` — mobile + desktop media queries
+- `index.html` — HTML shell only; loads all css/*.css + main.js
+- `img/` — chess piece PNG assets
 
 ## engine2 (custom chess engine — no chess.js)
 - `js/engine2/board.js` — 8×8 array board, get/set, sqToRC/rcToSq, inBounds

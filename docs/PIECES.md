@@ -46,7 +46,7 @@ AI auto-promotes pawns to queen in `makeMove()`.
 
 ## Piece Images
 
-All piece images are 60×60 PNG files stored in `pieces/`:
+All piece images are 60×60 PNG files stored in `img/`:
 
 **White (player):**
 - King: `Chess_klt60.png`

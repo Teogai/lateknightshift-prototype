@@ -103,13 +103,13 @@ test('dealHand returns hand of size 6', () => {
 test('CARD_CATALOG pawn_boost includes image from config', () => {
   const entry = CARD_CATALOG.find(e => e.card().name === 'Pawn Boost');
   expect(entry).toBeDefined();
-  expect(entry.card().image).toBe('./pieces/pawn-boost.png');
+  expect(entry.card().image).toBe('./img/pawn-boost.png');
 });
 
 test('upgradeCard preserves image field', () => {
-  const c = { name: 'Test', type: 'move', image: './pieces/test.jpg' };
+  const c = { name: 'Test', type: 'move', image: './img/test.jpg' };
   const up = upgradeCard(c);
-  expect(up.image).toBe('./pieces/test.jpg');
+  expect(up.image).toBe('./img/test.jpg');
 });
 
 test('cards without image config do not have image field', () => {

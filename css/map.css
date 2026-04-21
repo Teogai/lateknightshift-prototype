@@ -1,0 +1,109 @@
+/* --- Map screen (path track) --- */
+#screen-map {
+  width: calc(100vw - 4rem);
+  max-width: 900px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+#map-debug { margin-top: 1rem; }
+#map-header { color: #aaa; font-size: 0.9rem; margin-bottom: 1rem; text-align: center; }
+#map-content {
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.path-track {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0;
+  padding: 1rem 1.5rem;
+  width: max-content;
+  min-width: 100%;
+}
+
+.path-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.path-connector {
+  width: 24px;
+  height: 2px;
+  background: #3a5a3a;
+  margin-top: 28px;
+  flex-shrink: 0;
+}
+.path-connector.done { background: #4a8a4a; }
+
+.path-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  width: 96px;
+  padding: 0.75rem 0.35rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid #3a5a3a;
+  background: #1a2a1a;
+  cursor: default;
+  position: relative;
+}
+.path-node.done {
+  background: #121a12;
+  border-color: #2a4a2a;
+  opacity: 0.55;
+}
+.path-node.current {
+  border-color: #7acc7a;
+  background: #1e3a1e;
+  box-shadow: 0 0 8px #3a7a3a66;
+}
+.path-node.future {
+  background: #141e14;
+  border-color: #2a3a2a;
+  opacity: 0.45;
+}
+
+/* Elite and boss theming */
+.path-node.current[data-type="elite"] { border-color: #d4a800; background: #2a2800; box-shadow: 0 0 8px #c0a00066; }
+.path-node.future[data-type="elite"]  { border-color: #5a4a00; }
+.path-node.current[data-type="boss"]  { border-color: #e05555; background: #2a1010; box-shadow: 0 0 8px #e0555566; }
+.path-node.future[data-type="boss"]   { border-color: #5a2020; }
+
+.path-floor-num {
+  font-size: 0.6rem;
+  color: #666;
+  line-height: 1;
+}
+.path-node.current .path-floor-num { color: #8a8a8a; }
+
+.path-node-icon { font-size: 1.2rem; line-height: 1; }
+
+.path-node-label {
+  font-size: 0.58rem;
+  color: #aaa;
+  text-align: center;
+  line-height: 1.2;
+  word-break: break-word;
+}
+.path-node.current .path-node-label { color: #ddd; }
+
+.path-enter-btn {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.6rem;
+  background: #2a5a2a;
+  border: 1px solid #5a9a5a;
+  border-radius: 4px;
+  color: #cfc;
+  cursor: pointer;
+  width: 96px;
+}
+.path-enter-btn:hover { background: #3a7a3a; }

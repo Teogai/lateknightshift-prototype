@@ -11,23 +11,23 @@ import { curseCard, bishopMoveCard, rookMoveCard, queenMoveCard } from './cards2
 
 const PIECES = {
   white: {
-    king:   './pieces/Chess_klt60.png',
-    queen:  './pieces/Chess_qlt60.png',
-    rook:   './pieces/Chess_rlt60.png',
-    bishop: './pieces/Chess_blt60.png',
-    knight: './pieces/Chess_nlt60.png',
-    pawn:   './pieces/Chess_plt60.png',
+    king:   './img/Chess_klt60.png',
+    queen:  './img/Chess_qlt60.png',
+    rook:   './img/Chess_rlt60.png',
+    bishop: './img/Chess_blt60.png',
+    knight: './img/Chess_nlt60.png',
+    pawn:   './img/Chess_plt60.png',
   },
   black: {
-    king:   './pieces/Chess_kdt60.png',
-    queen:  './pieces/Chess_qdt60.png',
-    rook:   './pieces/Chess_rdt60.png',
-    bishop: './pieces/Chess_bdt60.png',
-    knight: './pieces/Chess_ndt60.png',
-    pawn:   './pieces/Chess_pdt60.png',
+    king:   './img/Chess_kdt60.png',
+    queen:  './img/Chess_qdt60.png',
+    rook:   './img/Chess_rdt60.png',
+    bishop: './img/Chess_bdt60.png',
+    knight: './img/Chess_ndt60.png',
+    pawn:   './img/Chess_pdt60.png',
   },
   neutral: {
-    duck:   './pieces/duck.png',
+    duck:   './img/duck.png',
   },
 };
 

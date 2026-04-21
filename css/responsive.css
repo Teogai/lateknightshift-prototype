@@ -1,0 +1,300 @@
+/* --- Mobile responsive --- */
+@media (max-width: 767px) {
+  :root {
+    --sq-size: clamp(42px, 11vw, 52px);
+    --card-w: 85px;
+    --card-h: 120px;
+    --sidebar-w: 100%;
+  }
+
+  body {
+    padding: 0.5rem;
+  }
+
+  #layout {
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  #sidebar {
+    width: 100%;
+    max-width: 100%;
+    padding-top: 0;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    overflow-x: hidden;
+  }
+
+  .enemy-panel {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .enemy-panel-name,
+  .ability-name,
+  .ability-desc {
+    max-width: 100%;
+  }
+
+  .enemy-panel-name {
+    font-size: 0.9rem;
+  }
+
+  .ability-name, .ability-desc {
+    font-size: 0.7rem;
+  }
+
+  .enemy-panel-divider {
+    display: none;
+  }
+
+  #board-col {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    gap: 0.25rem;
+  }
+
+  #board {
+    margin: 0 auto;
+  }
+
+  #hand-scroll {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+  }
+
+  #hand {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  #hand::before,
+  #hand::after {
+    content: '';
+    flex: 1 0 auto;
+  }
+
+  .card {
+    flex-shrink: 0;
+  }
+
+  #bottom-bar {
+    gap: 0.25rem;
+    padding: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  #center-actions {
+    gap: 0.25rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .pile-btn, #btn-redraw, #btn-undo {
+    padding: 0.25rem 0.4rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  #btn-redraw {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  #debug-bar {
+    gap: 0.25rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  #debug-bar button {
+    padding: 0.15rem 0.3rem;
+    font-size: 0.65rem;
+    white-space: nowrap;
+  }
+
+  #status-bar {
+    font-size: 0.9rem;
+  }
+
+  #action-hint {
+    font-size: 0.8rem;
+  }
+
+  /* Map screen */
+  #screen-map {
+    width: 100%;
+    padding: 0 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .path-node {
+    width: 72px;
+    padding: 0.5rem 0.25rem 0.4rem;
+  }
+
+  .path-node-label {
+    font-size: 0.5rem;
+  }
+
+  .path-node-icon {
+    font-size: 1rem;
+  }
+
+  .path-floor-num {
+    font-size: 0.55rem;
+  }
+
+  .path-enter-btn {
+    width: 72px;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+  }
+
+  .path-connector {
+    width: 16px;
+    margin-top: 22px;
+  }
+
+  /* Room screen */
+  #screen-room {
+    width: 100%;
+    padding: 0 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .card-choices, .piece-choices {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    justify-content: flex-start;
+    width: 100%;
+    padding-bottom: 0.5rem;
+  }
+
+  .piece-reward-btn {
+    width: 90px;
+    min-height: 85px;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+
+  .reward-card-btn {
+    font-size: 0.85rem;
+    padding: 0.5rem 0.8rem;
+    flex-shrink: 0;
+  }
+
+  .placement-board {
+    margin: 0 auto;
+  }
+
+  /* Victory / defeat / complete */
+  #screen-victory,
+  #screen-defeat,
+  #screen-complete {
+    width: 100%;
+    padding: 0 1rem;
+    max-width: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  #screen-victory h1 {
+    font-size: 1.5rem;
+  }
+
+  /* Character select */
+  #screen-select {
+    width: 100%;
+    max-width: none;
+    padding: 0 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  #screen-select h1 {
+    font-size: 1.2rem;
+  }
+
+  .char-btn {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.8rem;
+  }
+
+  /* Modals */
+  #promotion-box, #pile-box {
+    max-width: 95vw;
+    padding: 1rem;
+  }
+
+  .promo-btn {
+    width: 50px;
+    height: 50px;
+  }
+
+  .promo-btn img {
+    width: 40px;
+    height: 40px;
+  }
+
+  #pile-grid {
+    max-height: 60vh;
+  }
+
+  /* Touch-friendly buttons */
+  button {
+    touch-action: manipulation;
+  }
+}
+
+/* Desktop layout explicit */
+@media (min-width: 768px) {
+  #layout {
+    flex-direction: row;
+    gap: 2rem;
+  }
+
+  #sidebar {
+    flex-direction: column;
+    width: var(--sidebar-w);
+  }
+
+  .enemy-panel {
+    flex-direction: column;
+  }
+
+  .enemy-panel-divider {
+    display: block;
+  }
+}
