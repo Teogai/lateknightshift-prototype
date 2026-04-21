@@ -144,6 +144,63 @@ export function pickCharmChoices(count = REWARD_CHOICES) {
   return choices;
 }
 
+// Pick a single card to transform into, following type-category rules
+export function pickTransformCard(oldCard, character) {
+  const pool = character ? getRewardPool(character) : CARD_CATALOG;
+  const rarityItems = Object.entries(CARD_RARITY_WEIGHTS).map(([rarity, weight]) => ({ rarity, weight }));
+
+  let candidates;
+  if (oldCard.type === 'piece') {
+    // Piece → different piece only
+    candidates = pool.filter(e => {
+      const c = e.card();
+      return c.type === 'piece' && c.piece !== oldCard.piece;
+    });
+  } else if (oldCard.type === 'curse') {
+    // Curse → different curse only
+    candidates = CARD_CATALOG.filter(e => {
+      const c = e.card();
+      return c.type === 'curse' && c.name !== oldCard.name;
+    });
+  } else {
+    // Other → non-piece, non-curse, not same card, not starter
+    const oldKey = cardKey(oldCard);
+    candidates = pool.filter(e => {
+      const c = e.card();
+      return c.type !== 'piece' && c.type !== 'curse' && cardKey(c) !== oldKey;
+    });
+  }
+
+  if (!candidates.length) {
+    // Fallback: any card from full catalog that matches type category
+    if (oldCard.type === 'piece') {
+      candidates = CARD_CATALOG.filter(e => e.card().type === 'piece' && e.card().piece !== oldCard.piece);
+    } else if (oldCard.type === 'curse') {
+      candidates = CARD_CATALOG.filter(e => {
+        const c = e.card();
+        return c.type === 'curse' && c.name !== oldCard.name;
+      });
+    } else {
+      candidates = CARD_CATALOG.filter(e => {
+        const c = e.card();
+        return c.type !== 'piece' && c.type !== 'curse' && cardKey(c) !== cardKey(oldCard);
+      });
+    }
+  }
+
+  if (!candidates.length) {
+    // Ultimate fallback: random card from catalog
+    const entry = CARD_CATALOG[Math.floor(Math.random() * CARD_CATALOG.length)];
+    return entry.card();
+  }
+
+  const chosenRarity = weightedSample(rarityItems).rarity;
+  const byRarity = candidates.filter(e => e.rarity === chosenRarity);
+  const poolToUse = byRarity.length ? byRarity : candidates;
+  const entry = poolToUse[Math.floor(Math.random() * poolToUse.length)];
+  return entry.card();
+}
+
 export function applyCharmToCard(card, charm) {
   if (!charm.validCardTypes.includes(card.type)) {
     return { error: `Cannot apply ${charm.name} to ${card.type} card` };

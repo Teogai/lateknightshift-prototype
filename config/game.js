@@ -7,7 +7,7 @@
 export const MAP_CONFIG = {
   totalFloors: 16,
   treasureFloor: 9,
-  upgradeFloor: 15,
+  transformFloor: 15,
   bossFloor: 16,
   eliteMinFloor: 6,
   roomWeights: { monster: 45, elite: 15, event: 25, shop: 15 },

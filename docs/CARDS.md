@@ -24,6 +24,14 @@
 | `unblock` | Apply `ghost` tag for 5 turns | Discard |
 | `curse` | Unplayable dead card | — |
 
+## Transform Rules
+- Transform rooms replace a chosen deck card with a random card of the same rarity category
+- **Piece cards** transform only into other piece cards (different piece type)
+- **Curse cards** transform only into other curse cards (different curse name)
+- **All other cards** transform into non-piece, non-curse cards from the reward pool (excludes starter cards)
+- Charms are preserved if valid for the new card type; otherwise lost
+- Implementation: `js/rewards.js` `pickTransformCard()`, `js/ui.js` `handleRoomEntered()`
+
 ## Card data
 - Definitions: `config/cards.js` (id, name, type, rarity, desc, image)
 - Factories: `js/cards2/move_cards.js`

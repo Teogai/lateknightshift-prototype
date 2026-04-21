@@ -5,7 +5,8 @@ import { FIXED_PATH } from './map.js';
 import {
   renderCardRewardScreen, renderPieceRewardScreen, renderUpgradeScreen,
   renderTransformScreen, renderTransformResultScreen, renderShopScreen, renderDefeatScreen,
-  pickCardChoices, pickPieceChoices, pickPieceCardChoices, pickCharmChoices, applyCharmToCard,
+  renderCharmRewardScreen, renderCharmApplyScreen,
+  pickCardChoices, pickPieceChoices, pickPieceCardChoices, pickCharmChoices, pickTransformCard, applyCharmToCard,
 } from './rewards.js';
 import { ENEMIES, REGULAR_ENEMIES, ELITE_ENEMY, BOSS_ENEMY } from './enemies2.js';
 import { curseCard, bishopMoveCard, rookMoveCard, queenMoveCard } from './cards2/move_cards.js';
@@ -820,10 +821,21 @@ export function handleRoomEntered(node) {
       runState.addRewardCard(card);
       advanceAfterRoom();
     });
-  } else if (node.type === 'upgrade') {
-    renderUpgradeScreen(runState.deck, (deckIdx) => {
-      runState.upgradeCard(deckIdx);
-      advanceAfterRoom();
+  } else if (node.type === 'transform') {
+    renderTransformScreen(runState.deck, (deckIdx, oldCard) => {
+      const newCard = pickTransformCard(oldCard, runState.character);
+      // Handle charm retention
+      let finalCard = newCard;
+      if (oldCard.charm) {
+        const result = applyCharmToCard(newCard, oldCard.charm);
+        if (!result.error) {
+          finalCard = result;
+        }
+      }
+      renderTransformResultScreen(oldCard, finalCard, () => {
+        runState.transformCard(deckIdx, finalCard);
+        advanceAfterRoom();
+      });
     });
   } else if (node.type === 'treasure') {
     const choices = pickPieceChoices(3);

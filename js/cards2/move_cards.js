@@ -36,8 +36,8 @@ export function pawnBoostCard() {
   return { name: 'Pawn Boost', type: 'move', moveVariant: 'pawn_boost' };
 }
 
-export function curseCard() {
-  return { name: 'Curse', type: 'curse', unplayable: true };
+export function curseCard(name = 'Curse') {
+  return { name, type: 'curse', unplayable: true };
 }
 
 export function summonDuckCard() {
@@ -90,6 +90,7 @@ const _factories = {
   shieldCard,
   sacrificeCard,
   unblockCard,
+  curseCard,
 };
 
 function makeCardInstance(def) {
@@ -98,6 +99,8 @@ function makeCardInstance(def) {
   let card;
   if (def.type === 'piece') {
     card = factory(def.piece);
+  } else if (def.type === 'curse') {
+    card = factory(def.name);
   } else {
     card = factory();
   }
@@ -112,6 +115,8 @@ export const CARD_CATALOG = CARD_DEFS.map(def => {
   let cardFn;
   if (def.type === 'piece') {
     cardFn = () => factory(def.piece);
+  } else if (def.type === 'curse') {
+    cardFn = () => factory(def.name);
   } else {
     cardFn = factory;
   }

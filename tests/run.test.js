@@ -107,8 +107,8 @@ test('treasure floor returns iron_line monster', () => {
   const nodes = generateNodes(MAP_CONFIG.treasureFloor);
   expect(nodes[0]).toMatchObject({ type: 'monster', enemyKey: 'iron_line' });
 });
-test('upgrade floor returns upgrade node', () => {
-  expect(generateNodes(MAP_CONFIG.upgradeFloor)[0].type).toBe('upgrade');
+test('transform floor returns transform node', () => {
+  expect(generateNodes(MAP_CONFIG.transformFloor)[0].type).toBe('transform');
 });
 test('boss floor returns boss node', () => {
   expect(generateNodes(MAP_CONFIG.bossFloor)[0].type).toBe('boss');

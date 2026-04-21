@@ -90,10 +90,12 @@ test('playPieceCard removes card from game (not discard)', () => {
   const idx = d.hand.findIndex(c => c.type === 'piece');
   if (idx === -1) return;
   const card = d.hand[idx];
+  const pieceCountBefore = d.hand.filter(c => c.type === 'piece' && c.piece === card.piece).length;
   state.playPieceCard(idx, card.piece, 'h2');
   expect(state.toDict().discard_size).toBe(0);
   expect(state.toDict().discard).toHaveLength(0);
-  expect(state.toDict().hand).not.toContainEqual(expect.objectContaining({ type: 'piece', piece: card.piece }));
+  const pieceCountAfter = state.toDict().hand.filter(c => c.type === 'piece' && c.piece === card.piece).length;
+  expect(pieceCountAfter).toBe(pieceCountBefore - 1);
 });
 
 test('playPieceCard on occupied square returns error', () => {

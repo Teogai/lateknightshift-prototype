@@ -22,6 +22,8 @@ export const CARD_DEFS = [
   { id: 'shield',       name: 'Shield',         type: 'shield', rarity: 'uncommon', desc: 'Apply {shield}.' },
   { id: 'sacrifice',    name: 'Sacrifice',      type: 'sacrifice', rarity: 'uncommon', desc: 'Sacrifice {piece}. Destroy weaker.' },
   { id: 'unblock',      name: 'Unblock',        type: 'unblock', rarity: 'uncommon', desc: 'Apply {ghost} 5 turns.' },
+  { id: 'curse',        name: 'Curse',          type: 'curse',  rarity: 'common', desc: 'Unplayable.' },
+  { id: 'curse_sloth',  name: 'Curse of Sloth', type: 'curse',  rarity: 'common', desc: 'Unplayable.' },
 ];
 
 // Factory wiring keys used by js/cards2/move_cards.js
@@ -43,6 +45,8 @@ export const CARD_FACTORY_KEYS = {
   shield:      'shieldCard',
   sacrifice:   'sacrificeCard',
   unblock:     'unblockCard',
+  curse:       'curseCard',
+  curse_sloth: 'curseCard',
 };
 
 export const STARTER_DECK_DEFS = {
