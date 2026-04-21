@@ -94,6 +94,7 @@
 - Terse. No filler. Skip "Let me...", "I'll now...", "Great!"
 - One-line question when blocked
 - Report done per task, one line
+- When a mistake is made: never apologize, never promise. Instead, identify the root cause and add a concrete prevention rule to AGENTS.md or the relevant doc
 
 ## Debug prints
 - Never remove debug prints (console.log/warn/error) after a task — keep for future debugging
