@@ -333,6 +333,16 @@ export class GameState {
       .map(a => a.targets[0]);
   }
 
+  legalMovesForPiece(sq) {
+    const piece = get(this._state.board, sq);
+    if (!piece) return [];
+    const owner = piece.owner;
+    const actions = generateLegalActions(this._state, owner);
+    return actions
+      .filter(a => a.source === sq)
+      .map(a => a.targets[0]);
+  }
+
   geometricDestsFor(sq, pattern) {
     const piece = get(this._state.board, sq);
     if (!piece || piece.owner !== 'player') return [];
@@ -626,6 +636,23 @@ export class GameState {
     }
   }
 
+  _decayStunStatuses() {
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const piece = this._state.board[r][c];
+        if (!piece) continue;
+        if (!piece.tags.has('stunned')) continue;
+        const turns = piece.data.stunTurns ?? 1;
+        if (turns <= 1) {
+          piece.tags.delete('stunned');
+          delete piece.data.stunTurns;
+        } else {
+          piece.data.stunTurns = turns - 1;
+        }
+      }
+    }
+  }
+
   // ─── new card play methods ─────────────────────────────────────────────────
 
   playSummonDuckCard(cardIndex, toSq) {
@@ -671,6 +698,7 @@ export class GameState {
     if (!piece) return { error: 'no piece on that square' };
 
     piece.tags.add('stunned');
+    piece.data.stunTurns = 2;
     this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
 
     return { ok: true };
@@ -770,6 +798,7 @@ export class GameState {
     this.summonedThisTurn.clear();
     this.movedThisTurn.clear();
     this._decayGhostStatuses('enemy');
+    this._decayStunStatuses();
 
     if (!this._enemyAI) {
       return { pendingMoves: [], warnNext: false };
@@ -863,6 +892,7 @@ export class GameState {
       this.turn = 'player';
       this.redrawCountdown = Math.max(0, this.redrawCountdown - 1);
       this._decayGhostStatuses('player');
+      this._decayStunStatuses();
     }
 
     return { ok: true };

@@ -9,7 +9,7 @@ import { attachEffect } from '../../js/engine2/effects.js';
 import { generateLegalActions } from '../../js/engine2/movegen.js';
 import { makeShieldEffect } from '../../js/engine2/effect_types/shield.js';
 import { GameState as BattleState } from '../../js/battle_state.js';
-import { unblockCard } from '../../js/cards2/move_cards.js';
+import { unblockCard, stunCard } from '../../js/cards2/move_cards.js';
 import { set as setSq } from '../../js/engine2/board.js';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -300,6 +300,38 @@ describe('stunned tag', () => {
     const actions = generateLegalActions(state, 'enemy');
     const captures = actions.filter(a => a.targets[0] === 'd4');
     expect(captures.length).toBeGreaterThan(0);
+  });
+
+  it('stun card applies stunned tag and stunTurns=2', () => {
+    const bs = new BattleState('knight', 'pawn_pusher');
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) bs._state.board[r][c] = null;
+    const pawn = makePiece('pawn', 'enemy');
+    setSq(bs._state.board, 'e4', pawn);
+    bs._state.hand = [stunCard()];
+    bs._state.deck = [];
+    bs._state.discard = [];
+
+    const result = bs.playStunCard(0, 'e4');
+    expect(result.error).toBeUndefined();
+    expect(pawn.tags.has('stunned')).toBe(true);
+    expect(pawn.data.stunTurns).toBe(2);
+  });
+
+  it('_decayStunStatuses decrements counter and removes stunned when expired', () => {
+    const bs = new BattleState('knight', 'pawn_pusher');
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) bs._state.board[r][c] = null;
+    const pawn = makePiece('pawn', 'enemy');
+    pawn.tags.add('stunned');
+    pawn.data.stunTurns = 2;
+    setSq(bs._state.board, 'e4', pawn);
+
+    bs._decayStunStatuses();
+    expect(pawn.tags.has('stunned')).toBe(true);
+    expect(pawn.data.stunTurns).toBe(1);
+
+    bs._decayStunStatuses();
+    expect(pawn.tags.has('stunned')).toBe(false);
+    expect(pawn.data.stunTurns).toBeUndefined();
   });
 });
 

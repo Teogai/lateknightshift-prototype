@@ -18,7 +18,7 @@
 | `piece` | Place a piece (pawn/knight/bishop/rook/queen) on rank 1-2 | **Removed** |
 | `summon_duck` | Place a duck on any empty square | **Removed** |
 | `move_duck` | Move any duck to any empty square | Discard |
-| `stun` | Apply `stunned` tag to any piece | Discard |
+| `stun` | Apply `stunned` tag to any piece for 2 turns | Discard |
 | `shield` | Apply `shielded` tag to any piece | Discard |
 | `sacrifice` | Destroy a friendly piece and a weaker enemy piece | Discard |
 | `unblock` | Apply `ghost` tag for 5 turns | Discard |

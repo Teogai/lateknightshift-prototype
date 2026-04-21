@@ -897,6 +897,76 @@ function showNextPromo() {
   document.getElementById('promotion-modal').classList.remove('hidden');
 }
 
+// ─── piece detail panel ───────────────────────────────────────────────────────
+
+function renderPieceDetailMoves(sq, legalMoves) {
+  const container = document.getElementById('piece-detail-moves');
+  container.innerHTML = '';
+  const legalSet = new Set(legalMoves);
+  for (let rank = 7; rank >= 0; rank--) {
+    for (let file = 0; file < 8; file++) {
+      const sqName = 'abcdefgh'[file] + (rank + 1);
+      const isLight = (rank + file) % 2 === 0;
+      const div = document.createElement('div');
+      div.className = 'piece-detail-move-sq ' + (isLight ? 'light' : 'dark');
+      if (sqName === sq) {
+        div.classList.add('current');
+        div.textContent = '●';
+      } else if (legalSet.has(sqName)) {
+        div.classList.add('legal');
+        div.textContent = '◆';
+      }
+      container.appendChild(div);
+    }
+  }
+}
+
+export function showPieceDetail(sq) {
+  const d = gameState ? gameState.toDict() : null;
+  const piece = d?.board[sq];
+  if (!piece) return;
+
+  const panel = document.getElementById('piece-detail');
+  const img = document.getElementById('piece-detail-img');
+  const name = document.getElementById('piece-detail-name');
+  const value = document.getElementById('piece-detail-value');
+  const status = document.getElementById('piece-detail-status');
+
+  const imageData = PIECES[piece.color];
+  img.src = imageData ? imageData[piece.type] : '';
+  img.alt = piece.color + ' ' + piece.type;
+
+  const ownerLabel = piece.color === 'white' ? 'Player' : piece.color === 'black' ? 'Enemy' : 'Neutral';
+  name.textContent = ownerLabel + ' ' + piece.type;
+
+  const val = PIECE_VALUES[piece.type] ?? 0;
+  value.textContent = 'Value: ' + val;
+
+  status.innerHTML = '';
+  if (piece.tags && piece.tags.length > 0) {
+    for (const tag of piece.tags) {
+      const span = document.createElement('span');
+      span.className = 'piece-detail-status-tag';
+      span.textContent = tag;
+      const color = STATUS_BADGE_COLORS[tag];
+      if (color) span.style.backgroundColor = color;
+      status.appendChild(span);
+    }
+  }
+
+  const legalMoves = gameState.legalMovesForPiece(sq);
+  renderPieceDetailMoves(sq, legalMoves);
+
+  panel.classList.remove('hidden');
+  uiState.pieceDetailSq = sq;
+}
+
+export function hidePieceDetail() {
+  const panel = document.getElementById('piece-detail');
+  panel.classList.add('hidden');
+  uiState.pieceDetailSq = null;
+}
+
 export function handleSquareClick(sq) {
   const d = gameState ? gameState.toDict() : null;
 
@@ -946,7 +1016,15 @@ export function handleSquareClick(sq) {
     return;
   }
 
-  if (uiState.phase === 'idle') return;
+  if (uiState.phase === 'idle') {
+    const piece = d?.board[sq];
+    if (piece) {
+      showPieceDetail(sq);
+    } else {
+      hidePieceDetail();
+    }
+    return;
+  }
 
   if (uiState.phase === 'card_selected') {
     if (uiState.selectedCardType === 'move' && !uiState.selectedMoveVariant) {

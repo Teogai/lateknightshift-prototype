@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="./css/screens.css" />
   <link rel="stylesheet" href="./css/modals.css" />
   <link rel="stylesheet" href="./css/responsive.css" />
+  <link rel="stylesheet" href="./css/piece-detail.css" />
 </head>
 <body>
 
@@ -49,6 +50,19 @@
         <div id="debug-bar">
           <button id="btn-debug-move">Debug: Move Any</button>
           <button id="btn-debug-win">Debug: Win</button>
+        </div>
+      </div>
+
+      <!-- Piece detail panel -->
+      <div id="piece-detail" class="hidden">
+        <button id="piece-detail-close" class="piece-detail-close">&times;</button>
+        <div id="piece-detail-content">
+          <img id="piece-detail-img" src="" alt="" />
+          <h3 id="piece-detail-name"></h3>
+          <div id="piece-detail-value"></div>
+          <div id="piece-detail-status"></div>
+          <div id="piece-detail-moves-label">Legal moves</div>
+          <div id="piece-detail-moves"></div>
         </div>
       </div>
 

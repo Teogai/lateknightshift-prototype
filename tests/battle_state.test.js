@@ -401,7 +401,7 @@ describe('new card play methods', () => {
     expect(result.error).toBeDefined();
   });
 
-  test('playStunCard adds stunned tag', () => {
+  test('playStunCard adds stunned tag and sets stunTurns=2', () => {
     const state = makeStateWithCards([stunCard()], [
       { sq: 'e1', type: 'king', owner: 'player' },
       { sq: 'e8', type: 'king', owner: 'enemy' },
@@ -409,7 +409,29 @@ describe('new card play methods', () => {
     ]);
     const result = state.playStunCard(0, 'd4');
     expect(result.error).toBeUndefined();
-    expect(get(state._state.board, 'd4').tags.has('stunned')).toBe(true);
+    const piece = get(state._state.board, 'd4');
+    expect(piece.tags.has('stunned')).toBe(true);
+    expect(piece.data.stunTurns).toBe(2);
+  });
+
+  test('stun decays after 2 turns', () => {
+    const state = makeStateWithCards([stunCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'd4', type: 'rook', owner: 'enemy' },
+    ]);
+    state.playStunCard(0, 'd4');
+    const piece = get(state._state.board, 'd4');
+
+    // After 1 decay: still stunned
+    state._decayStunStatuses();
+    expect(piece.tags.has('stunned')).toBe(true);
+    expect(piece.data.stunTurns).toBe(1);
+
+    // After 2nd decay: tag removed
+    state._decayStunStatuses();
+    expect(piece.tags.has('stunned')).toBe(false);
+    expect(piece.data.stunTurns).toBeUndefined();
   });
 
   test('playShieldCard adds shielded tag and attaches effect', () => {
@@ -465,5 +487,22 @@ describe('new card play methods', () => {
     const piece = get(state._state.board, 'd4');
     expect(piece.tags.has('ghost')).toBe(true);
     expect(piece.data.ghostTurns).toBe(5);
+  });
+
+  test('legalMovesForPiece returns legal destinations for any piece', () => {
+    const state = makeStateWithCards([], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'd4', type: 'rook', owner: 'player' },
+      { sq: 'f6', type: 'knight', owner: 'enemy' },
+    ]);
+    // Player rook at d4 should have legal moves
+    const moves = state.legalMovesForPiece('d4');
+    expect(moves.length).toBeGreaterThan(0);
+    // Enemy knight at f6 should have legal moves
+    const enemyMoves = state.legalMovesForPiece('f6');
+    expect(enemyMoves.length).toBeGreaterThan(0);
+    // Empty square returns empty array
+    expect(state.legalMovesForPiece('a1')).toHaveLength(0);
   });
 });

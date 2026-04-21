@@ -1,4 +1,4 @@
-import { startGame, handleRedraw, handlePromotionChoice, handleUndo, handleDebugMove, handleDebugWin, initPileButtons } from './ui.js';
+import { startGame, handleRedraw, handlePromotionChoice, handleUndo, handleDebugMove, handleDebugWin, initPileButtons, hidePieceDetail } from './ui.js';
 
 document.getElementById('btn-knight').addEventListener('click', () => startGame('knight'));
 document.getElementById('btn-redraw').addEventListener('click', handleRedraw);
@@ -11,5 +11,9 @@ document.getElementById('btn-play-again').addEventListener('click', () => {
 });
 document.querySelectorAll('.promo-btn').forEach(btn => {
   btn.addEventListener('click', () => handlePromotionChoice(btn.dataset.promo));
+});
+document.getElementById('piece-detail-close').addEventListener('click', hidePieceDetail);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') hidePieceDetail();
 });
 initPileButtons();
