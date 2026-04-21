@@ -33,3 +33,4 @@
 - [2026-04-21] done: debug reroll button on card reward screen — renderCardRewardScreen onReroll callback, regenerates choices; 268 tests green
 - [2026-04-21] done: fix reward pool key to include moveVariant — pawn boost and other variant move cards now appear in rewards; 269 tests green
 - [2026-04-21] done: remove card cost, fix summon removal, consolidate docs — no mana system, all summon cards disappear after use, docs split by domain (CARDS.md, CHARACTERS.md, ENEMIES.md), AGENTS.md updated; 293 tests green
+- [2026-04-21] done: mobile responsive UI — 768px breakpoint, sidebar→top bar on mobile, board scales with clamp(), hand cards scroll horizontally, all screens responsive, map debug UI moved outside scroll; 294 tests green

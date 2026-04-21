@@ -70,3 +70,4 @@
 - battle_state.js is the adapter between ui.js (old API shape) and engine2 internals
 - enemy2 AI: defaultAI → single action/turn; doubleMoveAI → alternates warn+double pattern
 - board dict in toDict(): { sq: { type: fullName, color: 'white'|'black' } } for UI compatibility
+- Responsive UI: 768px breakpoint, mobile sidebar becomes top bar, board scales with clamp()
