@@ -569,6 +569,7 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 
   #hand-scroll {
     display: block;
+    width: 100%;
     overflow-x: auto;
     padding-bottom: 0.5rem;
   }
@@ -576,6 +577,7 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
   #hand {
     flex-wrap: nowrap;
     justify-content: flex-start;
+    width: 100%;
   }
 
   #hand::before,
