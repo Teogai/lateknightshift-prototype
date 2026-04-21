@@ -686,54 +686,46 @@ function renderPathTrack(rs, onEnter) {
   content.appendChild(track);
 
   // Debug: floor selector
-  const debugDiv = document.createElement('div');
-  debugDiv.style.marginTop = '1.5rem';
-  debugDiv.style.padding = '0.75rem';
-  debugDiv.style.border = '1px solid #663333';
-  debugDiv.style.borderRadius = '4px';
-  debugDiv.style.backgroundColor = '#1a1a1a';
-  
-  const label = document.createElement('label');
-  label.textContent = 'Debug Floor: ';
-  label.style.color = '#cc8888';
-  label.style.fontSize = '0.85rem';
-  label.style.marginRight = '0.5rem';
-  
-  const input = document.createElement('input');
-  input.type = 'number';
-  input.min = '1';
-  input.max = '16';
-  input.value = rs.currentFloor;
-  input.style.width = '60px';
-  input.style.padding = '0.3rem';
-  input.style.marginRight = '0.5rem';
-  
-  const button = document.createElement('button');
-  button.textContent = 'Jump';
-  button.style.padding = '0.3rem 0.7rem';
-  button.style.fontSize = '0.85rem';
-  button.style.background = '#2a1a1a';
-  button.style.color = '#cc8888';
-  button.style.border = '1px solid #663333';
-  button.style.borderRadius = '4px';
-  button.style.cursor = 'pointer';
-  button.addEventListener('click', () => {
-    const floor = parseInt(input.value, 10);
-    if (floor >= 1 && floor <= 16) {
-      handleDebugFloor(floor);
-    }
-  });
-  button.addEventListener('mouseover', () => {
-    button.style.background = '#3a2020';
-  });
-  button.addEventListener('mouseout', () => {
-    button.style.background = '#2a1a1a';
-  });
-  
-  debugDiv.appendChild(label);
-  debugDiv.appendChild(input);
-  debugDiv.appendChild(button);
-  content.appendChild(debugDiv);
+  const debugContainer = document.getElementById('map-debug');
+  if (debugContainer) {
+    debugContainer.innerHTML = '';
+    const debugDiv = document.createElement('div');
+    debugDiv.style.marginTop = '1.5rem';
+    debugDiv.style.padding = '0.75rem';
+    debugDiv.style.border = '1px solid #663333';
+    debugDiv.style.borderRadius = '4px';
+    debugDiv.style.backgroundColor = '#1a1a1a';
+    
+    const label = document.createElement('label');
+    label.textContent = 'Debug Floor: ';
+    label.style.color = '#cc8888';
+    label.style.fontSize = '0.85rem';
+    label.style.marginRight = '0.5rem';
+    
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.min = '1';
+    input.max = '16';
+    input.value = rs.currentFloor;
+    input.style.width = '60px';
+    input.style.padding = '0.3rem';
+    input.style.marginRight = '0.5rem';
+    
+    const button = document.createElement('button');
+    button.textContent = 'Jump';
+    button.className = 'debug-btn';
+    button.addEventListener('click', () => {
+      const floor = parseInt(input.value, 10);
+      if (floor >= 1 && floor <= 16) {
+        handleDebugFloor(floor);
+      }
+    });
+    
+    debugDiv.appendChild(label);
+    debugDiv.appendChild(input);
+    debugDiv.appendChild(button);
+    debugContainer.appendChild(debugDiv);
+  }
 
   // Scroll current floor into view
   requestAnimationFrame(() => {
