@@ -568,16 +568,20 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
   }
 
   #hand-scroll {
-    justify-content: center;
+    display: block;
     overflow-x: auto;
     padding-bottom: 0.5rem;
   }
 
   #hand {
     flex-wrap: nowrap;
-    justify-content: center;
-    flex-shrink: 0;
-    width: max-content;
+    justify-content: flex-start;
+  }
+
+  #hand::before,
+  #hand::after {
+    content: '';
+    flex: 1 0 auto;
   }
 
   .card {

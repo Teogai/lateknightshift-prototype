@@ -38,4 +38,4 @@
 - [2026-04-21] done: swap deck/discard button positions + fix mobile keyword tooltip dismissal; 294 tests green
 - [2026-04-21] done: center hand cards on mobile; 294 tests green
 - [2026-04-21] done: fix hand scroll clipping — remove overflow-x:hidden from board-col on mobile; 294 tests green
-- [2026-04-21] done: fix hand scroll centering — wrap #hand in #hand-scroll, mobile #hand-scroll justify-content:center, #hand width:max-content so cards center when narrow and scroll properly when wide; 294 tests green
+- [2026-04-21] done: fix hand scroll centering — pseudo-elements flex-grow trick centers cards when few, left-aligns with scroll when many; 294 tests green
