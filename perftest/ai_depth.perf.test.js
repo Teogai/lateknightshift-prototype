@@ -13,10 +13,10 @@
  */
 
 import { describe, test, expect } from 'vitest';
-import { GameState } from '../../js/engine2/state.js';
-import { makePiece } from '../../js/engine2/pieces.js';
-import { set } from '../../js/engine2/board.js';
-import { selectAction } from '../../js/ai2/search.js';
+import { GameState } from '../js/engine2/state.js';
+import { makePiece } from '../js/engine2/pieces.js';
+import { set } from '../js/engine2/board.js';
+import { selectAction } from '../js/ai2/search.js';
 
 // ─── helper ───────────────────────────────────────────────────────────────────
 

@@ -60,6 +60,8 @@
 - `tests/ai2/` — ai2 unit tests
 - `tests/battle_state.test.js` — BattleState adapter tests
 - `tests/enemies2.test.js` — enemies2 tests
+- `perftest/` — AI depth performance benchmarks (excluded from default run)
+- `npm run test:perf` — Run perf tests when engine/AI changes
 - Run: `npm test`
 
 ## Docs

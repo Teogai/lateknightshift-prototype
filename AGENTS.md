@@ -14,9 +14,10 @@
 3. Write minimal code to pass
 4. Run test, confirm passes
 5. Refactor if needed, tests still green
-6. Update affected `docs/*.md` (bullets only)
-7. Restart docker stack
-8. Commit
+6. If engine/AI changed, run `npm run test:perf`
+7. Update affected `docs/*.md` (bullets only)
+8. Restart docker stack
+9. Commit
 
 **CRITICAL: Steps 1-8 must be completed IN ORDER. No skipping steps. No shortcuts. If you skip any step, you are violating the workflow.**
 
@@ -109,6 +110,7 @@
 ## Run
 - Install deps: `npm install`
 - Tests: `npm test`
+- Perf tests (engine/AI changes): `npm run test:perf`
 - Dev server: `npm run dev` → http://localhost:5173
 
 ## Frontend testing
