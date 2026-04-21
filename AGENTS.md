@@ -24,6 +24,7 @@
 - Update relevant md before commit
 - **Commit all changed files after every completed task**
 - **NEVER skip commit after completing a task — this is non-negotiable**
+- **If you already read a file this session, DO NOT read it again — use the content already in context**
 
 ## Log formats
 - `docs/TASKS.md`: `[YYYY-MM-DD] done: <x>` / `[YYYY-MM-DD] todo: <x>`
