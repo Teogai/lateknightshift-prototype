@@ -1,5 +1,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 
+html, body { overflow-x: hidden; }
+
 :root {
   --sq-size: 52px;
   --card-w: 110px;
@@ -510,14 +512,18 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
     flex-direction: column;
     gap: 0.5rem;
     width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 
   #sidebar {
     width: 100%;
+    max-width: 100%;
     padding-top: 0;
     flex-direction: row;
     flex-wrap: wrap;
     gap: 0.5rem;
+    overflow-x: hidden;
   }
 
   .enemy-panel {
@@ -554,6 +560,7 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
     max-width: 100%;
     min-width: 0;
     gap: 0.25rem;
+    overflow-x: hidden;
   }
 
   #board {
@@ -566,6 +573,7 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
     padding-bottom: 0.5rem;
     justify-content: flex-start;
     width: 100%;
+    max-width: 100%;
   }
 
   .card {
@@ -576,15 +584,22 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
     gap: 0.25rem;
     padding: 0;
     flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   #center-actions {
     gap: 0.25rem;
+    flex-wrap: wrap;
+    justify-content: center;
   }
 
   .pile-btn, #btn-redraw, #btn-undo {
     padding: 0.25rem 0.4rem;
     font-size: 0.75rem;
+    white-space: nowrap;
   }
 
   #btn-redraw {
@@ -595,11 +610,16 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
   #debug-bar {
     gap: 0.25rem;
     flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   #debug-bar button {
     padding: 0.15rem 0.3rem;
     font-size: 0.65rem;
+    white-space: nowrap;
   }
 
   #status-bar {
