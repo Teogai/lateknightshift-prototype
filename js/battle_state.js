@@ -712,7 +712,9 @@ export class GameState {
 
   finishEnemyTurnSequence(warnNext = false) {
     this.enemyWillDoubleMove = warnNext;
-    this._state.enPassant = null;
+    // enPassant is intentionally NOT cleared here — it must persist into the
+    // player's turn so they can capture en passant.  It is cleared at the
+    // start of the next enemy turn (_applyEnemyAction).
 
     if (this.turn !== 'player_won' && this.turn !== 'enemy_won') {
       this.turn = 'player';
@@ -745,8 +747,6 @@ export class GameState {
       this.redrawCountdown = REDRAW_COUNTDOWN_START;
       return { ok: true, free: true };
     }
-    const { pendingMoves, warnNext } = this.startEnemyTurn();
-    this.finishEnemyTurn(pendingMoves, warnNext);
     return { ok: true, free: false };
   }
 

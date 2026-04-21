@@ -2,12 +2,6 @@
 
 ## Rules
 - Character = starting pieces + starter deck + signature card
-- Prototype scope: one character (The Knight)
-
-## The Knight
-- Starting pieces: King e1, Rook a1, Knight b1, Pawn a2, Pawn d2, Pawn e2
-- Starter deck: 7×Move, 2×Summon Pawn, 1×Knight Move (10 cards total)
-- Signature: Knight Move card
 
 ## How to add a character
 1. `config/characters.js` — add `CHARACTER_PIECES` entry (type, color, sq)

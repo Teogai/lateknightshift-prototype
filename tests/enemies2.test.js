@@ -1,5 +1,6 @@
 import { describe, test, expect } from 'vitest';
-import { ENEMIES, VALID_ENEMIES, REGULAR_ENEMIES, ELITE_ENEMY, BOSS_ENEMY } from '../js/enemies2.js';
+import { ENEMIES, VALID_ENEMIES, REGULAR_ENEMIES, ELITE_ENEMY, ELITE_2_ENEMY, BOSS_ENEMY } from '../js/enemies2.js';
+import { ELITE_ENEMY as CONFIG_ELITE_ENEMY, ELITE_2_ENEMY as CONFIG_ELITE_2_ENEMY, BOSS_ENEMY as CONFIG_BOSS_ENEMY } from '../config/enemies.js';
 import { GameState } from '../js/engine2/state.js';
 import { makePiece } from '../js/engine2/pieces.js';
 import { set } from '../js/engine2/board.js';
@@ -17,12 +18,16 @@ test('REGULAR_ENEMIES is non-empty', () => {
   expect(REGULAR_ENEMIES.length).toBeGreaterThan(0);
 });
 
-test('ELITE_ENEMY is duelist', () => {
-  expect(ELITE_ENEMY).toBe('duelist');
+test('ELITE_ENEMY matches config', () => {
+  expect(ELITE_ENEMY).toBe(CONFIG_ELITE_ENEMY);
 });
 
-test('BOSS_ENEMY is boss_duelist', () => {
-  expect(BOSS_ENEMY).toBe('boss_duelist');
+test('ELITE_2_ENEMY matches config', () => {
+  expect(ELITE_2_ENEMY).toBe(CONFIG_ELITE_2_ENEMY);
+});
+
+test('BOSS_ENEMY matches config', () => {
+  expect(BOSS_ENEMY).toBe(CONFIG_BOSS_ENEMY);
 });
 
 test('each enemy has pieces array', () => {

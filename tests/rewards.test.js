@@ -1,6 +1,7 @@
 import { test, expect } from 'vitest';
 import { getRewardPool, pickCardChoices, pickPieceChoices } from '../js/rewards.js';
 import { STARTER_DECKS, pawnBoostCard } from '../js/cards2/move_cards.js';
+import { REWARD_CHOICES, PIECE_REWARD_CHOICES, PIECE_RARITY_WEIGHTS } from '../config/game.js';
 
 function cardKey(c) {
   return c.type + (c.piece || '') + (c.moveVariant || '');
@@ -26,49 +27,51 @@ test('getRewardPool includes pawn boost for knight', () => {
 
 // --- pickCardChoices ---
 test('pickCardChoices returns requested count', () => {
-  expect(pickCardChoices(3)).toHaveLength(3);
+  expect(pickCardChoices(REWARD_CHOICES)).toHaveLength(REWARD_CHOICES);
 });
 test('pickCardChoices returns no duplicate card types', () => {
   for (let i = 0; i < 20; i++) {
-    const choices = pickCardChoices(3);
+    const choices = pickCardChoices(REWARD_CHOICES);
     const keys = choices.map(({ card }) => cardKey(card));
     expect(new Set(keys).size).toBe(keys.length);
   }
 });
 test('pickCardChoices cards have name and type', () => {
-  for (const { card } of pickCardChoices(3)) {
+  for (const { card } of pickCardChoices(REWARD_CHOICES)) {
     expect(card.name).toBeDefined();
     expect(card.type).toBeDefined();
   }
 });
 test('pickCardChoices includes rarity field', () => {
-  for (const entry of pickCardChoices(3)) {
+  for (const entry of pickCardChoices(REWARD_CHOICES)) {
     expect(['common', 'uncommon', 'rare']).toContain(entry.rarity);
   }
 });
 
 // --- pickPieceChoices ---
 test('pickPieceChoices returns requested count', () => {
-  expect(pickPieceChoices(3)).toHaveLength(3);
+  expect(pickPieceChoices(PIECE_REWARD_CHOICES)).toHaveLength(PIECE_REWARD_CHOICES);
 });
 test('pickPieceChoices has no duplicate pieces', () => {
   for (let i = 0; i < 20; i++) {
-    const choices = pickPieceChoices(3);
+    const choices = pickPieceChoices(PIECE_REWARD_CHOICES);
     const pieces = choices.map(c => c.piece);
     expect(new Set(pieces).size).toBe(pieces.length);
   }
 });
 test('pickPieceChoices entries have piece and rarity', () => {
-  for (const entry of pickPieceChoices(3)) {
+  for (const entry of pickPieceChoices(PIECE_REWARD_CHOICES)) {
     expect(entry.piece).toBeDefined();
     expect(entry.rarity).toBeDefined();
   }
 });
 test('pickPieceChoices rarity weights yield pawn most often', () => {
   let pawnCount = 0;
-  for (let i = 0; i < 300; i++) {
+  const trials = 300;
+  for (let i = 0; i < trials; i++) {
     if (pickPieceChoices(1)[0]?.piece === 'pawn') pawnCount++;
   }
-  // pawn weight 55% → should appear far more than 50% of the time
-  expect(pawnCount).toBeGreaterThan(120);
+  const pawnWeight = PIECE_RARITY_WEIGHTS.common.weight;
+  // Should appear well above random chance based on configured weight
+  expect(pawnCount).toBeGreaterThan(trials * (pawnWeight / 100) * 0.7);
 });

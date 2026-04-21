@@ -20,6 +20,14 @@
 
 **CRITICAL: Steps 1-8 must be completed IN ORDER. No skipping steps. No shortcuts. If you skip any step, you are violating the workflow.**
 
+## TDD for debugging — reproduce bugs with tests
+- When a bug is reported, write a test that replicates the real scenario and makes it fail
+- The test must fail BEFORE any fix is applied — this proves the test actually catches the bug
+- Follow the exact code path from the real game, not just the engine internals
+- Only after confirming the test fails, apply the minimal fix
+- Run the test again to confirm it passes
+- This prevents regressions and documents the bug for future reference
+
 ## Commits
 - Lowercase imperative, <50 chars
 - One commit per passing feature, not per file

@@ -3,6 +3,9 @@ import { GameState, knightAttacks } from '../js/battle_state.js';
 import { pawnBoostCard, summonDuckCard, moveDuckCard, stunCard, shieldCard, sacrificeCard, unblockCard } from '../js/cards2/move_cards.js';
 import { makePiece } from '../js/engine2/pieces.js';
 import { get, set } from '../js/engine2/board.js';
+import { CHARACTER_PIECES } from '../config/characters.js';
+import { ENEMIES } from '../config/enemies.js';
+import { HAND_SIZE, REDRAW_COUNTDOWN_START } from '../config/game.js';
 
 function freshGame(character = 'knight', enemy = 'pawn_pusher') {
   return new GameState(character, enemy);
@@ -16,23 +19,23 @@ test('new game returns board and hand and turn', () => {
   expect(d.turn).toBe('player');
 });
 
-test('knight character starts with 6 player pieces', () => {
+test('knight character starts with correct player piece count', () => {
   const state = freshGame();
   const pieces = Object.values(state.toDict().board);
   const player = pieces.filter(p => p.color === 'white');
-  expect(player).toHaveLength(6);
+  expect(player).toHaveLength(CHARACTER_PIECES.knight.length);
 });
 
-test('pawn_pusher enemy starts with 6 enemy pieces', () => {
+test('pawn_pusher enemy starts with correct enemy piece count', () => {
   const state = freshGame();
   const pieces = Object.values(state.toDict().board);
   const enemy = pieces.filter(p => p.color === 'black');
-  expect(enemy).toHaveLength(6);
+  expect(enemy).toHaveLength(ENEMIES.pawn_pusher.pieces.length);
 });
 
-test('new game deals 6 cards', () => {
+test('new game deals correct hand size', () => {
   const state = freshGame();
-  expect(state.toDict().hand).toHaveLength(6);
+  expect(state.toDict().hand).toHaveLength(HAND_SIZE);
 });
 
 test('invalid character throws', () => {
@@ -116,7 +119,7 @@ test('playSummonCard on rank 5 returns error', () => {
 
 test('toDict includes redraw_countdown', () => {
   const d = freshGame().toDict();
-  expect(d.redraw_countdown).toBe(4);
+  expect(d.redraw_countdown).toBe(REDRAW_COUNTDOWN_START);
 });
 
 test('toDict does not include mana', () => {
@@ -146,6 +149,18 @@ test('redrawHand replaces hand', () => {
   expect(result.free).toBe(true);
   expect(result.ok).toBe(true);
   expect(state.toDict().hand).toHaveLength(6);
+});
+
+test('redrawHand when countdown > 0 does not execute enemy turn', () => {
+  const state = freshGame();
+  state.redrawCountdown = 2;
+  const boardBefore = JSON.stringify(state.toDict().board);
+  const result = state.redrawHand();
+  expect(result.free).toBe(false);
+  expect(result.ok).toBe(true);
+  const boardAfter = JSON.stringify(state.toDict().board);
+  expect(boardAfter).toBe(boardBefore);
+  expect(state.turn).toBe('player');
 });
 
 describe('debugMovePiece', () => {

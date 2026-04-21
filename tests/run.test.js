@@ -1,9 +1,14 @@
 import { test, expect } from 'vitest';
 import { RunState, generateNodes } from '../js/run.js';
+import { LIVES, MAP_CONFIG } from '../config/game.js';
+import { STARTER_DECK_DEFS } from '../config/cards.js';
+import { ELITE_ENEMY, ELITE_2_ENEMY, BOSS_ENEMY } from '../config/enemies.js';
+
+const KNIGHT_DECK_SIZE = STARTER_DECK_DEFS.knight.reduce((sum, c) => sum + c.count, 0);
 
 // --- RunState init ---
-test('RunState starts with 1 life', () => {
-  expect(new RunState('knight').lives).toBe(1);
+test('RunState starts with correct life count', () => {
+  expect(new RunState('knight').lives).toBe(LIVES);
 });
 test('RunState starts at floor 1', () => {
   expect(new RunState('knight').currentFloor).toBe(1);
@@ -11,31 +16,31 @@ test('RunState starts at floor 1', () => {
 test('RunState starts in map phase', () => {
   expect(new RunState('knight').phase).toBe('map');
 });
-test('RunState starts with knight deck (10 cards)', () => {
-  expect(new RunState('knight').deck).toHaveLength(10);
+test('RunState starts with knight deck of correct size', () => {
+  expect(new RunState('knight').deck).toHaveLength(KNIGHT_DECK_SIZE);
 });
 test('RunState startingPieces starts empty', () => {
   expect(new RunState('knight').startingPieces).toHaveLength(0);
 });
 
 // --- recordDefeat ---
-test('recordDefeat decrements to 0 with 1 life', () => {
+test('recordDefeat decrements lives to zero', () => {
   const r = new RunState('knight');
   r.recordDefeat();
-  expect(r.lives).toBe(0);
+  expect(r.lives).toBe(LIVES - 1);
 });
-test('recordDefeat to 0 sets phase defeated', () => {
+test('recordDefeat to zero sets phase defeated', () => {
   const r = new RunState('knight');
   r.recordDefeat();
-  expect(r.lives).toBe(0);
+  expect(r.lives).toBe(LIVES - 1);
   expect(r.phase).toBe('defeated');
 });
-test('isDefeated true at 0 lives', () => {
+test('isDefeated true at zero lives', () => {
   const r = new RunState('knight');
   r.lives = 0;
   expect(r.isDefeated()).toBe(true);
 });
-test('isDefeated false at 1+ lives', () => {
+test('isDefeated false when lives remain', () => {
   expect(new RunState('knight').isDefeated()).toBe(false);
 });
 
@@ -94,23 +99,23 @@ test('enterRoom stores pendingNode', () => {
 
 // --- generateNodes (fixed path) ---
 test('every floor returns exactly 1 node', () => {
-  for (let f = 1; f <= 16; f++) {
+  for (let f = 1; f <= MAP_CONFIG.totalFloors; f++) {
     expect(generateNodes(f)).toHaveLength(1);
   }
 });
-test('floor 9 returns iron_line monster', () => {
-  const nodes = generateNodes(9);
+test('treasure floor returns iron_line monster', () => {
+  const nodes = generateNodes(MAP_CONFIG.treasureFloor);
   expect(nodes[0]).toMatchObject({ type: 'monster', enemyKey: 'iron_line' });
 });
-test('floor 15 returns upgrade node', () => {
-  expect(generateNodes(15)[0].type).toBe('upgrade');
+test('upgrade floor returns upgrade node', () => {
+  expect(generateNodes(MAP_CONFIG.upgradeFloor)[0].type).toBe('upgrade');
 });
-test('floor 16 returns boss node', () => {
-  expect(generateNodes(16)[0].type).toBe('boss');
+test('boss floor returns boss node', () => {
+  expect(generateNodes(MAP_CONFIG.bossFloor)[0].type).toBe('boss');
 });
-test('floor 6 returns duelist elite', () => {
-  expect(generateNodes(6)[0]).toMatchObject({ type: 'elite', enemyKey: 'duelist' });
+test('elite min floor returns first elite enemy', () => {
+  expect(generateNodes(MAP_CONFIG.eliteMinFloor)[0]).toMatchObject({ type: 'elite', enemyKey: ELITE_ENEMY });
 });
-test('floor 12 returns duelist_2 elite', () => {
-  expect(generateNodes(12)[0]).toMatchObject({ type: 'elite', enemyKey: 'duelist_2' });
+test('floor 12 returns second elite enemy', () => {
+  expect(generateNodes(12)[0]).toMatchObject({ type: 'elite', enemyKey: ELITE_2_ENEMY });
 });

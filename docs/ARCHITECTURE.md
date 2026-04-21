@@ -79,3 +79,10 @@
 - enemy2 AI: defaultAI → single action/turn; doubleMoveAI → alternates warn+double pattern
 - board dict in toDict(): { sq: { type: fullName, color: 'white'|'black' } } for UI compatibility
 - Responsive UI: 768px breakpoint, mobile sidebar becomes top bar, board scales with clamp()
+
+## En passant lifecycle
+- Set by enemy double-push in `_applyEnemyAction` (battle_state.js:620) when pawn moves 7→5
+- Cleared by `_applyEnemyAction` (battle_state.js:613) at start of next enemy turn  
+- **NOT cleared by `finishEnemyTurnSequence`** — en passant must persist into player turn so they can capture it
+- Player card plays do NOT clear en passant (supports multi-card turns)
+- En passant only cleared when enemy turn begins, consuming the opportunity

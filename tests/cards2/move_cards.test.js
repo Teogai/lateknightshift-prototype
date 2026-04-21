@@ -5,6 +5,10 @@ import {
   summonDuckCard, moveDuckCard, stunCard, shieldCard, sacrificeCard, unblockCard,
   CARD_CATALOG, STARTER_DECKS, buildStarterDeck, dealHand,
 } from '../../js/cards2/move_cards.js';
+import { STARTER_DECK_DEFS, CARD_DEFS } from '../../config/cards.js';
+import { HAND_SIZE } from '../../config/game.js';
+
+const KNIGHT_DECK_SIZE = STARTER_DECK_DEFS.knight.reduce((sum, c) => sum + c.count, 0);
 
 // --- card shape ---
 test('moveCard has type move', () => {
@@ -79,24 +83,24 @@ test('CARD_CATALOG includes pawn boost as common', () => {
   expect(entry.rarity).toBe('common');
 });
 
-test('STARTER_DECKS knight has 10 cards', () => {
-  expect(STARTER_DECKS.knight).toHaveLength(10);
+test('STARTER_DECKS knight has correct deck size', () => {
+  expect(STARTER_DECKS.knight).toHaveLength(KNIGHT_DECK_SIZE);
 });
 
-test('buildStarterDeck returns 10 cards', () => {
+test('buildStarterDeck returns correct deck size', () => {
   const deck = buildStarterDeck('knight');
-  expect(deck).toHaveLength(10);
+  expect(deck).toHaveLength(KNIGHT_DECK_SIZE);
 });
 
 test('buildStarterDeck throws on unknown character', () => {
   expect(() => buildStarterDeck('wizard')).toThrow();
 });
 
-test('dealHand returns hand of size 6', () => {
+test('dealHand returns hand of correct size', () => {
   const deck = buildStarterDeck('knight');
-  const { hand, deck: remaining } = dealHand(deck, 6);
-  expect(hand).toHaveLength(6);
-  expect(remaining).toHaveLength(4);
+  const { hand, deck: remaining } = dealHand(deck, HAND_SIZE);
+  expect(hand).toHaveLength(HAND_SIZE);
+  expect(remaining).toHaveLength(KNIGHT_DECK_SIZE - HAND_SIZE);
 });
 
 // --- image propagation ---
@@ -147,14 +151,16 @@ test('unblockCard has type unblock', () => {
   expect(c.type).toBe('unblock');
 });
 
-test('CARD_CATALOG includes Summon Duck as uncommon', () => {
+test('CARD_CATALOG includes Summon Duck with config rarity', () => {
   const entry = CARD_CATALOG.find(e => e.card().name === 'Summon Duck');
+  const configDef = CARD_DEFS.find(d => d.id === 'summon_duck');
   expect(entry).toBeDefined();
-  expect(entry.rarity).toBe('uncommon');
+  expect(entry.rarity).toBe(configDef.rarity);
 });
 
-test('CARD_CATALOG includes Move Duck as common', () => {
+test('CARD_CATALOG includes Move Duck with config rarity', () => {
   const entry = CARD_CATALOG.find(e => e.card().name === 'Move Duck');
+  const configDef = CARD_DEFS.find(d => d.id === 'move_duck');
   expect(entry).toBeDefined();
-  expect(entry.rarity).toBe('common');
+  expect(entry.rarity).toBe(configDef.rarity);
 });
