@@ -1,5 +1,6 @@
 import { CARD_CATALOG, curseCard, STARTER_DECKS } from './cards2/move_cards.js';
 import { CARD_RARITY_WEIGHTS, PIECE_RARITY_WEIGHTS, REWARD_CHOICES, PIECE_REWARD_CHOICES } from '../config/game.js';
+import { CHARM_CATALOG } from './charms.js';
 import { makeCardEl } from './ui.js';
 import { CHARACTER_PIECES } from './engine2/constants2.js';
 
@@ -48,10 +49,10 @@ export function pickCardChoices(count = REWARD_CHOICES, character = null) {
   const usedTypes = new Set();
 
   for (let i = 0; i < count; i++) {
-    // Filter pool to unused entries
+    // Filter pool to unused entries, exclude piece cards
     const remaining = pool.filter(e => {
       const c = e.card();
-      return !usedTypes.has(cardKey(c));
+      return c.type !== 'piece' && !usedTypes.has(cardKey(c));
     });
     if (!remaining.length) break;
 
@@ -62,6 +63,35 @@ export function pickCardChoices(count = REWARD_CHOICES, character = null) {
     const entry = candidates[Math.floor(Math.random() * candidates.length)];
     const card = entry.card();
     usedTypes.add(cardKey(card));
+    choices.push({ card, rarity: entry.rarity });
+  }
+  return choices;
+}
+
+// Pick `count` piece card choices, weighted by rarity, no duplicates by piece
+export function pickPieceCardChoices(count = REWARD_CHOICES) {
+  const pool = CARD_CATALOG.filter(e => e.card().type === 'piece');
+  if (!pool.length) return [];
+
+  const rarityItems = Object.entries(CARD_RARITY_WEIGHTS).map(([rarity, weight]) => ({ rarity, weight }));
+  const choices = [];
+  const usedPieces = new Set();
+
+  for (let i = 0; i < count; i++) {
+    // Filter pool to unused pieces
+    const remaining = pool.filter(e => {
+      const c = e.card();
+      return !usedPieces.has(c.piece);
+    });
+    if (!remaining.length) break;
+
+    // Pick a rarity
+    const chosenRarity = weightedSample(rarityItems).rarity;
+    const byRarity = remaining.filter(e => e.rarity === chosenRarity);
+    const candidates = byRarity.length ? byRarity : remaining;
+    const entry = candidates[Math.floor(Math.random() * candidates.length)];
+    const card = entry.card();
+    usedPieces.add(card.piece);
     choices.push({ card, rarity: entry.rarity });
   }
   return choices;
@@ -89,6 +119,36 @@ export function pickPieceChoices(count = PIECE_REWARD_CHOICES) {
     choices.push({ piece, rarity: tier.rarity, label: PIECE_NAMES[piece[0]] || piece });
   }
   return choices;
+}
+
+// Pick `count` charm choices, weighted by rarity, no duplicates
+export function pickCharmChoices(count = REWARD_CHOICES) {
+  const pool = CHARM_CATALOG;
+  if (!pool.length) return [];
+
+  const rarityItems = Object.entries(CARD_RARITY_WEIGHTS).map(([rarity, weight]) => ({ rarity, weight }));
+  const choices = [];
+  const usedIds = new Set();
+
+  for (let i = 0; i < count; i++) {
+    const remaining = pool.filter(e => !usedIds.has(e.charm.id));
+    if (!remaining.length) break;
+
+    const chosenRarity = weightedSample(rarityItems).rarity;
+    const byRarity = remaining.filter(e => e.rarity === chosenRarity);
+    const candidates = byRarity.length ? byRarity : remaining;
+    const entry = candidates[Math.floor(Math.random() * candidates.length)];
+    usedIds.add(entry.charm.id);
+    choices.push({ charm: { ...entry.charm }, rarity: entry.rarity });
+  }
+  return choices;
+}
+
+export function applyCharmToCard(card, charm) {
+  if (!charm.validCardTypes.includes(card.type)) {
+    return { error: `Cannot apply ${charm.name} to ${card.type} card` };
+  }
+  return { ...card, charm: { ...charm } };
 }
 
 // --- Render functions ---
@@ -263,4 +323,40 @@ export function renderDefeatScreen(onAddCurse, onRetry) {
   retryBtn.textContent = 'Retry the battle (use a life)';
   retryBtn.addEventListener('click', onRetry);
   content.appendChild(retryBtn);
+}
+
+export function renderCharmRewardScreen(choices, onChosen) {
+  const content = document.getElementById('room-content');
+  if (!content) return;
+  content.innerHTML = '<h2>Choose a charm</h2>';
+  const row = document.createElement('div');
+  row.className = 'charm-choices';
+  choices.forEach(({ charm, rarity }, i) => {
+    const btn = document.createElement('button');
+    btn.className = `charm-reward-btn rarity-${rarity}`;
+    btn.innerHTML = `<strong>${charm.name}</strong><br><small>${charm.desc}</small><br>[${rarity}]`;
+    btn.addEventListener('click', () => onChosen(i, charm));
+    row.appendChild(btn);
+  });
+  content.appendChild(row);
+}
+
+export function renderCharmApplyScreen(deck, charm, onChosen) {
+  const content = document.getElementById('room-content');
+  if (!content) return;
+  content.innerHTML = `<h2>Apply ${charm.name} to a card</h2><p>${charm.desc}</p><p>Valid for: ${charm.validCardTypes.join(', ')} cards</p>`;
+  const grid = document.createElement('div');
+  grid.className = 'card-scroll-grid';
+  deck.forEach((card, i) => {
+    if (card.type === 'curse') return;
+    const valid = charm.validCardTypes.includes(card.type);
+    const el = makeCardEl(card, { onClick: () => {
+      if (!valid) return;
+      onChosen(i, card);
+    }});
+    if (!valid) el.classList.add('invalid-charm-target');
+    if (card.charm) el.classList.add('already-charmed');
+    grid.appendChild(el);
+  });
+  content.appendChild(grid);
 }

@@ -72,48 +72,48 @@ test('geometricDestsFor bishop pattern returns diagonals only', () => {
   }
 });
 
-test('playSummonCard places a piece on the board', () => {
+test('playPieceCard places a piece on the board', () => {
   const state = freshGame();
-  // Find a summon card in hand
+  // Find a piece card in hand
   const d = state.toDict();
-  const idx = d.hand.findIndex(c => c.type === 'summon');
-  if (idx === -1) return; // no summon in hand, skip
+  const idx = d.hand.findIndex(c => c.type === 'piece');
+  if (idx === -1) return; // no piece card in hand, skip
   const card = d.hand[idx];
-  const result = state.playSummonCard(idx, card.piece, 'h2');
+  const result = state.playPieceCard(idx, card.piece, 'h2');
   expect(result.error).toBeUndefined();
   expect(state.toDict().board['h2']).toBeDefined();
 });
 
-test('playSummonCard removes card from game (not discard)', () => {
+test('playPieceCard removes card from game (not discard)', () => {
   const state = freshGame();
   const d = state.toDict();
-  const idx = d.hand.findIndex(c => c.type === 'summon');
+  const idx = d.hand.findIndex(c => c.type === 'piece');
   if (idx === -1) return;
   const card = d.hand[idx];
-  state.playSummonCard(idx, card.piece, 'h2');
+  state.playPieceCard(idx, card.piece, 'h2');
   expect(state.toDict().discard_size).toBe(0);
   expect(state.toDict().discard).toHaveLength(0);
-  expect(state.toDict().hand).not.toContainEqual(expect.objectContaining({ type: 'summon', piece: card.piece }));
+  expect(state.toDict().hand).not.toContainEqual(expect.objectContaining({ type: 'piece', piece: card.piece }));
 });
 
-test('playSummonCard on occupied square returns error', () => {
+test('playPieceCard on occupied square returns error', () => {
   const state = freshGame();
   const d = state.toDict();
-  const idx = d.hand.findIndex(c => c.type === 'summon');
+  const idx = d.hand.findIndex(c => c.type === 'piece');
   if (idx === -1) return;
   const card = d.hand[idx];
   // e1 is occupied by player king
-  const result = state.playSummonCard(idx, card.piece, 'e1');
+  const result = state.playPieceCard(idx, card.piece, 'e1');
   expect(result.error).toBeDefined();
 });
 
-test('playSummonCard on rank 5 returns error', () => {
+test('playPieceCard on rank 5 returns error', () => {
   const state = freshGame();
   const d = state.toDict();
-  const idx = d.hand.findIndex(c => c.type === 'summon');
+  const idx = d.hand.findIndex(c => c.type === 'piece');
   if (idx === -1) return;
   const card = d.hand[idx];
-  const result = state.playSummonCard(idx, card.piece, 'e5');
+  const result = state.playPieceCard(idx, card.piece, 'e5');
   expect(result.error).toBeDefined();
 });
 

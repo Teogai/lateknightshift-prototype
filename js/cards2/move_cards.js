@@ -12,8 +12,8 @@ export function moveCard() {
   return { name: 'Move', type: 'move' };
 }
 
-export function summonCard(piece) {
-  return { name: `Summon ${piece.charAt(0).toUpperCase() + piece.slice(1)}`, type: 'summon', piece };
+export function pieceCard(piece) {
+  return { name: `${piece.charAt(0).toUpperCase() + piece.slice(1)}`, type: 'piece', piece };
 }
 
 export function knightMoveCard() {
@@ -78,7 +78,7 @@ export function upgradeCard(card) {
 
 const _factories = {
   moveCard,
-  summonCard,
+  pieceCard,
   knightMoveCard,
   bishopMoveCard,
   rookMoveCard,
@@ -96,7 +96,7 @@ function makeCardInstance(def) {
   const key = CARD_FACTORY_KEYS[def.id];
   const factory = _factories[key];
   let card;
-  if (def.type === 'summon') {
+  if (def.type === 'piece') {
     card = factory(def.piece);
   } else {
     card = factory();
@@ -110,7 +110,7 @@ export const CARD_CATALOG = CARD_DEFS.map(def => {
   const key = CARD_FACTORY_KEYS[def.id];
   const factory = _factories[key];
   let cardFn;
-  if (def.type === 'summon') {
+  if (def.type === 'piece') {
     cardFn = () => factory(def.piece);
   } else {
     cardFn = factory;

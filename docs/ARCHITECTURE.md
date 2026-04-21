@@ -4,11 +4,12 @@
 - `config/game.js` — MAP_CONFIG, rarity weights, lives, reward counts, hand size, redraw countdown
 - `config/enemies.js` — ENEMIES data (pieces, personality, aiType)
 - `config/cards.js` — CARD_DEFS, STARTER_DECK_DEFS
+- `config/charms.js` — CHARM_DEFS, CHARM_RARITY_WEIGHTS
 - `config/characters.js` — CHARACTERS (name, pieces)
 - `config/path.js` — FIXED_PATH, ROOM_META
 - `js/run.js` — RunState class: deck/pieces/lives/floor/phase lifecycle; re-exports generateNodes
 - `js/map.js` — imports FIXED_PATH from config/path.js; exports generateNodes, renderMapScreen
-- `js/rewards.js` — pickCardChoices, pickPieceChoices, render* screen functions for all room types
+- `js/rewards.js` — pickCardChoices, pickPieceChoices, pickPieceCardChoices, pickCharmChoices, applyCharmToCard, render* screen functions for all room types
 - `js/battle_state.js` — BattleState adapter: wraps engine2/GameState with old GameState API for ui.js; handles card play, enemy turn, redraw
 - `js/enemies2.js` — imports ENEMIES from config/enemies.js; attaches createAI() factories at load time
 - `js/ui.js` — DOM render functions, interaction handlers, uiState, screen flow
@@ -49,6 +50,9 @@
 - `js/cards2/line_card.js` — line card
 - `js/cards2/index.js` — barrel re-export
 
+## charms
+- `js/charms.js` — CHARM_CATALOG, getCharmById(), canApplyCharm()
+
 ## Tests
 - `tests/` — Vitest suite
 - `tests/engine2/` — engine2 unit tests
@@ -61,6 +65,7 @@
 ## Docs
 - `docs/GAME_DESIGN.md` — high-level game design
 - `docs/CARDS.md` — card rules, types, how to add new cards
+- `docs/CHARMS.md` — charm system, types, effects, how to add new charms
 - `docs/CHARACTERS.md` — character system
 - `docs/ENEMIES.md` — enemy roster, AI types, personalities
 - `docs/TASKS.md` — task log

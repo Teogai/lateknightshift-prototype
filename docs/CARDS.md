@@ -15,7 +15,7 @@
 |------|-------------|-------------------|
 | `move` | Move any friendly piece to a legal square | Discard |
 | `move` (variant) | Knight / Bishop / Rook / Queen / Pawn Boost geometric moves | Discard |
-| `summon` | Place a piece (pawn/knight/bishop/rook/queen) on rank 1-2 | **Removed** |
+| `piece` | Place a piece (pawn/knight/bishop/rook/queen) on rank 1-2 | **Removed** |
 | `summon_duck` | Place a duck on any empty square | **Removed** |
 | `move_duck` | Move any duck to any empty square | Discard |
 | `stun` | Apply `stunned` tag to any piece | Discard |

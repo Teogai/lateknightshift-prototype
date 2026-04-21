@@ -138,6 +138,93 @@ function matchesPattern(board, fromSq, toSq, patternType) {
   return true;
 }
 
+/** Resolve push effect: push all adjacent pieces 1 square away from center.
+ *  Chain push: if a piece would be pushed into another piece, push that piece too.
+ *  Returns array of { from, to } for all pushed pieces.
+ */
+function resolvePush(board, centerSq) {
+  const [cr, cc] = sqToRC(centerSq);
+  const DIRS = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+  const pushes = [];
+  const pushed = new Set();
+
+  for (const [dr, dc] of DIRS) {
+    const r = cr + dr, c = cc + dc;
+    if (!inBounds(r, c)) continue;
+    const sq = rcToSq(r, c);
+    const piece = get(board, sq);
+    if (!piece) continue;
+    if (pushed.has(sq)) continue;
+
+    // Try to push this piece
+    const chain = [];
+    let curR = r, curC = c;
+    while (true) {
+      const nextR = curR + dr, nextC = curC + dc;
+      if (!inBounds(nextR, nextC)) break; // Off-board, can't push
+      const nextSq = rcToSq(nextR, nextC);
+      const nextPiece = get(board, nextSq);
+      if (!nextPiece) {
+        // Empty square, push chain here
+        for (let i = chain.length - 1; i >= 0; i--) {
+          const { from, piece: p } = chain[i];
+          set(board, from, null);
+        }
+        // Place all pieces in their new positions
+        let placeR = nextR, placeC = nextC;
+        for (let i = chain.length - 1; i >= 0; i--) {
+          set(board, rcToSq(placeR, placeC), chain[i].piece);
+          pushes.push({ from: chain[i].from, to: rcToSq(placeR, placeC) });
+          pushed.add(chain[i].from);
+          placeR -= dr; placeC -= dc;
+        }
+        break;
+      } else {
+        // Another piece in the way, add to chain
+        chain.push({ from: nextSq, piece: nextPiece });
+        curR = nextR; curC = nextC;
+      }
+    }
+  }
+
+  return pushes;
+}
+
+/** Resolve atomic explosion: destroy all pieces in 3x3 area centered on sq. */
+function resolveAtomicExplosion(board, centerSq) {
+  const [cr, cc] = sqToRC(centerSq);
+  const destroyed = [];
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      const r = cr + dr, c = cc + dc;
+      if (!inBounds(r, c)) continue;
+      const sq = rcToSq(r, c);
+      const piece = get(board, sq);
+      if (piece) {
+        destroyed.push({ sq, piece });
+        set(board, sq, null);
+      }
+    }
+  }
+  return destroyed;
+}
+
+/** Check and resolve atomic explosions after a capture.
+ *  If the capturing piece or captured piece is atomic, destroy 3x3 area.
+ */
+function checkAndResolveAtomic(board, fromSq, toSq, wasCapture) {
+  if (!wasCapture) return false;
+  
+  const mover = get(board, toSq);
+  const isAtomic = mover?.data?.atomic;
+  
+  if (isAtomic) {
+    resolveAtomicExplosion(board, toSq);
+    return true;
+  }
+  return false;
+}
+
 // ─── BattleState (adapter) ────────────────────────────────────────────────────
 
 export class GameState {
@@ -298,6 +385,7 @@ export class GameState {
 
     const isPromo = piece.type === 'pawn' && toSq[1] === '8';
     const targetPiece = get(this._state.board, toSq);
+    const isCapture = targetPiece && targetPiece.owner !== 'player';
     const isKingCapture = targetPiece?.type === 'king' && targetPiece?.owner === 'enemy';
 
     if (!isKingCapture) {
@@ -341,6 +429,14 @@ export class GameState {
     this.movedThisTurn.add(toSq);
     this.lastMove = { from: fromSq, to: toSq };
 
+    // Resolve push charm if present
+    if (card.charm?.id === 'push') {
+      resolvePush(this._state.board, toSq);
+    }
+
+    // Resolve atomic explosion if capture by atomic piece
+    checkAndResolveAtomic(this._state.board, fromSq, toSq, isCapture);
+
     const winner = checkKingCaptured(this._state.board);
     if (winner) this.turn = winner;
 
@@ -362,6 +458,7 @@ export class GameState {
     if (!knightAttacks(fromSq).includes(toSq)) return { error: 'invalid knight move destination' };
 
     const target = get(this._state.board, toSq);
+    const isCapture = target && target.owner !== 'player';
     if (target?.owner === 'player') return { error: 'square occupied by friendly piece' };
 
     set(this._state.board, fromSq, null);
@@ -370,6 +467,14 @@ export class GameState {
     this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
     this.movedThisTurn.add(toSq);
     this.lastMove = { from: fromSq, to: toSq };
+
+    // Resolve push charm if present
+    if (card.charm?.id === 'push') {
+      resolvePush(this._state.board, toSq);
+    }
+
+    // Resolve atomic explosion if capture by atomic piece
+    checkAndResolveAtomic(this._state.board, fromSq, toSq, isCapture);
 
     const winner = checkKingCaptured(this._state.board);
     if (winner) this.turn = winner;
@@ -388,6 +493,7 @@ export class GameState {
     if (this.movedThisTurn.has(fromSq)) return { error: 'piece already moved this turn' };
 
     const target = get(this._state.board, toSq);
+    const isCapture = target && target.owner !== 'player';
     if (target?.owner === 'player') return { error: 'square occupied by friendly piece' };
     if (!matchesPattern(this._state.board, fromSq, toSq, pattern)) return { error: 'invalid destination for this card' };
 
@@ -397,6 +503,14 @@ export class GameState {
     this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
     this.movedThisTurn.add(toSq);
     this.lastMove = { from: fromSq, to: toSq };
+
+    // Resolve push charm if present
+    if (card.charm?.id === 'push') {
+      resolvePush(this._state.board, toSq);
+    }
+
+    // Resolve atomic explosion if capture by atomic piece
+    checkAndResolveAtomic(this._state.board, fromSq, toSq, isCapture);
 
     const winner = checkKingCaptured(this._state.board);
     if (winner) this.turn = winner;
@@ -430,12 +544,23 @@ export class GameState {
     const dests = this.pawnBoostDestsFor(fromSq);
     if (!dests.includes(toSq)) return { error: 'invalid destination for pawn boost' };
 
+    const target = get(this._state.board, toSq);
+    const isCapture = target && target.owner !== 'player';
+
     set(this._state.board, fromSq, null);
     set(this._state.board, toSq, piece);
 
     this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
     this.movedThisTurn.add(toSq);
     this.lastMove = { from: fromSq, to: toSq };
+
+    // Resolve push charm if present
+    if (card.charm?.id === 'push') {
+      resolvePush(this._state.board, toSq);
+    }
+
+    // Resolve atomic explosion if capture by atomic piece
+    checkAndResolveAtomic(this._state.board, fromSq, toSq, isCapture);
 
     const winner = checkKingCaptured(this._state.board);
     if (winner) this.turn = winner;
@@ -452,11 +577,12 @@ export class GameState {
     return { ok: true };
   }
 
-  playSummonCard(cardIndex, pieceType, toSq) {
-    if (cardIndex < 0 || cardIndex >= this._state.hand.length) return { error: 'invalid card index' };
-    const card = this._state.hand[cardIndex];
-    if (card.type !== 'summon') return { error: 'not a summon card' };
-    if (card.piece && card.piece !== pieceType) return { error: 'card summons a different piece type' };
+  playPieceCard(cardIndex, pieceType, toSq) {
+    if (this.toDict().turn !== 'player') return { error: 'not player turn' };
+    const hand = this._state.hand;
+    const card = hand[cardIndex];
+    if (card.type !== 'piece') return { error: 'not a piece card' };
+    if (card.piece && card.piece !== pieceType) return { error: 'card places a different piece type' };
 
     if (!PIECE_FULL[pieceType] && !['pawn','knight','bishop','rook','queen'].includes(pieceType))
       return { error: 'unknown piece type' };
@@ -466,7 +592,11 @@ export class GameState {
     const rank = parseInt(toSq[1]);
     if (rank !== 1 && rank !== 2) return { error: 'pieces must be placed on ranks 1 or 2' };
 
-    set(this._state.board, toSq, makePiece(pieceType, 'player'));
+    const newPiece = makePiece(pieceType, 'player');
+    if (card.charm?.id === 'atomic') {
+      newPiece.data.atomic = true;
+    }
+    set(this._state.board, toSq, newPiece);
     this.summonedThisTurn.add(toSq);
     this._state.hand.splice(cardIndex, 1);
     this.lastMove = { from: null, to: toSq };
@@ -614,7 +744,20 @@ export class GameState {
     this.lastMove = { from: action.source, to: action.targets?.[0] ?? null };
     // Handle en passant update
     const piece = get(this._state.board, action.source);
+    
+    // Check if destination has an atomic piece before capture
+    const dest = action.targets?.[0];
+    const targetPiece = dest ? get(this._state.board, dest) : null;
+    const isCapture = targetPiece && targetPiece.owner !== piece?.owner;
+    const targetWasAtomic = targetPiece?.data?.atomic;
+    
     this._state.play(action);
+    
+    // Resolve atomic explosion if captured piece was atomic
+    if (isCapture && targetWasAtomic) {
+      resolveAtomicExplosion(this._state.board, dest);
+    }
+    
     // Track enemy pawn double-push for en passant
     if (piece?.type === 'pawn' && action.source?.[1] === '7' && action.targets?.[0]?.[1] === '5') {
       this._state.enPassant = action.targets[0][0] + '6';

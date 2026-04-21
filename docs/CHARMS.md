@@ -1,0 +1,45 @@
+# CHARMS
+
+## Overview
+Charms enhance cards. Obtained from elite battles.
+
+## Rules
+- Charms are applied immediately upon receiving (pick charm → pick valid card → attach)
+- A card can have at most one charm
+- Charms persist on cards through the entire run
+- Charms define valid card types they can be attached to
+
+## Charm Types
+
+| ID | Name | Valid Cards | Effect |
+|----|------|-------------|--------|
+| `push` | Push | `move` | After moving, push all adjacent pieces 1 square away. Chain push supported. |
+| `atomic` | Atomic | `piece` | Summoned piece becomes atomic. Explodes in 3x3 area on capture (both capturing and being captured). |
+
+## Data
+- Definitions: `config/charms.js` (`CHARM_DEFS`)
+- Catalog: `js/charms.js` (`CHARM_CATALOG`)
+- Reward logic: `js/rewards.js` (`pickCharmChoices`, `applyCharmToCard`)
+
+## Adding a New Charm
+
+1. `config/charms.js` — add entry to `CHARM_DEFS` with id, name, desc, validCardTypes, rarity
+2. `js/charms.js` — `CHARM_CATALOG` auto-builds from config
+3. `js/battle_state.js` — implement effect in relevant play methods
+4. `js/rewards.js` — `renderCharmRewardScreen` + `renderCharmApplyScreen` if UI changes needed
+5. Add tests in `tests/charms.test.js`
+
+## Implementation Notes
+
+### Push Charm
+- Resolved after move card resolves (`playMoveCard`, `playKnightMoveCard`, etc.)
+- From destination square, checks all 8 directions for adjacent pieces
+- Chain push: if pushed piece would land on another piece, that piece is also pushed
+- Off-board: chain stops (structure ready for future "push off board" effect)
+
+### Atomic Charm
+- Applied to piece cards: summoned piece gets `data.atomic = true`
+- On capture by atomic piece: 3x3 explosion at destination after move
+- On capture of atomic piece: 3x3 explosion at destination before removal
+- Explosion destroys ALL pieces including kings
+- Tracked in both player moves (`checkAndResolveAtomic`) and enemy moves (`_applyEnemyAction`)

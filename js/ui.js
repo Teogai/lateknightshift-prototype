@@ -4,7 +4,7 @@ import { FIXED_PATH } from './map.js';
 import {
   renderCardRewardScreen, renderPieceRewardScreen, renderUpgradeScreen,
   renderTransformScreen, renderTransformResultScreen, renderShopScreen, renderDefeatScreen,
-  pickCardChoices, pickPieceChoices,
+  pickCardChoices, pickPieceChoices, pickPieceCardChoices, pickCharmChoices, applyCharmToCard,
 } from './rewards.js';
 import { ENEMIES, REGULAR_ENEMIES, ELITE_ENEMY, BOSS_ENEMY } from './enemies2.js';
 import { curseCard, bishopMoveCard, rookMoveCard, queenMoveCard } from './cards2/move_cards.js';
@@ -287,7 +287,7 @@ const CARD_ART_COLORS = {
   curse: '#5a1a7a',
 };
 function cardArtColor(card) {
-  if (card.type === 'summon') {
+  if (card.type === 'piece') {
     return '#e8e8e8';
   }
   return CARD_ART_COLORS[card.type] || '#3a3a3a';
@@ -338,7 +338,7 @@ export function makeCardEl(card, { onClick } = {}) {
 }
 
 function sortCardsByType(cards) {
-  const typeOrder = { move: 0, summon: 1, curse: 2 };
+  const typeOrder = { move: 0, piece: 1, curse: 2 };
   return [...cards].sort((a, b) => {
     const typeA = typeOrder[a.type] ?? 99;
     const typeB = typeOrder[b.type] ?? 99;
@@ -521,7 +521,24 @@ function showBattleReward() {
   if (!runState) return;
   const nodeType = runState.pendingNode?.type;
 
-  if (nodeType === 'elite' || nodeType === 'treasure') {
+  if (nodeType === 'elite') {
+    // Elite gives charm reward
+    const choices = pickCharmChoices(3);
+    runState.phase = 'room';
+    showScreen('screen-room');
+    renderCharmRewardScreen(choices, (i, charm) => {
+      renderCharmApplyScreen(runState.deck, charm, (deckIdx) => {
+        const card = runState.deck[deckIdx];
+        const result = applyCharmToCard(card, charm);
+        if (result.error) {
+          alert(result.error);
+          return;
+        }
+        runState.deck[deckIdx] = result;
+        advanceAfterRoom();
+      });
+    });
+  } else if (nodeType === 'treasure') {
     const choices = pickPieceChoices(3);
     runState.phase = 'room';
     showScreen('screen-room');
@@ -775,17 +792,31 @@ export function handleNodeChosen(index) {
 export function handleRoomEntered(node) {
   showScreen('screen-room');
   if (node.type === 'event') {
-    const choices = pickCardChoices(1, runState.character);
-    if (!choices.length) { advanceAfterRoom(); return; }
-    renderTransformScreen(runState.deck, runState.character, (deckIdx) => {
-      const oldCard = runState.deck[deckIdx];
-      const newCard = choices[0].card;
-      runState.transformCard(deckIdx, newCard);
-      renderTransformResultScreen(oldCard, newCard, advanceAfterRoom);
+    // Show only piece cards from deck
+    const pieceCardIndices = runState.deck.map((c, i) => ({ card: c, index: i })).filter(({ card }) => card.type === 'piece');
+    if (!pieceCardIndices.length) { advanceAfterRoom(); return; }
+
+    const content = document.getElementById('room-content');
+    if (!content) return;
+    content.innerHTML = '<h2>Choose a piece card to place on the board</h2>';
+    const grid = document.createElement('div');
+    grid.className = 'card-scroll-grid';
+    pieceCardIndices.forEach(({ card, index }) => {
+      const el = makeCardEl(card, { onClick: () => {
+        // Consume the piece card
+        runState.removeCard(index);
+        // Show square picker for the piece
+        const typeMap = { pawn: 'p', knight: 'n', bishop: 'b', rook: 'r', queen: 'q' };
+        const pieceType = typeMap[card.piece] || card.piece;
+        renderSquarePickerForPiece(pieceType, advanceAfterRoom);
+      }});
+      grid.appendChild(el);
     });
+    content.appendChild(grid);
   } else if (node.type === 'shop') {
-    renderShopScreen(runState.deck, (deckIdx) => {
-      runState.removeCard(deckIdx);
+    const choices = pickPieceCardChoices(3);
+    renderCardRewardScreen(choices, (i, card) => {
+      runState.addRewardCard(card);
       advanceAfterRoom();
     });
   } else if (node.type === 'upgrade') {
@@ -823,12 +854,12 @@ export function handleCardClick(index, card) {
     setHint('Queen Move: click a friendly piece to move diagonally or straight');
   } else if (card.type === 'move' && card.moveVariant === 'pawn_boost') {
     setHint('Pawn Boost: click a friendly pawn to slide forward');
-  } else if (card.type === 'summon') {
+  } else if (card.type === 'piece') {
     const validRanks = ['1', '2'];
     uiState.summonTargets = 'abcdefgh'.split('').flatMap(f =>
       validRanks.map(r => f + r)
     ).filter(sq => !d.board[sq]);
-    setHint(`Click a highlighted square to summon ${card.piece}`);
+    setHint(`Click a highlighted square to place ${card.piece}`);
   } else if (card.type === 'summon_duck') {
     uiState.phase = 'summon_duck_selected';
     uiState.summonTargets = [];
@@ -965,12 +996,12 @@ export function handleSquareClick(sq) {
       } else {
         setHint('Pick a friendly pawn');
       }
-    } else if (uiState.selectedCardType === 'summon') {
+    } else if (uiState.selectedCardType === 'piece') {
       if (uiState.summonTargets.length && !uiState.summonTargets.includes(sq)) {
         setHint('Invalid placement square'); return;
       }
       if (d.board[sq]) { setHint('Square is occupied'); return; }
-      const result = gameState.playSummonCard(uiState.selectedCardIndex, uiState.selectedPieceType, sq);
+      const result = gameState.playPieceCard(uiState.selectedCardIndex, uiState.selectedPieceType, sq);
       if (result.error) { setHint(result.error); }
       resetUiState(); setHint(''); render();
       playoutEnemyTurn();
@@ -1281,6 +1312,60 @@ export function handleDebugFloor(floor) {
   console.log('[debug] jumped to floor', floor);
   showScreen('screen-map');
   renderPathTrack(runState, handleNodeChosen);
+}
+
+function renderSquarePickerForPiece(pieceType, onPlaced) {
+  const content = document.getElementById('room-content');
+  if (!content) return;
+  const typeToName = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen' };
+  const fullName = typeToName[pieceType] || pieceType;
+  const label = fullName.charAt(0).toUpperCase() + fullName.slice(1);
+  content.innerHTML = `<h2>Place your ${label} — click a rank 1–2 square</h2>`;
+
+  const occupied = new Map();
+  for (const { type, color, sq } of CHARACTER_PIECES[runState.character]) {
+    if (color === 'w') occupied.set(sq, { type, color });
+  }
+  for (const { piece, square } of runState.startingPieces) {
+    occupied.set(square, piece);
+  }
+
+  const boardEl = document.createElement('div');
+  boardEl.className = 'placement-board';
+
+  for (let rank = 8; rank >= 1; rank--) {
+    for (let fileIdx = 0; fileIdx < 8; fileIdx++) {
+      const file = 'abcdefgh'[fileIdx];
+      const sq = file + rank;
+      const isLight = (rank + fileIdx) % 2 === 0;
+      const div = document.createElement('div');
+      div.className = 'sq ' + (isLight ? 'light' : 'dark');
+
+      const placedPiece = occupied.get(sq);
+      if (placedPiece) {
+        const img = document.createElement('img');
+        const typeName = placedPiece.type || placedPiece;
+        const pieceName = typeToName[typeName] || typeName;
+        img.src = PIECES.white[pieceName] || PIECES.white[typeName];
+        img.className = 'piece-img';
+        div.appendChild(img);
+      }
+
+      if (rank <= 2 && !placedPiece) {
+        div.classList.add('summon-target');
+        div.addEventListener('click', () => {
+          runState.addStartingPiece({ type: pieceType, color: 'w' }, sq);
+          if (onPlaced) onPlaced();
+        });
+      } else if (rank > 2) {
+        div.classList.add('sq-disabled');
+      }
+
+      boardEl.appendChild(div);
+    }
+  }
+
+  content.appendChild(boardEl);
 }
 
 export function startGame(character) {

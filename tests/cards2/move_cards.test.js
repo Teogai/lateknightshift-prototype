@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'vitest';
 import {
   moveCard, knightMoveCard, bishopMoveCard, rookMoveCard, queenMoveCard, pawnBoostCard,
-  summonCard, curseCard, upgradeCard,
+  pieceCard, curseCard, upgradeCard,
   summonDuckCard, moveDuckCard, stunCard, shieldCard, sacrificeCard, unblockCard,
   CARD_CATALOG, STARTER_DECKS, buildStarterDeck, dealHand,
 } from '../../js/cards2/move_cards.js';
@@ -46,9 +46,9 @@ test('pawnBoostCard has moveVariant pawn_boost', () => {
   expect(c.moveVariant).toBe('pawn_boost');
 });
 
-test('summonCard pawn has correct type and piece', () => {
-  const c = summonCard('pawn');
-  expect(c.type).toBe('summon');
+test('pieceCard pawn has correct type and piece', () => {
+  const c = pieceCard('pawn');
+  expect(c.type).toBe('piece');
   expect(c.piece).toBe('pawn');
 });
 

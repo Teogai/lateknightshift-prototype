@@ -6,11 +6,11 @@
 
 export const CARD_DEFS = [
   { id: 'move',         name: 'Move',           type: 'move',   rarity: 'common', desc: 'Move {piece} to legal square.' },
-  { id: 'summon_pawn',  name: 'Summon Pawn',    type: 'summon', piece: 'pawn',  rarity: 'common', image: './img/Chess_plt60.png', desc: 'Summon {pawn} on rank 1-2.' },
-  { id: 'summon_knight',name: 'Summon Knight',  type: 'summon', piece: 'knight',rarity: 'common', image: './img/Chess_nlt60.png', desc: 'Summon {knight} on rank 1-2.' },
-  { id: 'summon_bishop',name: 'Summon Bishop',  type: 'summon', piece: 'bishop',rarity: 'common', image: './img/Chess_blt60.png', desc: 'Summon {bishop} on rank 1-2.' },
-  { id: 'summon_rook',  name: 'Summon Rook',    type: 'summon', piece: 'rook',  rarity: 'uncommon', image: './img/Chess_rlt60.png', desc: 'Summon {rook} on rank 1-2.' },
-  { id: 'summon_queen', name: 'Summon Queen',   type: 'summon', piece: 'queen', rarity: 'rare', image: './img/Chess_qlt60.png', desc: 'Summon {queen} on rank 1-2.' },
+  { id: 'piece_pawn',   name: 'Pawn',           type: 'piece',  piece: 'pawn',  rarity: 'common', image: './img/Chess_plt60.png', desc: '{pawn}' },
+  { id: 'piece_knight', name: 'Knight',         type: 'piece',  piece: 'knight',rarity: 'common', image: './img/Chess_nlt60.png', desc: '{knight}' },
+  { id: 'piece_bishop', name: 'Bishop',         type: 'piece',  piece: 'bishop',rarity: 'common', image: './img/Chess_blt60.png', desc: '{bishop}' },
+  { id: 'piece_rook',   name: 'Rook',           type: 'piece',  piece: 'rook',  rarity: 'uncommon', image: './img/Chess_rlt60.png', desc: '{rook}' },
+  { id: 'piece_queen',  name: 'Queen',          type: 'piece',  piece: 'queen', rarity: 'rare', image: './img/Chess_qlt60.png', desc: '{queen}' },
   { id: 'knight_move',  name: 'Knight Move',    type: 'move',   moveVariant: 'knight', rarity: 'common', image: './img/Chess_nlt60.png', desc: '{Knight} jump to any square.' },
   { id: 'bishop_move',  name: 'Bishop Move',    type: 'move',   moveVariant: 'bishop', rarity: 'uncommon', image: './img/Chess_blt60.png', desc: 'Move like {bishop}.' },
   { id: 'rook_move',    name: 'Rook Move',      type: 'move',   moveVariant: 'rook',   rarity: 'uncommon', image: './img/Chess_rlt60.png', desc: 'Move like {rook}.' },
@@ -27,11 +27,11 @@ export const CARD_DEFS = [
 // Factory wiring keys used by js/cards2/move_cards.js
 export const CARD_FACTORY_KEYS = {
   move:        'moveCard',
-  summon_pawn: 'summonCard',
-  summon_knight:'summonCard',
-  summon_bishop:'summonCard',
-  summon_rook: 'summonCard',
-  summon_queen:'summonCard',
+  piece_pawn:  'pieceCard',
+  piece_knight:'pieceCard',
+  piece_bishop:'pieceCard',
+  piece_rook:  'pieceCard',
+  piece_queen: 'pieceCard',
   knight_move: 'knightMoveCard',
   bishop_move: 'bishopMoveCard',
   rook_move:   'rookMoveCard',
@@ -48,7 +48,7 @@ export const CARD_FACTORY_KEYS = {
 export const STARTER_DECK_DEFS = {
   knight: [
     { id: 'move', count: 7 },
-    { id: 'summon_pawn', count: 2 },
+    { id: 'piece_pawn', count: 2 },
     { id: 'knight_move', count: 1 },
   ],
 };
