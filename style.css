@@ -413,7 +413,7 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
   background: #1a1a2a; border: 1px solid #444; border-radius: 6px;
   padding: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem;
 }
-.enemy-panel-name { font-size: 1rem; font-weight: bold; color: #eee; }
+.enemy-panel-name { font-size: 1rem; font-weight: bold; color: #eee; word-break: break-word; overflow-wrap: anywhere; }
 .enemy-type-badge {
   display: inline-block; font-size: 0.7rem; padding: 0.15rem 0.45rem;
   border-radius: 3px; font-weight: bold; width: fit-content;
@@ -422,8 +422,8 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 .enemy-type-badge[data-type="elite"] { background: #2a2800; color: #d4a800; border-color: #d4a800; }
 .enemy-type-badge[data-type="boss"]  { background: #2a1010; color: #e05555; border-color: #e05555; }
 .enemy-panel-divider { border: none; border-top: 1px solid #333; margin: 0.25rem 0; }
-.ability-name { font-size: 0.85rem; font-weight: bold; color: #eee; }
-.ability-desc { font-size: 0.75rem; color: #aaa; line-height: 1.4; }
+.ability-name { font-size: 0.85rem; font-weight: bold; color: #eee; word-break: break-word; overflow-wrap: anywhere; }
+.ability-desc { font-size: 0.75rem; color: #aaa; line-height: 1.4; word-break: break-word; overflow-wrap: anywhere; }
 
 /* --- Victory screen --- */
 #screen-victory { max-width: 400px; text-align: center; }
@@ -527,6 +527,14 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
     gap: 0.5rem;
     padding: 0.5rem;
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .enemy-panel-name,
+  .ability-name,
+  .ability-desc {
+    max-width: 100%;
   }
 
   .enemy-panel-name {
@@ -543,6 +551,8 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 
   #board-col {
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
     gap: 0.25rem;
   }
 
@@ -563,27 +573,33 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
   }
 
   #bottom-bar {
-    gap: 0.5rem;
-    padding: 0 0.25rem;
+    gap: 0.25rem;
+    padding: 0;
+    flex-wrap: wrap;
+  }
+
+  #center-actions {
+    gap: 0.25rem;
   }
 
   .pile-btn, #btn-redraw, #btn-undo {
-    padding: 0.3rem 0.6rem;
-    font-size: 0.8rem;
+    padding: 0.25rem 0.4rem;
+    font-size: 0.75rem;
   }
 
   #btn-redraw {
-    padding: 0.5rem 1rem;
-    font-size: 0.9rem;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.8rem;
   }
 
   #debug-bar {
-    gap: 0.3rem;
+    gap: 0.25rem;
+    flex-wrap: wrap;
   }
 
   #debug-bar button {
-    padding: 0.2rem 0.5rem;
-    font-size: 0.7rem;
+    padding: 0.15rem 0.3rem;
+    font-size: 0.65rem;
   }
 
   #status-bar {
