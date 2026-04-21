@@ -229,9 +229,6 @@ function castlingActions(board, owner, castling) {
   const kingPiece = get(board, kingSq);
   if (!kingPiece || kingPiece.type !== 'king' || kingPiece.owner !== owner) return actions;
 
-  // Must not be in check
-  if (isAttackedBy(board, kingSq, isPlayer ? 'enemy' : 'player')) return actions;
-
   const sides = isPlayer
     ? [
         { right: castling.wK, kingTo: 'g' + rank, rookFrom: 'h' + rank, rookTo: 'f' + rank, passSq: 'f' + rank },
@@ -257,10 +254,6 @@ function castlingActions(board, owner, castling) {
     // Extra clear square for queenside (b-file must also be empty)
     if (side.extraClear && get(board, side.extraClear)) continue;
 
-    // King must not pass through or land on attacked square
-    if (isAttackedBy(board, side.passSq, attackerOwner)) continue;
-    if (isAttackedBy(board, side.kingTo, attackerOwner)) continue;
-
     actions.push({
       kind: 'castle',
       source: kingSq,
@@ -278,7 +271,8 @@ function castlingActions(board, owner, castling) {
  * Generate all legal actions for `owner` from `state`.
  * state: { board, tiles, turn, enPassant, castling }
  *
- * Filters out actions that leave the moving side's king in check.
+ * King-capture win condition: kings MAY move into check / danger squares.
+ * No self-check filtering (unlike standard chess).
  */
 export function generateLegalActions(state, owner) {
   const { board, enPassant, castling } = state;
@@ -344,14 +338,7 @@ export function generateLegalActions(state, owner) {
           };
         }
 
-        // Check legality: does this action leave our king in check?
-        const undo = applyTemp(board, action);
-        const kingSq = findKingSq(board, owner);
-        const attackerOwner = owner === 'player' ? 'enemy' : 'player';
-        const inCheck = kingSq ? isAttackedBy(board, kingSq, attackerOwner) : false;
-        undo();
-
-        if (!inCheck) legal.push(action);
+        legal.push(action);
       }
     }
   }

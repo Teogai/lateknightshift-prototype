@@ -264,3 +264,36 @@ describe('selectAction — personality', () => {
     expect(action.source).toBe('d7');
   });
 });
+
+// ─── test 6: king-capture mode — AI must move even with no "safe" squares ─────
+
+describe('selectAction — king-capture mode', () => {
+  test('AI still moves when king has no safe squares', () => {
+    // Enemy king on e8, enemy rook on a8.
+    // Player rook on e1 attacks e-file; player rook on a1 attacks rank 8.
+    // In chess this would be checkmate; in king-capture mode AI must still move.
+    const state = makeState([
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'a8', type: 'rook', owner: 'enemy' },
+      { sq: 'e1', type: 'rook', owner: 'player' },
+      { sq: 'a1', type: 'rook', owner: 'player' },
+    ]);
+
+    const action = selectAction(state, 'enemy', { depth: 2 });
+    expect(action).not.toBeNull();
+  });
+
+  test('AI captures player king when adjacent even if in danger', () => {
+    // Enemy king on e5, player king on e4 — direct capture available
+    // Enemy king is also attacked by player rook on e1, but capture is still best
+    const state = makeState([
+      { sq: 'e5', type: 'king', owner: 'enemy' },
+      { sq: 'e4', type: 'king', owner: 'player' },
+      { sq: 'e1', type: 'rook', owner: 'player' },
+    ]);
+
+    const action = selectAction(state, 'enemy', { depth: 2 });
+    expect(action).not.toBeNull();
+    expect(action.targets[0]).toBe('e4');
+  });
+});

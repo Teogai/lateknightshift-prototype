@@ -2,7 +2,8 @@
  * P1 — Board + pieces + standard move generation (engine2)
  *
  * Tests cover: coord helpers, piece factory, standard move generation,
- * castling, en passant, promotion legality, pinned pieces, check escape.
+ * castling, en passant, promotion legality.
+ * King-capture mode: no check/pin restrictions (king may move into danger).
  *
  * Allowed: chess.js import here only (oracle comparison).
  * NOT allowed: chess.js import in engine2/ source files.
@@ -405,8 +406,9 @@ describe('king moves', () => {
     expect(dests.sort()).toEqual(['d3', 'd4', 'd5', 'e3', 'e5', 'f3', 'f4', 'f5'].sort());
   });
 
-  test('king cannot move into check', () => {
-    // Enemy rook on e8 covers e-file; player king on e4 cannot move to e3/e5
+  test('king CAN move into check — king-capture rule, no checkmate', () => {
+    // Enemy rook on e8 covers e-file; player king on e4 CAN move to e3/e5
+    // because the win condition is king capture, not checkmate
     const state = makeState([
       { sq: 'e4', type: 'king', owner: 'player' },
       { sq: 'e8', type: 'king', owner: 'enemy' },
@@ -414,9 +416,9 @@ describe('king moves', () => {
     ]);
     const actions = generateLegalActions(state, 'player');
     const dests = targetsFrom(actions, 'e4');
-    expect(dests).not.toContain('e5');
-    expect(dests).not.toContain('d5');
-    expect(dests).not.toContain('f5');
+    expect(dests).toContain('e5');
+    expect(dests).toContain('d5');
+    expect(dests).toContain('f5');
   });
 });
 
@@ -457,20 +459,20 @@ describe('castling', () => {
     expect(castleAction).toBeUndefined();
   });
 
-  test('castling blocked if king in check', () => {
+  test('castling ALLOWED even if king in check — king-capture mode', () => {
     const state = makeState([
       { sq: 'e1', type: 'king', owner: 'player' },
       { sq: 'h1', type: 'rook', owner: 'player' },
       { sq: 'e8', type: 'king', owner: 'enemy' },
-      { sq: 'e5', type: 'rook', owner: 'enemy' },  // checks white king on e-file
+      { sq: 'e5', type: 'rook', owner: 'enemy' },  // attacks white king on e-file
     ], { castling: { wK: true, wQ: false, bK: false, bQ: false } });
     const actions = generateLegalActions(state, 'player');
     const castleAction = actions.find(a => a.kind === 'castle' && a.targets[0] === 'g1');
-    expect(castleAction).toBeUndefined();
+    expect(castleAction).toBeDefined();
   });
 
-  test('castling blocked if king passes through attacked square', () => {
-    // f1 is attacked by enemy rook, so king cannot pass through it (kingside)
+  test('castling ALLOWED even if king passes through attacked square — king-capture mode', () => {
+    // f1 is attacked by enemy rook, but king CAN pass through it (kingside)
     const state = makeState([
       { sq: 'e1', type: 'king', owner: 'player' },
       { sq: 'h1', type: 'rook', owner: 'player' },
@@ -479,7 +481,7 @@ describe('castling', () => {
     ], { castling: { wK: true, wQ: false, bK: false, bQ: false } });
     const actions = generateLegalActions(state, 'player');
     const castleAction = actions.find(a => a.kind === 'castle' && a.targets[0] === 'g1');
-    expect(castleAction).toBeUndefined();
+    expect(castleAction).toBeDefined();
   });
 
   test('castling rights false: no castling generated', () => {
@@ -559,11 +561,12 @@ describe('en passant', () => {
   });
 });
 
-// ─── pinned pieces ────────────────────────────────────────────────────────────
+// ─── pinned pieces (king-capture mode: no pin restrictions) ───────────────────
 
-describe('pinned pieces', () => {
-  test('absolutely pinned piece cannot move off pin ray', () => {
-    // White king e1, white rook e4, enemy rook e8. Rook is pinned on e-file.
+describe('pinned pieces — king-capture mode', () => {
+  test('absolutely pinned piece CAN move off pin ray', () => {
+    // White king e1, white rook e4, enemy rook e8.
+    // In king-capture mode, the rook can move anywhere (king may be captured)
     const state = makeState([
       { sq: 'e1', type: 'king', owner: 'player' },
       { sq: 'e4', type: 'rook', owner: 'player' },
@@ -572,14 +575,13 @@ describe('pinned pieces', () => {
     ]);
     const actions = generateLegalActions(state, 'player');
     const dests = targetsFrom(actions, 'e4');
-    // Pinned rook can only move along the e-file (capture e7 or retreat toward e1)
-    for (const d of dests) {
-      expect(d[0]).toBe('e'); // all moves must be on e-file
-    }
+    // Rook can move to non-e-file squares (e.g., a4, h4)
+    expect(dests.some(d => d[0] !== 'e')).toBe(true);
   });
 
-  test('diagonally pinned piece cannot move off diagonal', () => {
-    // King a1, bishop c3, enemy bishop f6. Bishop is pinned diagonally.
+  test('diagonally pinned piece CAN move off diagonal', () => {
+    // King a1, bishop c3, enemy bishop f6.
+    // In king-capture mode, bishop can leave the diagonal
     const state = makeState([
       { sq: 'a1', type: 'king', owner: 'player' },
       { sq: 'c3', type: 'bishop', owner: 'player' },
@@ -588,16 +590,17 @@ describe('pinned pieces', () => {
     ]);
     const actions = generateLegalActions(state, 'player');
     const dests = targetsFrom(actions, 'c3');
-    // All moves must stay on the a1-h8 diagonal
-    for (const d of dests) {
+    // Bishop can move to squares off the a1-h8 diagonal
+    const offDiagonal = dests.some(d => {
       const [r, c] = sqToRC(d);
       const [kr, kc] = sqToRC('a1');
-      expect(Math.abs(r - kr)).toBe(Math.abs(c - kc));
-    }
+      return Math.abs(r - kr) !== Math.abs(c - kc);
+    });
+    expect(offDiagonal).toBe(true);
   });
 
-  test('pinned knight cannot move at all', () => {
-    // Knight cannot maintain pin ray: all moves illegal
+  test('pinned knight CAN move', () => {
+    // In king-capture mode, even a "pinned" knight can move
     const state = makeState([
       { sq: 'e1', type: 'king', owner: 'player' },
       { sq: 'e4', type: 'knight', owner: 'player' },
@@ -606,32 +609,28 @@ describe('pinned pieces', () => {
     ]);
     const actions = generateLegalActions(state, 'player');
     const dests = targetsFrom(actions, 'e4');
-    expect(dests).toHaveLength(0);
+    expect(dests.length).toBeGreaterThan(0);
   });
 });
 
-// ─── check escape ─────────────────────────────────────────────────────────────
+// ─── check escape (king-capture mode: no check restriction) ───────────────────
 
-describe('check escape', () => {
-  test('in check: only legal moves escape the check', () => {
-    // Enemy rook on e8 checks white king on e1; only legal moves are king escapes or block/capture
+describe('king-capture mode — no check restriction', () => {
+  test('king CAN move into apparent check', () => {
+    // Enemy rook on e5 covers e-file; player king on e1 CAN move to e2
     const state = makeState([
       { sq: 'e1', type: 'king', owner: 'player' },
-      { sq: 'e5', type: 'rook', owner: 'enemy' },  // gives check
+      { sq: 'e5', type: 'rook', owner: 'enemy' },
       { sq: 'h8', type: 'king', owner: 'enemy' },
     ]);
     const actions = generateLegalActions(state, 'player');
-    // Every action must result in no check on the player king
-    expect(actions.length).toBeGreaterThan(0);
-    // Verify: no action leaves king in check (implicit in legal generation)
-    // King moves available: d1, d2, f1, f2 (not e2 — still on e-file)
     const kingDests = targetsFrom(actions, 'e1');
-    expect(kingDests).not.toContain('e2');
+    expect(kingDests).toContain('e2');
   });
 
-  test('piece can block a check', () => {
-    // Enemy rook on a1 checks player king on e1; player rook on b4 can block at b1...
-    // Actually: rook on e8 checks e1 king; player rook on d5 can block on e5.
+  test('other pieces CAN move even if king is threatened', () => {
+    // Enemy rook on e8 checks player king on e1;
+    // player rook on d5 can still move anywhere, not just block
     const state = makeState([
       { sq: 'e1', type: 'king', owner: 'player' },
       { sq: 'd5', type: 'rook', owner: 'player' },
@@ -640,53 +639,23 @@ describe('check escape', () => {
     ]);
     const actions = generateLegalActions(state, 'player');
     const blockDests = targetsFrom(actions, 'd5');
-    // d5 rook can interpose at e5
+    // d5 rook can still move to non-blocking squares (e.g., d1, d8)
     expect(blockDests).toContain('e5');
+    expect(blockDests.some(d => d[0] !== 'e' && d[1] !== '5')).toBe(true);
   });
 
-  test('piece can capture the checker', () => {
+  test('double threat: all pieces can still move', () => {
+    // Two attackers — in king-capture mode, all pieces can still move
     const state = makeState([
       { sq: 'e1', type: 'king', owner: 'player' },
-      { sq: 'd2', type: 'bishop', owner: 'player' },
-      { sq: 'e5', type: 'rook', owner: 'enemy' },  // checks king
+      { sq: 'a2', type: 'rook', owner: 'player' },
+      { sq: 'e8', type: 'rook', owner: 'enemy' },
+      { sq: 'b4', type: 'bishop', owner: 'enemy' },
       { sq: 'h8', type: 'king', owner: 'enemy' },
     ]);
     const actions = generateLegalActions(state, 'player');
-    // Bishop on d2 cannot capture e5 (not on diagonal). King must move.
-    // Make it so bishop CAN capture: place bishop on b2, enemy rook on d4
-    const state2 = makeState([
-      { sq: 'e1', type: 'king', owner: 'player' },
-      { sq: 'b2', type: 'bishop', owner: 'player' },
-      { sq: 'd4', type: 'rook', owner: 'enemy' },  // checks via... nope not in check
-      { sq: 'h8', type: 'king', owner: 'enemy' },
-    ]);
-    // Rook on d4 does not check e1. Let's do: enemy rook on a1, player king on e1
-    const state3 = makeState([
-      { sq: 'e1', type: 'king', owner: 'player' },
-      { sq: 'f2', type: 'bishop', owner: 'player' },
-      { sq: 'a1', type: 'rook', owner: 'enemy' },  // checks king horizontally
-      { sq: 'h8', type: 'king', owner: 'enemy' },
-    ]);
-    const actions3 = generateLegalActions(state3, 'player');
-    // Bishop on f2 cannot capture a1. King can move to d1, d2, e2, f1
-    // Also check that there are legal moves
-    expect(actions3.length).toBeGreaterThan(0);
-  });
-
-  test('double check: only king moves are legal', () => {
-    // Two attackers — only the king can move
-    const state = makeState([
-      { sq: 'e1', type: 'king', owner: 'player' },
-      { sq: 'a2', type: 'rook', owner: 'player' },  // own rook (can't help)
-      { sq: 'e8', type: 'rook', owner: 'enemy' },   // checks on e-file
-      { sq: 'b4', type: 'bishop', owner: 'enemy' },  // checks on b4-e1 diagonal
-      { sq: 'h8', type: 'king', owner: 'enemy' },
-    ]);
-    const actions = generateLegalActions(state, 'player');
-    // All actions must be king moves
-    for (const a of actions) {
-      expect(a.piece.type).toBe('king');
-    }
+    // Player rook can still move
+    expect(actions.some(a => a.piece.type === 'rook')).toBe(true);
   });
 });
 
