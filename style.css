@@ -67,6 +67,22 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 .game-over  { color: #e05555; font-size: 1.2rem; }
 #deck-info { color: #888; font-size: 0.8rem; text-align: center; }
 
+/* Pile buttons */
+.pile-btn {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  background: #2a2a3a;
+  color: #eee;
+  border: 1px solid #555;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.pile-btn:hover {
+  background: #3a3a4a;
+  border-color: #777;
+}
+
 /* --- Hand --- */
 #hand { display: flex; flex-direction: row; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
 .card {
@@ -437,3 +453,21 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
 .promo-btn { width:60px; height:60px; background:#2a2a3a; border:2px solid #555; border-radius:6px; cursor:pointer; padding:4px; }
 .promo-btn:hover { border-color:#f0e040; background:#3a3a1a; }
 .promo-btn img { width:48px; height:48px; display:block; }
+
+/* Pile viewer modal */
+#pile-modal { position:fixed; inset:0; background:rgba(0,0,0,.72); display:flex; align-items:center; justify-content:center; z-index:100; }
+#pile-modal.hidden { display:none !important; }
+#pile-box { background:#1e1e2e; border:2px solid #888; border-radius:8px; padding:1.25rem 1.5rem; text-align:center; max-width: min(700px, 90vw); max-height: 80vh; display: flex; flex-direction: column; }
+#pile-box h3 { margin:0 0 .75rem; color:#ccc; font-size:.9rem; }
+#pile-grid { flex: 1; overflow-y: auto; margin-bottom: 0.75rem; }
+#pile-close {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  background: #2a2a3a;
+  color: #eee;
+  border: 1px solid #555;
+  border-radius: 4px;
+  cursor: pointer;
+  align-self: center;
+}
+#pile-close:hover { background: #3a3a4a; border-color: #777; }
