@@ -25,7 +25,19 @@ h1 { font-size: 1.1rem; margin-bottom: 1rem; }
   width: 180px; padding-top: 0.25rem; flex-shrink: 0;
 }
 #board-col { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
-#bottom-bar { display: flex; gap: 1rem; align-items: center; margin-top: 0.25rem; }
+#bottom-bar { 
+  display: flex; 
+  gap: 1rem; 
+  align-items: center; 
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 0.25rem; 
+}
+#center-actions { 
+  display: flex; 
+  gap: 1rem; 
+  align-items: center; 
+}
 #debug-bar { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.25rem; border-top: 1px solid #332222; padding-top: 0.25rem; }
 #debug-bar button { padding: 0.3rem 0.7rem; font-size: 0.75rem; background: #2a1a1a; color: #cc8888; border: 1px solid #663333; border-radius: 4px; cursor: pointer; }
 #debug-bar button:hover { background: #3a2020; }
