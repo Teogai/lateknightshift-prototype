@@ -95,6 +95,7 @@
 - One-line question when blocked
 - Report done per task, one line
 - When a mistake is made: never apologize, never promise. Instead, identify the root cause and add a concrete prevention rule to AGENTS.md or the relevant doc
+- Doc updates are not optional cleanup — they are a mandatory step in the workflow. Stop implementation immediately when a doc change is requested.
 
 ## Debug prints
 - Never remove debug prints (console.log/warn/error) after a task — keep for future debugging
