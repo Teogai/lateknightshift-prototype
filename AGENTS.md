@@ -28,6 +28,12 @@
 - Run the test again to confirm it passes
 - This prevents regressions and documents the bug for future reference
 
+## Test coverage discipline
+- When writing a test, think about similar cases that should be covered too
+- If similar cases exist, create tests for those before considering the task complete
+- Example: if a bug affects piece type mapping, test ALL piece types (not just the one that failed)
+- Example: if a UI screen has a bug, check if other screens use the same broken pattern
+
 ## Commits
 - Lowercase imperative, <50 chars
 - One commit per passing feature, not per file
