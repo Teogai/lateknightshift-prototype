@@ -1,4 +1,4 @@
-import { startGame, handleRedraw, handlePromotionChoice, handleUndo, handleDebugMove, handleDebugWin } from './ui.js';
+import { startGame, handleRedraw, handlePromotionChoice, handleUndo, handleDebugMove, handleDebugWin, initPileButtons } from './ui.js';
 
 document.getElementById('btn-knight').addEventListener('click', () => startGame('knight'));
 document.getElementById('btn-redraw').addEventListener('click', handleRedraw);
@@ -12,3 +12,4 @@ document.getElementById('btn-play-again').addEventListener('click', () => {
 document.querySelectorAll('.promo-btn').forEach(btn => {
   btn.addEventListener('click', () => handlePromotionChoice(btn.dataset.promo));
 });
+initPileButtons();

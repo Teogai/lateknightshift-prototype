@@ -310,6 +310,16 @@ export function makeCardEl(card, { onClick } = {}) {
   return div;
 }
 
+function sortCardsByType(cards) {
+  const typeOrder = { move: 0, summon: 1, curse: 2 };
+  return [...cards].sort((a, b) => {
+    const typeA = typeOrder[a.type] ?? 99;
+    const typeB = typeOrder[b.type] ?? 99;
+    if (typeA !== typeB) return typeA - typeB;
+    return (a.name || '').localeCompare(b.name || '');
+  });
+}
+
 export function renderHand() {
   const handEl = document.getElementById('hand');
   handEl.innerHTML = '';
@@ -347,7 +357,10 @@ export function renderStatus() {
     statusEl.textContent = 'Game over.';
     statusEl.classList.add('game-over');
   }
-  document.getElementById('deck-info').textContent = `Deck: ${d.deck_size}  |  Discard: ${d.discard_size}  |  Lives: ${runState?.lives ?? '—'}`;
+  const btnDeck = document.getElementById('btn-deck');
+  const btnDiscard = document.getElementById('btn-discard');
+  if (btnDeck) btnDeck.textContent = `Deck (${d.deck_size})`;
+  if (btnDiscard) btnDiscard.textContent = `Discard (${d.discard_size})`;
   const btnRedraw = document.getElementById('btn-redraw');
   if (btnRedraw) {
     btnRedraw.disabled = d.turn !== 'player';
@@ -357,6 +370,62 @@ export function renderStatus() {
     } else {
       btnRedraw.classList.remove('ready');
     }
+  }
+}
+
+function showPileModal(title, cards) {
+  const modal = document.getElementById('pile-modal');
+  const titleEl = document.getElementById('pile-title');
+  const grid = document.getElementById('pile-grid');
+
+  titleEl.textContent = title;
+  grid.innerHTML = '';
+
+  cards.forEach(card => {
+    const el = makeCardEl(card);
+    el.style.cursor = 'default';
+    grid.appendChild(el);
+  });
+
+  modal.classList.remove('hidden');
+}
+
+function hidePileModal() {
+  document.getElementById('pile-modal').classList.add('hidden');
+}
+
+export function initPileButtons() {
+  const btnDeck = document.getElementById('btn-deck');
+  const btnDiscard = document.getElementById('btn-discard');
+  const btnClose = document.getElementById('pile-close');
+  const modal = document.getElementById('pile-modal');
+
+  if (btnDeck) {
+    btnDeck.addEventListener('click', () => {
+      if (!gameState) return;
+      const d = gameState.toDict();
+      const sorted = sortCardsByType(d.deck);
+      showPileModal(`Deck (${d.deck.length} cards)`, sorted);
+    });
+  }
+
+  if (btnDiscard) {
+    btnDiscard.addEventListener('click', () => {
+      if (!gameState) return;
+      const d = gameState.toDict();
+      const ordered = [...d.discard].reverse();
+      showPileModal(`Discard Pile (${d.discard.length} cards)`, ordered);
+    });
+  }
+
+  if (btnClose) {
+    btnClose.addEventListener('click', hidePileModal);
+  }
+
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) hidePileModal();
+    });
   }
 }
 
