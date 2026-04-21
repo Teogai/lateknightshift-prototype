@@ -40,3 +40,4 @@
 - [2026-04-21] done: fix hand scroll clipping — remove overflow-x:hidden from board-col on mobile; 294 tests green
 - [2026-04-21] done: fix hand scroll centering — pseudo-elements flex-grow trick with explicit width:100%; centers cards when few, scrolls from left when many; 294 tests green
 - [2026-04-21] done: remove self-check filtering from movegen — king-capture win condition means kings CAN move into danger, AI no longer passes when "checkmated"; updated movegen+castling tests; 295 tests green
+- [2026-04-21] done: center-align all UI screens — flexbox centering on select/map/room/victory/defeat/complete, move game sidebar to top, show title only on character select screen; 294 tests green
