@@ -24,6 +24,11 @@
 | `unblock` | Apply `ghost` tag for 5 turns | Discard |
 | `curse` | Unplayable dead card | — |
 
+## Reward Pool
+- Card rewards exclude **starter cards** (character-specific) and **piece cards** (separate piece reward pool)
+- **Curse cards are excluded** from card rewards (only obtained via defeat or events)
+- Implementation: `js/rewards.js` `pickCardChoices()`
+
 ## Transform Rules
 - Transform rooms replace a chosen deck card with a random card of the same rarity category
 - **Piece cards** transform only into other piece cards (different piece type)

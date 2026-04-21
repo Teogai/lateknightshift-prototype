@@ -46,3 +46,10 @@ test('pickPieceCardChoices weighted by rarity', () => {
   }
   expect(commonCount).toBeGreaterThan(trials * 0.5);
 });
+
+test('pickCardChoices excludes curse cards', () => {
+  const choices = pickCardChoices(10, 'knight');
+  for (const { card } of choices) {
+    expect(card.type).not.toBe('curse');
+  }
+});

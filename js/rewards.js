@@ -52,7 +52,7 @@ export function pickCardChoices(count = REWARD_CHOICES, character = null) {
     // Filter pool to unused entries, exclude piece cards
     const remaining = pool.filter(e => {
       const c = e.card();
-      return c.type !== 'piece' && !usedTypes.has(cardKey(c));
+      return c.type !== 'piece' && c.type !== 'curse' && !usedTypes.has(cardKey(c));
     });
     if (!remaining.length) break;
 
