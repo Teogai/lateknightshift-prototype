@@ -1,7 +1,7 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { RunState } from '../js/run.js';
 import * as ui from '../js/ui.js';
-import { pickCharmChoices, pickTransformCard, applyCharmToCard } from '../js/rewards.js';
+import { pickCharmChoices, pickTransformCard, applyCharmToCard, renderTransformScreen, renderCharmApplyScreen } from '../js/rewards.js';
 import { CHARM_CATALOG } from '../js/charms.js';
 import { CARD_CATALOG, curseCard } from '../js/cards2/move_cards.js';
 
@@ -163,5 +163,37 @@ describe('transform room', () => {
 
     const roomContent = document.getElementById('room-content');
     expect(roomContent.querySelector('.card-scroll-grid')).not.toBeNull();
+  });
+
+  test('transform screen card click invokes callback when called with 2 args', () => {
+    const deck = [{ type: 'move', name: 'Move' }];
+    const onChosen = vi.fn();
+    // Called from ui.js with only 2 args: (deck, callback)
+    renderTransformScreen(deck, onChosen);
+
+    const roomContent = document.getElementById('room-content');
+    const cardEl = roomContent.querySelector('.card');
+    expect(cardEl).not.toBeNull();
+    cardEl.click();
+    expect(onChosen).toHaveBeenCalledTimes(1);
+    expect(onChosen).toHaveBeenCalledWith(0, deck[0]);
+  });
+
+  test('charm apply screen only shows valid card types', () => {
+    const deck = [
+      { type: 'move', name: 'Move' },
+      { type: 'piece', name: 'Pawn', piece: 'pawn' },
+      { type: 'move', name: 'Knight Move', moveVariant: 'knight' },
+    ];
+    const charm = { id: 'push', name: 'Push', validCardTypes: ['move'] };
+    const onChosen = vi.fn();
+    renderCharmApplyScreen(deck, charm, onChosen);
+
+    const roomContent = document.getElementById('room-content');
+    const cardEls = roomContent.querySelectorAll('.card');
+    expect(cardEls.length).toBe(2); // only move cards
+    cardEls.forEach(el => {
+      expect(el.classList.contains('invalid-charm-target')).toBe(false);
+    });
   });
 });

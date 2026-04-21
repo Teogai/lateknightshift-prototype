@@ -315,7 +315,7 @@ export function renderUpgradeScreen(deck, onChosen) {
   content.appendChild(grid);
 }
 
-export function renderTransformScreen(deck, character, onChosen) {
+export function renderTransformScreen(deck, onChosen) {
   const content = document.getElementById('room-content');
   if (!content) return;
   content.innerHTML = '<h2>Choose a card to transform</h2>';
@@ -406,12 +406,8 @@ export function renderCharmApplyScreen(deck, charm, onChosen) {
   grid.className = 'card-scroll-grid';
   deck.forEach((card, i) => {
     if (card.type === 'curse') return;
-    const valid = charm.validCardTypes.includes(card.type);
-    const el = makeCardEl(card, { onClick: () => {
-      if (!valid) return;
-      onChosen(i, card);
-    }});
-    if (!valid) el.classList.add('invalid-charm-target');
+    if (!charm.validCardTypes.includes(card.type)) return;
+    const el = makeCardEl(card, { onClick: () => onChosen(i, card) });
     if (card.charm) el.classList.add('already-charmed');
     grid.appendChild(el);
   });
