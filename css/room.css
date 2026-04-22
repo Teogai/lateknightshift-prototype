@@ -55,3 +55,4 @@
 
 /* Square placement selected */
 .sq.selected { border: 3px solid #f0e040; }
+.sq.summon-target.selected { outline-color: #f0e040; }

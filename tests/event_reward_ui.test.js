@@ -1,4 +1,5 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
+import { readFileSync } from 'fs';
 import { RunState } from '../js/run.js';
 import * as ui from '../js/ui.js';
 import { renderPieceRewardScreen } from '../js/rewards.js';
@@ -195,5 +196,26 @@ describe('treasure reward board ui', () => {
       // Should have 64 squares
       expect(board.querySelectorAll('.sq').length).toBe(64);
     });
+  });
+
+  test('selected placement square has yellow outline', () => {
+    const runState = new RunState('knight');
+    renderPieceRewardScreen([{ piece: 'rook', rarity: 'uncommon', label: 'Rook' }], runState, () => {});
+
+    const roomContent = document.getElementById('room-content');
+    const btn = roomContent.querySelector('.piece-reward-btn');
+    btn.click();
+    roomContent.querySelector('.confirm-btn').click();
+
+    const board = roomContent.querySelector('.placement-board');
+    const targetSq = board.querySelector('.sq.summon-target');
+    expect(targetSq).not.toBeNull();
+
+    targetSq.click();
+    expect(targetSq.classList.contains('selected')).toBe(true);
+
+    // Verify CSS rule exists that changes outline to yellow when selected
+    const cssContent = readFileSync('./css/room.css', 'utf-8');
+    expect(cssContent).toContain('.sq.summon-target.selected');
   });
 });
