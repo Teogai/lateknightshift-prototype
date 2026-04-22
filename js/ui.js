@@ -885,7 +885,7 @@ export function handleCardClick(index, card) {
       validRanks.map(r => f + r)
     ).filter(sq => !d.board[sq]);
     setHint(`Click a highlighted square to place ${card.piece}`);
-  } else if (card.type === 'summon_duck') {
+  } else if (card.type === 'piece' && card.piece === 'duck') {
     uiState.phase = 'summon_duck_selected';
     uiState.summonTargets = [];
     for (let r = 0; r < 8; r++) {
@@ -895,19 +895,19 @@ export function handleCardClick(index, card) {
       }
     }
     setHint('Click any empty square to place duck');
-  } else if (card.type === 'move_duck') {
+  } else if (card.type === 'move' && card.moveVariant === 'duck') {
     uiState.phase = 'move_duck_selected';
     setHint('Click a duck to move');
-  } else if (card.type === 'stun') {
+  } else if (card.type === 'action' && card.actionType === 'stun') {
     uiState.phase = 'stun_selected';
     setHint('Click any piece to stun');
-  } else if (card.type === 'shield') {
+  } else if (card.type === 'action' && card.actionType === 'shield') {
     uiState.phase = 'shield_selected';
     setHint('Click any piece to shield');
-  } else if (card.type === 'sacrifice') {
+  } else if (card.type === 'action' && card.actionType === 'sacrifice') {
     uiState.phase = 'sacrifice_selected';
     setHint('Click a friendly piece to sacrifice');
-  } else if (card.type === 'unblock') {
+  } else if (card.type === 'action' && card.actionType === 'unblock') {
     uiState.phase = 'unblock_selected';
     setHint('Click any piece to make ghost');
   }

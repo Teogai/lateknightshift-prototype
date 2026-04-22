@@ -121,34 +121,40 @@ test('cards without image config do not have image field', () => {
   expect(c.image).toBeUndefined();
 });
 
-test('summonDuckCard has type summon_duck', () => {
+test('summonDuckCard has type piece and piece duck', () => {
   const c = summonDuckCard();
-  expect(c.type).toBe('summon_duck');
+  expect(c.type).toBe('piece');
+  expect(c.piece).toBe('duck');
 });
 
-test('moveDuckCard has type move_duck', () => {
+test('moveDuckCard has type move and moveVariant duck', () => {
   const c = moveDuckCard();
-  expect(c.type).toBe('move_duck');
+  expect(c.type).toBe('move');
+  expect(c.moveVariant).toBe('duck');
 });
 
-test('stunCard has type stun', () => {
+test('stunCard has type action and actionType stun', () => {
   const c = stunCard();
-  expect(c.type).toBe('stun');
+  expect(c.type).toBe('action');
+  expect(c.actionType).toBe('stun');
 });
 
-test('shieldCard has type shield', () => {
+test('shieldCard has type action and actionType shield', () => {
   const c = shieldCard();
-  expect(c.type).toBe('shield');
+  expect(c.type).toBe('action');
+  expect(c.actionType).toBe('shield');
 });
 
-test('sacrificeCard has type sacrifice', () => {
+test('sacrificeCard has type action and actionType sacrifice', () => {
   const c = sacrificeCard();
-  expect(c.type).toBe('sacrifice');
+  expect(c.type).toBe('action');
+  expect(c.actionType).toBe('sacrifice');
 });
 
-test('unblockCard has type unblock', () => {
+test('unblockCard has type action and actionType unblock', () => {
   const c = unblockCard();
-  expect(c.type).toBe('unblock');
+  expect(c.type).toBe('action');
+  expect(c.actionType).toBe('unblock');
 });
 
 test('CARD_CATALOG includes Summon Duck with config rarity', () => {

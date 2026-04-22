@@ -658,7 +658,7 @@ export class GameState {
   playSummonDuckCard(cardIndex, toSq) {
     if (cardIndex < 0 || cardIndex >= this._state.hand.length) return { error: 'invalid card index' };
     const card = this._state.hand[cardIndex];
-    if (card.type !== 'summon_duck') return { error: 'not a summon_duck card' };
+    if (card.type !== 'piece' || card.piece !== 'duck') return { error: 'not a summon_duck card' };
     if (get(this._state.board, toSq)) return { error: 'square occupied' };
 
     set(this._state.board, toSq, makePiece('duck', 'neutral'));
@@ -674,7 +674,7 @@ export class GameState {
   playMoveDuckCard(cardIndex, fromSq, toSq) {
     if (cardIndex < 0 || cardIndex >= this._state.hand.length) return { error: 'invalid card index' };
     const card = this._state.hand[cardIndex];
-    if (card.type !== 'move_duck') return { error: 'not a move_duck card' };
+    if (card.type !== 'move' || card.moveVariant !== 'duck') return { error: 'not a move_duck card' };
 
     const piece = get(this._state.board, fromSq);
     if (!piece || piece.type !== 'duck') return { error: 'no duck on that square' };
@@ -692,7 +692,7 @@ export class GameState {
   playStunCard(cardIndex, sq) {
     if (cardIndex < 0 || cardIndex >= this._state.hand.length) return { error: 'invalid card index' };
     const card = this._state.hand[cardIndex];
-    if (card.type !== 'stun') return { error: 'not a stun card' };
+    if (card.type !== 'action' || card.actionType !== 'stun') return { error: 'not a stun card' };
 
     const piece = get(this._state.board, sq);
     if (!piece) return { error: 'no piece on that square' };
@@ -707,7 +707,7 @@ export class GameState {
   playShieldCard(cardIndex, sq) {
     if (cardIndex < 0 || cardIndex >= this._state.hand.length) return { error: 'invalid card index' };
     const card = this._state.hand[cardIndex];
-    if (card.type !== 'shield') return { error: 'not a shield card' };
+    if (card.type !== 'action' || card.actionType !== 'shield') return { error: 'not a shield card' };
 
     const piece = get(this._state.board, sq);
     if (!piece) return { error: 'no piece on that square' };
@@ -724,7 +724,7 @@ export class GameState {
   playSacrificeCard(cardIndex, fromSq, toSq) {
     if (cardIndex < 0 || cardIndex >= this._state.hand.length) return { error: 'invalid card index' };
     const card = this._state.hand[cardIndex];
-    if (card.type !== 'sacrifice') return { error: 'not a sacrifice card' };
+    if (card.type !== 'action' || card.actionType !== 'sacrifice') return { error: 'not a sacrifice card' };
 
     const friendly = get(this._state.board, fromSq);
     if (!friendly || friendly.owner !== 'player') return { error: 'select a friendly piece to sacrifice' };
@@ -751,7 +751,7 @@ export class GameState {
   playUnblockCard(cardIndex, sq) {
     if (cardIndex < 0 || cardIndex >= this._state.hand.length) return { error: 'invalid card index' };
     const card = this._state.hand[cardIndex];
-    if (card.type !== 'unblock') return { error: 'not an unblock card' };
+    if (card.type !== 'action' || card.actionType !== 'unblock') return { error: 'not an unblock card' };
 
     const piece = get(this._state.board, sq);
     if (!piece) return { error: 'no piece on that square' };
