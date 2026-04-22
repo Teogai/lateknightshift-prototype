@@ -41,7 +41,7 @@ export function curseCard(name = 'Curse') {
 }
 
 export function summonDuckCard() {
-  return { name: 'Summon Duck', type: 'piece', piece: 'duck' };
+  return { name: 'Duck', type: 'piece', piece: 'duck' };
 }
 
 export function moveDuckCard() {

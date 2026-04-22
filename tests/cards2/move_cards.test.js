@@ -157,8 +157,8 @@ test('unblockCard has type action and actionType unblock', () => {
   expect(c.actionType).toBe('unblock');
 });
 
-test('CARD_CATALOG includes Summon Duck with config rarity', () => {
-  const entry = CARD_CATALOG.find(e => e.card().name === 'Summon Duck');
+test('CARD_CATALOG includes Duck with config rarity', () => {
+  const entry = CARD_CATALOG.find(e => e.card().name === 'Duck');
   const configDef = CARD_DEFS.find(d => d.id === 'summon_duck');
   expect(entry).toBeDefined();
   expect(entry.rarity).toBe(configDef.rarity);
