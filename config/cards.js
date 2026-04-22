@@ -23,6 +23,10 @@ export const CARD_DEFS = [
   { id: 'sacrifice',    name: 'Sacrifice',      type: 'action', actionType: 'sacrifice', rarity: 'uncommon', desc: 'Sacrifice {piece}. Destroy weaker.' },
   { id: 'unblock',      name: 'Unblock',        type: 'action', actionType: 'unblock', rarity: 'uncommon', desc: 'Apply {ghost} 5 turns.' },
   { id: 'swap',         name: 'Swap',           type: 'action', actionType: 'swap', rarity: 'uncommon', desc: 'Swap place with friendly {piece}.' },
+  { id: 'teleport',     name: 'Teleport',       type: 'move',   moveVariant: 'teleport', rarity: 'uncommon', desc: 'Teleport {piece} to empty square.' },
+  { id: 'snap',         name: 'Snap',           type: 'action', actionType: 'snap', rarity: 'uncommon', desc: 'Capture at legal move without moving.' },
+  { id: 'blitz',        name: 'Blitz',          type: 'move',   moveVariant: 'blitz', rarity: 'rare', desc: 'Move {piece} twice.' },
+  { id: 'move_together',name: 'Move Together',  type: 'move',   moveVariant: 'move_together', rarity: 'uncommon', desc: 'Move 2 friendly {piece}s.' },
   { id: 'curse',        name: 'Curse',          type: 'curse',  rarity: 'common', desc: 'Unplayable.' },
   { id: 'curse_sloth',  name: 'Curse of Sloth', type: 'curse',  rarity: 'common', desc: 'Unplayable.' },
 ];
@@ -47,6 +51,10 @@ export const CARD_FACTORY_KEYS = {
   sacrifice:   'sacrificeCard',
   unblock:     'unblockCard',
   swap:        'swapCard',
+  teleport:    'teleportCard',
+  snap:        'snapCard',
+  blitz:       'blitzCard',
+  move_together:'moveTogetherCard',
   curse:       'curseCard',
   curse_sloth: 'curseCard',
 };

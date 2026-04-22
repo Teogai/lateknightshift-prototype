@@ -3,6 +3,7 @@ import {
   moveCard, knightMoveCard, bishopMoveCard, rookMoveCard, queenMoveCard, pawnBoostCard,
   pieceCard, curseCard, upgradeCard,
   summonDuckCard, moveDuckCard, stunCard, shieldCard, sacrificeCard, unblockCard, swapCard,
+  teleportCard, snapCard, blitzCard, moveTogetherCard,
   CARD_CATALOG, STARTER_DECKS, buildStarterDeck, dealHand,
 } from '../../js/cards2/move_cards.js';
 import { STARTER_DECK_DEFS, CARD_DEFS } from '../../config/cards.js';
@@ -180,6 +181,58 @@ test('swapCard has type action and actionType swap', () => {
 test('CARD_CATALOG includes Swap with config rarity', () => {
   const entry = CARD_CATALOG.find(e => e.card().name === 'Swap');
   const configDef = CARD_DEFS.find(d => d.id === 'swap');
+  expect(entry).toBeDefined();
+  expect(entry.rarity).toBe(configDef.rarity);
+});
+
+test('teleportCard has type move and moveVariant teleport', () => {
+  const c = teleportCard();
+  expect(c.type).toBe('move');
+  expect(c.moveVariant).toBe('teleport');
+});
+
+test('CARD_CATALOG includes Teleport with config rarity', () => {
+  const entry = CARD_CATALOG.find(e => e.card().name === 'Teleport');
+  const configDef = CARD_DEFS.find(d => d.id === 'teleport');
+  expect(entry).toBeDefined();
+  expect(entry.rarity).toBe(configDef.rarity);
+});
+
+test('snapCard has type action and actionType snap', () => {
+  const c = snapCard();
+  expect(c.type).toBe('action');
+  expect(c.actionType).toBe('snap');
+});
+
+test('CARD_CATALOG includes Snap with config rarity', () => {
+  const entry = CARD_CATALOG.find(e => e.card().name === 'Snap');
+  const configDef = CARD_DEFS.find(d => d.id === 'snap');
+  expect(entry).toBeDefined();
+  expect(entry.rarity).toBe(configDef.rarity);
+});
+
+test('blitzCard has type move and moveVariant blitz', () => {
+  const c = blitzCard();
+  expect(c.type).toBe('move');
+  expect(c.moveVariant).toBe('blitz');
+});
+
+test('CARD_CATALOG includes Blitz with config rarity', () => {
+  const entry = CARD_CATALOG.find(e => e.card().name === 'Blitz');
+  const configDef = CARD_DEFS.find(d => d.id === 'blitz');
+  expect(entry).toBeDefined();
+  expect(entry.rarity).toBe(configDef.rarity);
+});
+
+test('moveTogetherCard has type move and moveVariant move_together', () => {
+  const c = moveTogetherCard();
+  expect(c.type).toBe('move');
+  expect(c.moveVariant).toBe('move_together');
+});
+
+test('CARD_CATALOG includes Move Together with config rarity', () => {
+  const entry = CARD_CATALOG.find(e => e.card().name === 'Move Together');
+  const configDef = CARD_DEFS.find(d => d.id === 'move_together');
   expect(entry).toBeDefined();
   expect(entry.rarity).toBe(configDef.rarity);
 });

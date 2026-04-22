@@ -68,6 +68,22 @@ export function swapCard() {
   return { name: 'Swap', type: 'action', actionType: 'swap' };
 }
 
+export function teleportCard() {
+  return { name: 'Teleport', type: 'move', moveVariant: 'teleport' };
+}
+
+export function snapCard() {
+  return { name: 'Snap', type: 'action', actionType: 'snap' };
+}
+
+export function blitzCard() {
+  return { name: 'Blitz', type: 'move', moveVariant: 'blitz' };
+}
+
+export function moveTogetherCard() {
+  return { name: 'Move Together', type: 'move', moveVariant: 'move_together' };
+}
+
 // Returns upgraded copy of a card (never mutates original)
 export function upgradeCard(card) {
   const c = { ...card };
@@ -95,6 +111,10 @@ const _factories = {
   sacrificeCard,
   unblockCard,
   swapCard,
+  teleportCard,
+  snapCard,
+  blitzCard,
+  moveTogetherCard,
   curseCard,
 };
 
