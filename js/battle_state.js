@@ -768,10 +768,10 @@ export class GameState {
     return { ok: true };
   }
 
-  playSwapCard(cardIndex, fromSq, toSq) {
+  playSwapMoveCard(cardIndex, fromSq, toSq) {
     if (cardIndex < 0 || cardIndex >= this._state.hand.length) return { error: 'invalid card index' };
     const card = this._state.hand[cardIndex];
-    if (card.type !== 'action' || card.actionType !== 'swap') return { error: 'not a swap card' };
+    if (card.type !== 'move' || card.moveVariant !== 'swap') return { error: 'not a swap card' };
 
     const piece1 = get(this._state.board, fromSq);
     const piece2 = get(this._state.board, toSq);

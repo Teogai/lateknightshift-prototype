@@ -540,38 +540,49 @@ describe('new card play methods', () => {
     expect(state.legalMovesForPiece('a1')).toHaveLength(0);
   });
 
-  test('playSwapCard swaps two friendly pieces', () => {
+  test('playSwapMoveCard swaps two friendly pieces', () => {
     const state = makeStateWithCards([swapCard()], [
       { sq: 'e1', type: 'king', owner: 'player' },
       { sq: 'e8', type: 'king', owner: 'enemy' },
       { sq: 'd4', type: 'rook', owner: 'player' },
       { sq: 'f6', type: 'bishop', owner: 'player' },
     ]);
-    const result = state.playSwapCard(0, 'd4', 'f6');
+    const result = state.playSwapMoveCard(0, 'd4', 'f6');
     expect(result.error).toBeUndefined();
     const board = state.toDict().board;
     expect(board['d4'].type).toBe('bishop');
     expect(board['f6'].type).toBe('rook');
   });
 
-  test('playSwapCard fails if either square is empty', () => {
+  test('playSwapMoveCard fails if either square is empty', () => {
     const state = makeStateWithCards([swapCard()], [
       { sq: 'e1', type: 'king', owner: 'player' },
       { sq: 'e8', type: 'king', owner: 'enemy' },
       { sq: 'd4', type: 'rook', owner: 'player' },
     ]);
-    const result = state.playSwapCard(0, 'd4', 'f6');
+    const result = state.playSwapMoveCard(0, 'd4', 'f6');
     expect(result.error).toBeDefined();
   });
 
-  test('playSwapCard fails if target is enemy piece', () => {
+  test('playSwapMoveCard fails if target is enemy piece', () => {
     const state = makeStateWithCards([swapCard()], [
       { sq: 'e1', type: 'king', owner: 'player' },
       { sq: 'e8', type: 'king', owner: 'enemy' },
       { sq: 'd4', type: 'rook', owner: 'player' },
       { sq: 'f6', type: 'bishop', owner: 'enemy' },
     ]);
-    const result = state.playSwapCard(0, 'd4', 'f6');
+    const result = state.playSwapMoveCard(0, 'd4', 'f6');
+    expect(result.error).toBeDefined();
+  });
+
+  test('playSwapMoveCard validates card is move type with swap variant', () => {
+    const state = makeStateWithCards([{ name: 'Swap', type: 'action', actionType: 'swap' }], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'd4', type: 'rook', owner: 'player' },
+      { sq: 'f6', type: 'bishop', owner: 'player' },
+    ]);
+    const result = state.playSwapMoveCard(0, 'd4', 'f6');
     expect(result.error).toBeDefined();
   });
 
