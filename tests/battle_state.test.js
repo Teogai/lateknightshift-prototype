@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'vitest';
 import { GameState, knightAttacks } from '../js/battle_state.js';
-import { pawnBoostCard, summonDuckCard, moveDuckCard, stunCard, shieldCard, sacrificeCard, unblockCard, swapCard } from '../js/cards2/move_cards.js';
+import { pawnBoostCard, summonDuckCard, moveDuckCard, stunCard, shieldCard, sacrificeCard, unblockCard, swapCard,
+  teleportCard, snapCard, blitzCard, moveTogetherCard } from '../js/cards2/move_cards.js';
 import { makePiece } from '../js/engine2/pieces.js';
 import { get, set } from '../js/engine2/board.js';
 import { CHARACTER_PIECES } from '../config/characters.js';
@@ -572,5 +573,190 @@ describe('new card play methods', () => {
     ]);
     const result = state.playSwapCard(0, 'd4', 'f6');
     expect(result.error).toBeDefined();
+  });
+
+  test('playTeleportCard moves piece to empty square', () => {
+    const state = makeStateWithCards([teleportCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'd4', type: 'rook', owner: 'player' },
+    ]);
+    const result = state.playTeleportCard(0, 'd4', 'h1');
+    expect(result.error).toBeUndefined();
+    const board = state.toDict().board;
+    expect(board['d4']).toBeUndefined();
+    expect(board['h1'].type).toBe('rook');
+  });
+
+  test('playTeleportCard fails if destination occupied', () => {
+    const state = makeStateWithCards([teleportCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'd4', type: 'rook', owner: 'player' },
+      { sq: 'h1', type: 'pawn', owner: 'player' },
+    ]);
+    const result = state.playTeleportCard(0, 'd4', 'h1');
+    expect(result.error).toBeDefined();
+  });
+
+  test('playTeleportCard fails if no friendly piece at source', () => {
+    const state = makeStateWithCards([teleportCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+    ]);
+    const result = state.playTeleportCard(0, 'd4', 'h1');
+    expect(result.error).toBeDefined();
+  });
+
+  test('playSnapCard captures enemy without moving', () => {
+    const state = makeStateWithCards([snapCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'd4', type: 'rook', owner: 'player' },
+      { sq: 'd5', type: 'pawn', owner: 'enemy' },
+    ]);
+    const result = state.playSnapCard(0, 'd4', 'd5');
+    expect(result.error).toBeUndefined();
+    const board = state.toDict().board;
+    expect(board['d4'].type).toBe('rook');
+    expect(board['d5']).toBeUndefined();
+  });
+
+  test('playSnapCard fails if target is not a legal capture', () => {
+    const state = makeStateWithCards([snapCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'd4', type: 'rook', owner: 'player' },
+      { sq: 'h8', type: 'pawn', owner: 'enemy' },
+    ]);
+    const result = state.playSnapCard(0, 'd4', 'h8');
+    expect(result.error).toBeDefined();
+  });
+
+  test('playSnapCard fails if target is friendly', () => {
+    const state = makeStateWithCards([snapCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'd4', type: 'rook', owner: 'player' },
+      { sq: 'd5', type: 'pawn', owner: 'player' },
+    ]);
+    const result = state.playSnapCard(0, 'd4', 'd5');
+    expect(result.error).toBeDefined();
+  });
+
+  test('playBlitzFirstMove moves piece and stores state', () => {
+    const state = makeStateWithCards([blitzCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'a1', type: 'rook', owner: 'player' },
+    ]);
+    const result = state.playBlitzFirstMove(0, 'a1', 'a4');
+    expect(result.error).toBeUndefined();
+    expect(state.toDict().board['a1']).toBeUndefined();
+    expect(state.toDict().board['a4'].type).toBe('rook');
+    expect(state._blitzPieceSq).toBe('a4');
+    expect(state._blitzCardIndex).toBe(0);
+  });
+
+  test('playBlitzSecondMove moves again and discards card', () => {
+    const state = makeStateWithCards([blitzCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'a1', type: 'rook', owner: 'player' },
+    ]);
+    state.playBlitzFirstMove(0, 'a1', 'a4');
+    const result = state.playBlitzSecondMove('a6');
+    expect(result.error).toBeUndefined();
+    expect(state.toDict().board['a4']).toBeUndefined();
+    expect(state.toDict().board['a6'].type).toBe('rook');
+    expect(state._state.hand).toHaveLength(0);
+  });
+
+  test('playBlitzSecondMove fails if no blitz state', () => {
+    const state = makeStateWithCards([blitzCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'a1', type: 'rook', owner: 'player' },
+    ]);
+    const result = state.playBlitzSecondMove('a4');
+    expect(result.error).toBeDefined();
+  });
+
+  test('blitz state clears on enemy turn start', () => {
+    const state = makeStateWithCards([blitzCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'a1', type: 'rook', owner: 'player' },
+    ]);
+    state.playBlitzFirstMove(0, 'a1', 'a4');
+    expect(state._blitzPieceSq).toBe('a4');
+    state.startEnemyTurn();
+    expect(state._blitzPieceSq).toBeNull();
+  });
+
+  test('playMoveTogetherFirst moves piece and stores state', () => {
+    const state = makeStateWithCards([moveTogetherCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'a1', type: 'rook', owner: 'player' },
+      { sq: 'b1', type: 'knight', owner: 'player' },
+    ]);
+    const result = state.playMoveTogetherFirst(0, 'a1', 'a4');
+    expect(result.error).toBeUndefined();
+    expect(state.toDict().board['a1']).toBeUndefined();
+    expect(state.toDict().board['a4'].type).toBe('rook');
+    expect(state._moveTogetherFirstPieceSq).toBe('a4');
+    expect(state._moveTogetherCardIndex).toBe(0);
+    expect(state._state.hand).toHaveLength(1);
+  });
+
+  test('playMoveTogetherSecond moves second piece and discards card', () => {
+    const state = makeStateWithCards([moveTogetherCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'a1', type: 'rook', owner: 'player' },
+      { sq: 'b1', type: 'knight', owner: 'player' },
+    ]);
+    state.playMoveTogetherFirst(0, 'a1', 'a4');
+    const result = state.playMoveTogetherSecond('b1', 'b3');
+    expect(result.error).toBeUndefined();
+    expect(state.toDict().board['b1']).toBeUndefined();
+    expect(state.toDict().board['b3'].type).toBe('knight');
+    expect(state._state.hand).toHaveLength(0);
+  });
+
+  test('playMoveTogetherSecond fails if same piece', () => {
+    const state = makeStateWithCards([moveTogetherCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'a1', type: 'rook', owner: 'player' },
+      { sq: 'b1', type: 'knight', owner: 'player' },
+    ]);
+    state.playMoveTogetherFirst(0, 'a1', 'a4');
+    const result = state.playMoveTogetherSecond('a4', 'a6');
+    expect(result.error).toBeDefined();
+  });
+
+  test('playMoveTogetherSecond fails if no state', () => {
+    const state = makeStateWithCards([moveTogetherCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'b1', type: 'knight', owner: 'player' },
+    ]);
+    const result = state.playMoveTogetherSecond('b1', 'b3');
+    expect(result.error).toBeDefined();
+  });
+
+  test('move together state clears on enemy turn start', () => {
+    const state = makeStateWithCards([moveTogetherCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'a1', type: 'rook', owner: 'player' },
+      { sq: 'b1', type: 'knight', owner: 'player' },
+    ]);
+    state.playMoveTogetherFirst(0, 'a1', 'a4');
+    expect(state._moveTogetherFirstPieceSq).toBe('a4');
+    state.startEnemyTurn();
+    expect(state._moveTogetherFirstPieceSq).toBeNull();
   });
 });

@@ -278,6 +278,10 @@ export class GameState {
     this.movedThisTurn = new Set();
     this.summonedThisTurn = new Set();
     this.lastMove = { from: null, to: null };
+    this._blitzPieceSq = null;
+    this._blitzCardIndex = null;
+    this._moveTogetherFirstPieceSq = null;
+    this._moveTogetherCardIndex = null;
 
     console.log('[battle_state] created character=%s enemy=%s', character, enemy);
   }
@@ -783,6 +787,163 @@ export class GameState {
     return { ok: true };
   }
 
+  playTeleportCard(cardIndex, fromSq, toSq) {
+    if (cardIndex < 0 || cardIndex >= this._state.hand.length) return { error: 'invalid card index' };
+    const card = this._state.hand[cardIndex];
+    if (card.type !== 'move' || card.moveVariant !== 'teleport') return { error: 'not a teleport card' };
+
+    const piece = get(this._state.board, fromSq);
+    if (!piece || piece.owner !== 'player') return { error: 'no friendly piece on that square' };
+    if (this.movedThisTurn.has(fromSq)) return { error: 'piece already moved this turn' };
+
+    const target = get(this._state.board, toSq);
+    if (target) return { error: 'destination must be empty' };
+
+    set(this._state.board, fromSq, null);
+    set(this._state.board, toSq, piece);
+
+    this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
+    this.movedThisTurn.add(toSq);
+    this.lastMove = { from: fromSq, to: toSq };
+
+    const winner = checkKingCaptured(this._state.board);
+    if (winner) this.turn = winner;
+
+    return { ok: true };
+  }
+
+  playSnapCard(cardIndex, fromSq, toSq) {
+    if (cardIndex < 0 || cardIndex >= this._state.hand.length) return { error: 'invalid card index' };
+    const card = this._state.hand[cardIndex];
+    if (card.type !== 'action' || card.actionType !== 'snap') return { error: 'not a snap card' };
+
+    const piece = get(this._state.board, fromSq);
+    if (!piece || piece.owner !== 'player') return { error: 'no friendly piece on that square' };
+
+    const target = get(this._state.board, toSq);
+    if (!target || target.owner === 'player') return { error: 'target must be an enemy piece' };
+
+    // Verify it's a legal capture target for this piece
+    const actions = generateLegalActions(this._state, 'player');
+    const canCapture = actions.some(a => a.source === fromSq && a.targets[0] === toSq);
+    if (!canCapture) return { error: 'not a legal capture target' };
+
+    // Capture without moving
+    set(this._state.board, toSq, null);
+
+    this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
+    this.lastMove = { from: fromSq, to: toSq };
+
+    const winner = checkKingCaptured(this._state.board);
+    if (winner) this.turn = winner;
+
+    return { ok: true };
+  }
+
+  playBlitzFirstMove(cardIndex, fromSq, toSq) {
+    if (cardIndex < 0 || cardIndex >= this._state.hand.length) return { error: 'invalid card index' };
+    const card = this._state.hand[cardIndex];
+    if (card.type !== 'move' || card.moveVariant !== 'blitz') return { error: 'not a blitz card' };
+
+    const piece = get(this._state.board, fromSq);
+    if (!piece || piece.owner !== 'player') return { error: 'no friendly piece on that square' };
+    if (this.movedThisTurn.has(fromSq)) return { error: 'piece already moved this turn' };
+
+    const actions = generateLegalActions(this._state, 'player');
+    const action = actions.find(a => a.source === fromSq && a.targets[0] === toSq);
+    if (!action) return { error: 'illegal move' };
+
+    this._state.play(action);
+
+    this._blitzPieceSq = toSq;
+    this._blitzCardIndex = cardIndex;
+    this.movedThisTurn.add(toSq);
+    this.lastMove = { from: fromSq, to: toSq };
+
+    return { ok: true };
+  }
+
+  playBlitzSecondMove(toSq) {
+    if (this._blitzPieceSq === null) return { error: 'no active blitz move' };
+
+    const fromSq = this._blitzPieceSq;
+    const piece = get(this._state.board, fromSq);
+    if (!piece) return { error: 'piece no longer on board' };
+
+    const actions = generateLegalActions(this._state, 'player');
+    const action = actions.find(a => a.source === fromSq && a.targets[0] === toSq);
+    if (!action) return { error: 'illegal move' };
+
+    this._state.play(action);
+
+    // Discard the card now
+    const cardIndex = this._blitzCardIndex;
+    this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
+
+    this._blitzPieceSq = null;
+    this._blitzCardIndex = null;
+    this.movedThisTurn.add(toSq);
+    this.lastMove = { from: fromSq, to: toSq };
+
+    const winner = checkKingCaptured(this._state.board);
+    if (winner) this.turn = winner;
+
+    return { ok: true };
+  }
+
+  playMoveTogetherFirst(cardIndex, fromSq, toSq) {
+    if (cardIndex < 0 || cardIndex >= this._state.hand.length) return { error: 'invalid card index' };
+    const card = this._state.hand[cardIndex];
+    if (card.type !== 'move' || card.moveVariant !== 'move_together') return { error: 'not a move_together card' };
+
+    const piece = get(this._state.board, fromSq);
+    if (!piece || piece.owner !== 'player') return { error: 'no friendly piece on that square' };
+    if (this.movedThisTurn.has(fromSq)) return { error: 'piece already moved this turn' };
+
+    const actions = generateLegalActions(this._state, 'player');
+    const action = actions.find(a => a.source === fromSq && a.targets[0] === toSq);
+    if (!action) return { error: 'illegal move' };
+
+    this._state.play(action);
+
+    this._moveTogetherFirstPieceSq = toSq;
+    this._moveTogetherCardIndex = cardIndex;
+    this.movedThisTurn.add(toSq);
+    this.lastMove = { from: fromSq, to: toSq };
+
+    return { ok: true };
+  }
+
+  playMoveTogetherSecond(fromSq, toSq) {
+    if (this._moveTogetherFirstPieceSq === null) return { error: 'no active move_together' };
+
+    if (fromSq === this._moveTogetherFirstPieceSq) return { error: 'must move a different piece' };
+
+    const piece = get(this._state.board, fromSq);
+    if (!piece || piece.owner !== 'player') return { error: 'no friendly piece on that square' };
+    if (this.movedThisTurn.has(fromSq)) return { error: 'piece already moved this turn' };
+
+    const actions = generateLegalActions(this._state, 'player');
+    const action = actions.find(a => a.source === fromSq && a.targets[0] === toSq);
+    if (!action) return { error: 'illegal move' };
+
+    this._state.play(action);
+
+    // Discard the card now
+    const cardIndex = this._moveTogetherCardIndex;
+    this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
+
+    this._moveTogetherFirstPieceSq = null;
+    this._moveTogetherCardIndex = null;
+    this.movedThisTurn.add(toSq);
+    this.lastMove = { from: fromSq, to: toSq };
+
+    const winner = checkKingCaptured(this._state.board);
+    if (winner) this.turn = winner;
+
+    return { ok: true };
+  }
+
   // ─── enemy turn ────────────────────────────────────────────────────────────
 
   _applyEnemyAction(action) {
@@ -816,6 +977,10 @@ export class GameState {
     this.turn = 'enemy';
     this.summonedThisTurn.clear();
     this.movedThisTurn.clear();
+    this._blitzPieceSq = null;
+    this._blitzCardIndex = null;
+    this._moveTogetherFirstPieceSq = null;
+    this._moveTogetherCardIndex = null;
     this._decayGhostStatuses('enemy');
 
     if (!this._enemyAI) {
