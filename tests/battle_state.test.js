@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import { GameState, knightAttacks } from '../js/battle_state.js';
-import { pawnBoostCard, summonDuckCard, moveDuckCard, stunCard, shieldCard, sacrificeCard, unblockCard } from '../js/cards2/move_cards.js';
+import { pawnBoostCard, summonDuckCard, moveDuckCard, stunCard, shieldCard, sacrificeCard, unblockCard, swapCard } from '../js/cards2/move_cards.js';
 import { makePiece } from '../js/engine2/pieces.js';
 import { get, set } from '../js/engine2/board.js';
 import { CHARACTER_PIECES } from '../config/characters.js';
@@ -537,5 +537,40 @@ describe('new card play methods', () => {
     expect(enemyMoves.length).toBeGreaterThan(0);
     // Empty square returns empty array
     expect(state.legalMovesForPiece('a1')).toHaveLength(0);
+  });
+
+  test('playSwapCard swaps two friendly pieces', () => {
+    const state = makeStateWithCards([swapCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'd4', type: 'rook', owner: 'player' },
+      { sq: 'f6', type: 'bishop', owner: 'player' },
+    ]);
+    const result = state.playSwapCard(0, 'd4', 'f6');
+    expect(result.error).toBeUndefined();
+    const board = state.toDict().board;
+    expect(board['d4'].type).toBe('bishop');
+    expect(board['f6'].type).toBe('rook');
+  });
+
+  test('playSwapCard fails if either square is empty', () => {
+    const state = makeStateWithCards([swapCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'd4', type: 'rook', owner: 'player' },
+    ]);
+    const result = state.playSwapCard(0, 'd4', 'f6');
+    expect(result.error).toBeDefined();
+  });
+
+  test('playSwapCard fails if target is enemy piece', () => {
+    const state = makeStateWithCards([swapCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'd4', type: 'rook', owner: 'player' },
+      { sq: 'f6', type: 'bishop', owner: 'enemy' },
+    ]);
+    const result = state.playSwapCard(0, 'd4', 'f6');
+    expect(result.error).toBeDefined();
   });
 });

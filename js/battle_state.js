@@ -764,6 +764,25 @@ export class GameState {
     return { ok: true };
   }
 
+  playSwapCard(cardIndex, fromSq, toSq) {
+    if (cardIndex < 0 || cardIndex >= this._state.hand.length) return { error: 'invalid card index' };
+    const card = this._state.hand[cardIndex];
+    if (card.type !== 'action' || card.actionType !== 'swap') return { error: 'not a swap card' };
+
+    const piece1 = get(this._state.board, fromSq);
+    const piece2 = get(this._state.board, toSq);
+    if (!piece1 || !piece2) return { error: 'both squares must have pieces' };
+    if (piece1.owner !== 'player' || piece2.owner !== 'player') return { error: 'both pieces must be friendly' };
+
+    set(this._state.board, fromSq, piece2);
+    set(this._state.board, toSq, piece1);
+
+    this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
+    this.lastMove = { from: fromSq, to: toSq };
+
+    return { ok: true };
+  }
+
   // ─── enemy turn ────────────────────────────────────────────────────────────
 
   _applyEnemyAction(action) {
