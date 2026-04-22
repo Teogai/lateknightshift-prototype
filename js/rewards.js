@@ -220,10 +220,10 @@ function createConfirmButton(text = 'Confirm') {
 
 // --- Render functions ---
 
-export function renderCardRewardScreen(choices, onChosen, onReroll) {
+export function renderCardRewardScreen(choices, onChosen, onReroll, title = 'Choose a card reward') {
   const content = document.getElementById('room-content');
   if (!content) return;
-  content.innerHTML = '<h2>Choose a card reward</h2>';
+  content.innerHTML = `<h2>${title}</h2>`;
   const row = document.createElement('div');
   row.className = 'card-choices';
   let selectedEl = null;

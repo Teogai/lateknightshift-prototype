@@ -814,11 +814,14 @@ export function handleNodeChosen(index) {
 export function handleRoomEntered(node) {
   showScreen('screen-room');
   if (node.type === 'piece_reward') {
-    const choices = pickPieceCardChoices(3);
-    renderCardRewardScreen(choices, (i, card) => {
-      runState.addRewardCard(card);
-      advanceAfterRoom();
-    });
+    const showPieceReward = () => {
+      const choices = pickPieceCardChoices(3);
+      renderCardRewardScreen(choices, (i, card) => {
+        runState.addRewardCard(card);
+        advanceAfterRoom();
+      }, showPieceReward, 'Choose a piece reward');
+    };
+    showPieceReward();
   } else if (node.type === 'transform') {
     renderTransformScreen(runState.deck, (deckIdx, oldCard) => {
       const newCard = pickTransformCard(oldCard, runState.character);
