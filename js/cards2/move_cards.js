@@ -65,7 +65,7 @@ export function unblockCard() {
 }
 
 export function swapCard() {
-  return { name: 'Swap', type: 'action', actionType: 'swap' };
+  return { name: 'Swap', type: 'move', moveVariant: 'swap' };
 }
 
 export function teleportCard() {

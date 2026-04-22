@@ -172,10 +172,10 @@ test('CARD_CATALOG includes Move Duck with config rarity', () => {
   expect(entry.rarity).toBe(configDef.rarity);
 });
 
-test('swapCard has type action and actionType swap', () => {
+test('swapCard has type move and moveVariant swap', () => {
   const c = swapCard();
-  expect(c.type).toBe('action');
-  expect(c.actionType).toBe('swap');
+  expect(c.type).toBe('move');
+  expect(c.moveVariant).toBe('swap');
 });
 
 test('CARD_CATALOG includes Swap with config rarity', () => {
