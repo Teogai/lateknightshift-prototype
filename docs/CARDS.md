@@ -24,6 +24,19 @@
 - **move** cards: `moveVariant: 'knight' | 'bishop' | 'rook' | 'queen' | 'pawn_boost' | 'duck'` (absent = standard move)
 - **action** cards: `actionType: 'stun' | 'shield' | 'sacrifice' | 'unblock'`
 
+## Naming & Description Rules
+
+- **Piece cards**: name = piece name (`Pawn`, `Knight`, `Duck`)
+  - Description format: `Summon {piece} [location]`
+  - Examples: `Summon {pawn} rank 1-2.`, `Summon {duck} anywhere.`
+- **Conciseness over grammar**: sacrifice grammar for brevity
+  - `Slide {pawn} forward.` not `Slide {pawn} forward any number of squares.`
+  - `Apply {shield}.` not `Apply {shield} to a piece.`
+  - `Move any {duck}.` not `Move any {duck} to an empty square.`
+- **Keywords**: wrap piece/status names in `{}` for tooltip styling
+  - `{pawn}`, `{knight}`, `{stun}`, `{shield}`, `{ghost}`
+  - Registry in `js/ui.js` `KEYWORD_REGISTRY`
+
 ## Reward Pool
 - Card rewards exclude **starter cards** (character-specific) and **piece cards** (separate piece reward pool)
 - **Curse cards are excluded** from card rewards (only obtained via defeat or events)
