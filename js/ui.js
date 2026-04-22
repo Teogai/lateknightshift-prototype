@@ -930,6 +930,18 @@ export function handleCardClick(index, card) {
   } else if (card.type === 'action' && card.actionType === 'swap') {
     uiState.phase = 'swap_selected';
     setHint('Click a friendly piece to swap');
+  } else if (card.type === 'move' && card.moveVariant === 'teleport') {
+    uiState.phase = 'teleport_selected';
+    setHint('Teleport: click a friendly piece');
+  } else if (card.type === 'action' && card.actionType === 'snap') {
+    uiState.phase = 'snap_selected';
+    setHint('Snap: click a friendly piece');
+  } else if (card.type === 'move' && card.moveVariant === 'blitz') {
+    uiState.phase = 'blitz_selected';
+    setHint('Blitz: click a friendly piece');
+  } else if (card.type === 'move' && card.moveVariant === 'move_together') {
+    uiState.phase = 'move_together_selected';
+    setHint('Move Together: click first friendly piece');
   }
   render();
 }
@@ -1398,6 +1410,198 @@ export function handleSquareClick(sq) {
       setHint('Invalid target'); return;
     }
     const result = gameState.playSwapCard(uiState.selectedCardIndex, uiState.fromSq, sq);
+    if (result.error) { setHint(result.error); return; }
+    resetUiState(); setHint(''); render();
+    playoutEnemyTurn();
+    return;
+  }
+
+  if (uiState.phase === 'teleport_selected') {
+    const piece = d.board[sq];
+    if (piece && piece.color === 'white') {
+      uiState.fromSq = sq;
+      uiState.phase = 'teleport_from_selected';
+      uiState.legalDests = [];
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const dest = 'abcdefgh'[c] + (r + 1);
+          if (!d.board[dest]) uiState.legalDests.push(dest);
+        }
+      }
+      setHint('Click an empty square to teleport to');
+      render();
+    } else {
+      setHint('Pick a friendly piece');
+    }
+    return;
+  }
+
+  if (uiState.phase === 'teleport_from_selected') {
+    if (sq === uiState.fromSq) {
+      uiState.phase = 'teleport_selected';
+      uiState.fromSq = null;
+      uiState.legalDests = [];
+      setHint('Teleport: click a friendly piece');
+      render(); return;
+    }
+    if (!uiState.legalDests.includes(sq)) {
+      setHint('Must be an empty square'); return;
+    }
+    const result = gameState.playTeleportCard(uiState.selectedCardIndex, uiState.fromSq, sq);
+    if (result.error) { setHint(result.error); return; }
+    resetUiState(); setHint(''); render();
+    playoutEnemyTurn();
+    return;
+  }
+
+  if (uiState.phase === 'snap_selected') {
+    const piece = d.board[sq];
+    if (piece && piece.color === 'white') {
+      uiState.fromSq = sq;
+      uiState.phase = 'snap_from_selected';
+      const moves = gameState.legalMovesForPiece(sq);
+      uiState.legalDests = moves.filter(dest => {
+        const target = d.board[dest];
+        return target && target.color === 'black';
+      });
+      if (uiState.legalDests.length === 0) {
+        setHint('No legal captures');
+        resetUiState(); render(); return;
+      }
+      setHint('Click an enemy piece to capture');
+      render();
+    } else {
+      setHint('Pick a friendly piece');
+    }
+    return;
+  }
+
+  if (uiState.phase === 'snap_from_selected') {
+    if (sq === uiState.fromSq) {
+      uiState.phase = 'snap_selected';
+      uiState.fromSq = null;
+      uiState.legalDests = [];
+      setHint('Snap: click a friendly piece');
+      render(); return;
+    }
+    if (!uiState.legalDests.includes(sq)) {
+      setHint('Not a legal capture target'); return;
+    }
+    const result = gameState.playSnapCard(uiState.selectedCardIndex, uiState.fromSq, sq);
+    if (result.error) { setHint(result.error); return; }
+    resetUiState(); setHint(''); render();
+    playoutEnemyTurn();
+    return;
+  }
+
+  if (uiState.phase === 'blitz_selected') {
+    const piece = d.board[sq];
+    if (piece && piece.color === 'white') {
+      uiState.fromSq = sq;
+      uiState.phase = 'blitz_first_selected';
+      uiState.legalDests = gameState.legalDestinationsFor(sq);
+      setHint('Blitz: click first destination');
+      render();
+    } else {
+      setHint('Pick a friendly piece');
+    }
+    return;
+  }
+
+  if (uiState.phase === 'blitz_first_selected') {
+    if (sq === uiState.fromSq) {
+      uiState.phase = 'blitz_selected';
+      uiState.fromSq = null;
+      uiState.legalDests = [];
+      setHint('Blitz: click a friendly piece');
+      render(); return;
+    }
+    if (!uiState.legalDests.includes(sq)) {
+      setHint('Not a legal destination'); return;
+    }
+    const result = gameState.playBlitzFirstMove(uiState.selectedCardIndex, uiState.fromSq, sq);
+    if (result.error) { setHint(result.error); return; }
+    uiState.fromSq = sq;
+    uiState.phase = 'blitz_second_selected';
+    uiState.legalDests = gameState.legalDestinationsFor(sq);
+    setHint('Blitz: click second destination');
+    render();
+    return;
+  }
+
+  if (uiState.phase === 'blitz_second_selected') {
+    if (!uiState.legalDests.includes(sq)) {
+      setHint('Not a legal destination'); return;
+    }
+    const result = gameState.playBlitzSecondMove(sq);
+    if (result.error) { setHint(result.error); return; }
+    resetUiState(); setHint(''); render();
+    playoutEnemyTurn();
+    return;
+  }
+
+  if (uiState.phase === 'move_together_selected') {
+    const piece = d.board[sq];
+    if (piece && piece.color === 'white') {
+      uiState.fromSq = sq;
+      uiState.phase = 'move_together_first_selected';
+      uiState.legalDests = gameState.legalDestinationsFor(sq);
+      setHint('Move Together: click first destination');
+      render();
+    } else {
+      setHint('Pick a friendly piece');
+    }
+    return;
+  }
+
+  if (uiState.phase === 'move_together_first_selected') {
+    if (sq === uiState.fromSq) {
+      uiState.phase = 'move_together_selected';
+      uiState.fromSq = null;
+      uiState.legalDests = [];
+      setHint('Move Together: click first friendly piece');
+      render(); return;
+    }
+    if (!uiState.legalDests.includes(sq)) {
+      setHint('Not a legal destination'); return;
+    }
+    const result = gameState.playMoveTogetherFirst(uiState.selectedCardIndex, uiState.fromSq, sq);
+    if (result.error) { setHint(result.error); return; }
+    uiState.phase = 'move_together_second_piece';
+    setHint('Move Together: click second friendly piece');
+    render();
+    return;
+  }
+
+  if (uiState.phase === 'move_together_second_piece') {
+    const piece = d.board[sq];
+    if (piece && piece.color === 'white') {
+      if (sq === gameState._moveTogetherFirstPieceSq) {
+        setHint('Cannot move same piece twice'); return;
+      }
+      uiState.fromSq = sq;
+      uiState.phase = 'move_together_second_from_selected';
+      uiState.legalDests = gameState.legalDestinationsFor(sq);
+      setHint('Move Together: click second destination');
+      render();
+    } else {
+      setHint('Pick a friendly piece');
+    }
+    return;
+  }
+
+  if (uiState.phase === 'move_together_second_from_selected') {
+    if (sq === uiState.fromSq) {
+      uiState.phase = 'move_together_second_piece';
+      uiState.fromSq = null;
+      uiState.legalDests = [];
+      setHint('Move Together: click second friendly piece');
+      render(); return;
+    }
+    if (!uiState.legalDests.includes(sq)) {
+      setHint('Not a legal destination'); return;
+    }
+    const result = gameState.playMoveTogetherSecond(uiState.fromSq, sq);
     if (result.error) { setHint(result.error); return; }
     resetUiState(); setHint(''); render();
     playoutEnemyTurn();

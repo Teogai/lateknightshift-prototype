@@ -718,10 +718,10 @@ describe('new card play methods', () => {
       { sq: 'b1', type: 'knight', owner: 'player' },
     ]);
     state.playMoveTogetherFirst(0, 'a1', 'a4');
-    const result = state.playMoveTogetherSecond('b1', 'b3');
+    const result = state.playMoveTogetherSecond('b1', 'c3');
     expect(result.error).toBeUndefined();
     expect(state.toDict().board['b1']).toBeUndefined();
-    expect(state.toDict().board['b3'].type).toBe('knight');
+    expect(state.toDict().board['c3'].type).toBe('knight');
     expect(state._state.hand).toHaveLength(0);
   });
 
@@ -743,7 +743,7 @@ describe('new card play methods', () => {
       { sq: 'e8', type: 'king', owner: 'enemy' },
       { sq: 'b1', type: 'knight', owner: 'player' },
     ]);
-    const result = state.playMoveTogetherSecond('b1', 'b3');
+    const result = state.playMoveTogetherSecond('b1', 'c3');
     expect(result.error).toBeDefined();
   });
 
