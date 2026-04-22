@@ -41,27 +41,27 @@ export function curseCard(name = 'Curse') {
 }
 
 export function summonDuckCard() {
-  return { name: 'Summon Duck', type: 'summon_duck' };
+  return { name: 'Summon Duck', type: 'piece', piece: 'duck' };
 }
 
 export function moveDuckCard() {
-  return { name: 'Move Duck', type: 'move_duck' };
+  return { name: 'Move Duck', type: 'move', moveVariant: 'duck' };
 }
 
 export function stunCard() {
-  return { name: 'Stun', type: 'stun' };
+  return { name: 'Stun', type: 'action', actionType: 'stun' };
 }
 
 export function shieldCard() {
-  return { name: 'Shield', type: 'shield' };
+  return { name: 'Shield', type: 'action', actionType: 'shield' };
 }
 
 export function sacrificeCard() {
-  return { name: 'Sacrifice', type: 'sacrifice' };
+  return { name: 'Sacrifice', type: 'action', actionType: 'sacrifice' };
 }
 
 export function unblockCard() {
-  return { name: 'Unblock', type: 'unblock' };
+  return { name: 'Unblock', type: 'action', actionType: 'unblock' };
 }
 
 // Returns upgraded copy of a card (never mutates original)
