@@ -927,6 +927,9 @@ export function handleCardClick(index, card) {
   } else if (card.type === 'action' && card.actionType === 'unblock') {
     uiState.phase = 'unblock_selected';
     setHint('Click any piece to make ghost');
+  } else if (card.type === 'action' && card.actionType === 'swap') {
+    uiState.phase = 'swap_selected';
+    setHint('Click a friendly piece to swap');
   }
   render();
 }
@@ -1353,6 +1356,51 @@ export function handleSquareClick(sq) {
     } else {
       setHint('Pick a piece');
     }
+    return;
+  }
+
+  if (uiState.phase === 'swap_selected') {
+    const piece = d.board[sq];
+    if (piece && piece.color === 'white') {
+      uiState.fromSq = sq;
+      uiState.phase = 'swap_target_selected';
+      uiState.legalDests = [];
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const dest = 'abcdefgh'[c] + (r + 1);
+          const friendly = d.board[dest];
+          if (friendly && friendly.color === 'white' && dest !== sq) {
+            uiState.legalDests.push(dest);
+          }
+        }
+      }
+      if (uiState.legalDests.length === 0) {
+        setHint('No other friendly pieces');
+        resetUiState(); render(); return;
+      }
+      setHint('Click another friendly piece to swap with');
+      render();
+    } else {
+      setHint('Pick a friendly piece');
+    }
+    return;
+  }
+
+  if (uiState.phase === 'swap_target_selected') {
+    if (sq === uiState.fromSq) {
+      uiState.phase = 'swap_selected';
+      uiState.fromSq = null;
+      uiState.legalDests = [];
+      setHint('Click a friendly piece to swap');
+      render(); return;
+    }
+    if (!uiState.legalDests.includes(sq)) {
+      setHint('Invalid target'); return;
+    }
+    const result = gameState.playSwapCard(uiState.selectedCardIndex, uiState.fromSq, sq);
+    if (result.error) { setHint(result.error); return; }
+    resetUiState(); setHint(''); render();
+    playoutEnemyTurn();
     return;
   }
 }
