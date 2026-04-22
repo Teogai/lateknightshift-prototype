@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'vitest';
 import { GameState, knightAttacks } from '../js/battle_state.js';
 import { pawnBoostCard, summonDuckCard, moveDuckCard, stunCard, shieldCard, sacrificeCard, unblockCard, swapCard,
-  teleportCard, snapCard, blitzCard, moveTogetherCard } from '../js/cards2/move_cards.js';
+  teleportCard, snapCard, blitzCard, moveTogetherCard, knightMoveCard } from '../js/cards2/move_cards.js';
 import { makePiece } from '../js/engine2/pieces.js';
 import { get, set } from '../js/engine2/board.js';
 import { CHARACTER_PIECES } from '../config/characters.js';
@@ -360,7 +360,9 @@ describe('pawn boost', () => {
     ]);
     const result = state.playPawnBoostCard(0, 'a7', 'a8');
     expect(result.error).toBeUndefined();
-    expect(result.needs_promotion).toEqual(['a8']);
+    expect(result.needs_promotion).toBeUndefined();
+    const promo = state.checkPromotions();
+    expect(promo.playerPromos).toEqual(['a8']);
   });
 });
 
@@ -647,7 +649,7 @@ describe('new card play methods', () => {
     expect(result.error).toBeDefined();
   });
 
-  test('playTeleportCard detects promotion for white pawn reaching rank 8', () => {
+  test('playTeleportCard leaves pawn on rank 8, checkPromotions detects it', () => {
     const state = makeStateWithCards([teleportCard()], [
       { sq: 'e1', type: 'king', owner: 'player' },
       { sq: 'e8', type: 'king', owner: 'enemy' },
@@ -655,7 +657,74 @@ describe('new card play methods', () => {
     ]);
     const result = state.playTeleportCard(0, 'a7', 'a8');
     expect(result.error).toBeUndefined();
-    expect(result.needs_promotion).toEqual(['a8']);
+    expect(result.needs_promotion).toBeUndefined();
+    // Pawn is still a pawn after teleport
+    const board = state.toDict().board;
+    expect(board['a8'].type).toBe('pawn');
+    // Global check detects it
+    const promo = state.checkPromotions();
+    expect(promo.playerPromos).toEqual(['a8']);
+  });
+
+  test('full promotion flow: teleport + checkPromotions + applyPromotion', () => {
+    const state = makeStateWithCards([teleportCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'a7', type: 'pawn', owner: 'player' },
+    ]);
+    state.playTeleportCard(0, 'a7', 'a8');
+    const promo = state.checkPromotions();
+    expect(promo.playerPromos).toEqual(['a8']);
+    state.applyPromotion('a8', 'q');
+    const board = state.toDict().board;
+    expect(board['a8'].type).toBe('queen');
+    expect(board['a8'].color).toBe('white');
+    // No more promotions needed
+    expect(state.checkPromotions().playerPromos).toEqual([]);
+  });
+
+  test('knight move to rank 8 triggers promotion via checkPromotions', () => {
+    const state = makeStateWithCards([knightMoveCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'b6', type: 'pawn', owner: 'player' },
+    ]);
+    const result = state.playKnightMoveCard(0, 'b6', 'a8');
+    expect(result.error).toBeUndefined();
+    expect(result.needs_promotion).toBeUndefined();
+    const promo = state.checkPromotions();
+    expect(promo.playerPromos).toEqual(['a8']);
+  });
+
+  test('enemy pawn auto-promotes to queen on rank 1 via checkPromotions', () => {
+    const state = makeStateWithCards([teleportCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+    ]);
+    // Manually place enemy pawn on rank 1 (a1 = row 7, col 0)
+    const enemyPawn = makePiece('pawn', 'enemy');
+    state._state.board[7][0] = enemyPawn;
+    const promo = state.checkPromotions();
+    expect(promo.autoPromoted).toEqual(['a1']);
+    expect(state.toDict().board['a1'].type).toBe('queen');
+    expect(state.toDict().board['a1'].color).toBe('black');
+  });
+
+  test('no phantom promotion after promoting pawn', () => {
+    const state = makeStateWithCards([teleportCard(), knightMoveCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'a7', type: 'pawn', owner: 'player' },
+      { sq: 'b1', type: 'knight', owner: 'player' },
+    ]);
+    // Teleport pawn to a8
+    state.playTeleportCard(0, 'a7', 'a8');
+    state.checkPromotions();
+    state.applyPromotion('a8', 'q');
+    // Now move knight - should NOT trigger promotion
+    state.playKnightMoveCard(1, 'b1', 'c3');
+    const promo = state.checkPromotions();
+    expect(promo.playerPromos).toEqual([]);
   });
 
   test('playSnapCard captures enemy without moving', () => {

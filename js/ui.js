@@ -472,6 +472,23 @@ function checkGameOver() {
   }, 600);
 }
 
+/**
+ * Centralized post-action handler.
+ * Checks for pawn promotions after any board-changing action.
+ * If player pawns need promotion, shows modal.
+ * Otherwise proceeds to enemy turn.
+ */
+function handlePostAction() {
+  const promoResult = gameState.checkPromotions();
+  if (promoResult.playerPromos.length > 0) {
+    uiState.pendingPromos = promoResult.playerPromos.map(s => ({ sq: s, cardType: null }));
+    showNextPromo();
+  } else {
+    resetUiState(); setHint(''); render();
+    playoutEnemyTurn();
+  }
+}
+
 // Play out enemy turn moves one at a time with renders between each
 async function playoutEnemyTurn() {
   // Wait for the browser to paint the player's move before starting enemy sequence
@@ -1062,14 +1079,7 @@ export function handleSquareClick(sq) {
       setHint(result.error);
       return;
     }
-    if (result.needs_promotion) {
-      uiState.pendingPromos = [{ sq: sq, cardType: null }];
-      document.getElementById('promotion-modal').classList.remove('hidden');
-      return;
-    }
-    resetUiState();
-    setHint('');
-    render();
+    handlePostAction();
     return;
   }
 
@@ -1138,9 +1148,8 @@ export function handleSquareClick(sq) {
       }
       if (d.board[sq]) { setHint('Square is occupied'); return; }
       const result = gameState.playPieceCard(uiState.selectedCardIndex, uiState.selectedPieceType, sq);
-      if (result.error) { setHint(result.error); }
-      resetUiState(); setHint(''); render();
-      playoutEnemyTurn();
+      if (result.error) { setHint(result.error); return; }
+      handlePostAction();
     }
     return;
   }
@@ -1155,13 +1164,7 @@ export function handleSquareClick(sq) {
     }
     const result = gameState.playMoveCard(uiState.selectedCardIndex, uiState.fromSq, sq);
     if (result.error) { setHint(result.error); return; }
-    if (result.needs_promotion) {
-      uiState.pendingPromos = [{ from: uiState.fromSq, to: sq, cardType: 'move', cardIndex: uiState.selectedCardIndex }];
-      document.getElementById('promotion-modal').classList.remove('hidden');
-      return;
-    }
-    resetUiState(); setHint(''); render();
-    playoutEnemyTurn();
+    handlePostAction();
     return;
   }
 
@@ -1178,13 +1181,7 @@ export function handleSquareClick(sq) {
     }
     const result = gameState.playKnightMoveCard(uiState.selectedCardIndex, uiState.fromSq, sq);
     if (result.error) { setHint(result.error); return; }
-    if (result.needs_promotion) {
-      uiState.pendingPromos = result.needs_promotion.map(s => ({ sq: s, cardType: null }));
-      showNextPromo();
-    } else {
-      resetUiState(); setHint(''); render();
-      playoutEnemyTurn();
-    }
+    handlePostAction();
   }
 
   if (uiState.phase === 'geometric_from_selected') {
@@ -1205,13 +1202,7 @@ export function handleSquareClick(sq) {
     }[uiState.selectedMoveVariant];
     const result = playFn();
     if (result.error) { setHint(result.error); return; }
-    if (result.needs_promotion) {
-      uiState.pendingPromos = result.needs_promotion.map(s => ({ sq: s, cardType: null }));
-      showNextPromo();
-    } else {
-      resetUiState(); setHint(''); render();
-      playoutEnemyTurn();
-    }
+    handlePostAction();
   }
 
   if (uiState.phase === 'pawn_boost_from_selected') {
@@ -1227,13 +1218,7 @@ export function handleSquareClick(sq) {
     }
     const result = gameState.playPawnBoostCard(uiState.selectedCardIndex, uiState.fromSq, sq);
     if (result.error) { setHint(result.error); return; }
-    if (result.needs_promotion) {
-      uiState.pendingPromos = result.needs_promotion.map(s => ({ sq: s, cardType: null }));
-      showNextPromo();
-    } else {
-      resetUiState(); setHint(''); render();
-      playoutEnemyTurn();
-    }
+    handlePostAction();
   }
 
   if (uiState.phase === 'summon_duck_selected') {
@@ -1243,8 +1228,7 @@ export function handleSquareClick(sq) {
     if (d.board[sq]) { setHint('Square occupied'); return; }
     const result = gameState.playSummonDuckCard(uiState.selectedCardIndex, sq);
     if (result.error) { setHint(result.error); return; }
-    resetUiState(); setHint(''); render();
-    playoutEnemyTurn();
+    handlePostAction();
     return;
   }
 
@@ -1281,8 +1265,7 @@ export function handleSquareClick(sq) {
     }
     const result = gameState.playMoveDuckCard(uiState.selectedCardIndex, uiState.fromSq, sq);
     if (result.error) { setHint(result.error); return; }
-    resetUiState(); setHint(''); render();
-    playoutEnemyTurn();
+    handlePostAction();
     return;
   }
 
@@ -1291,8 +1274,7 @@ export function handleSquareClick(sq) {
     if (piece) {
       const result = gameState.playStunCard(uiState.selectedCardIndex, sq);
       if (result.error) { setHint(result.error); return; }
-      resetUiState(); setHint(''); render();
-      playoutEnemyTurn();
+      handlePostAction();
     } else {
       setHint('Pick a piece');
     }
@@ -1304,8 +1286,7 @@ export function handleSquareClick(sq) {
     if (piece) {
       const result = gameState.playShieldCard(uiState.selectedCardIndex, sq);
       if (result.error) { setHint(result.error); return; }
-      resetUiState(); setHint(''); render();
-      playoutEnemyTurn();
+      handlePostAction();
     } else {
       setHint('Pick a piece');
     }
@@ -1354,8 +1335,7 @@ export function handleSquareClick(sq) {
     }
     const result = gameState.playSacrificeCard(uiState.selectedCardIndex, uiState.fromSq, sq);
     if (result.error) { setHint(result.error); return; }
-    resetUiState(); setHint(''); render();
-    playoutEnemyTurn();
+    handlePostAction();
     return;
   }
 
@@ -1364,8 +1344,7 @@ export function handleSquareClick(sq) {
     if (piece) {
       const result = gameState.playUnblockCard(uiState.selectedCardIndex, sq);
       if (result.error) { setHint(result.error); return; }
-      resetUiState(); setHint(''); render();
-      playoutEnemyTurn();
+      handlePostAction();
     } else {
       setHint('Pick a piece');
     }
@@ -1412,8 +1391,7 @@ export function handleSquareClick(sq) {
     }
     const result = gameState.playSwapMoveCard(uiState.selectedCardIndex, uiState.fromSq, sq);
     if (result.error) { setHint(result.error); return; }
-    resetUiState(); setHint(''); render();
-    playoutEnemyTurn();
+    handlePostAction();
     return;
   }
 
@@ -1450,8 +1428,7 @@ export function handleSquareClick(sq) {
     }
     const result = gameState.playTeleportCard(uiState.selectedCardIndex, uiState.fromSq, sq);
     if (result.error) { setHint(result.error); return; }
-    resetUiState(); setHint(''); render();
-    playoutEnemyTurn();
+    handlePostAction();
     return;
   }
 
@@ -1490,8 +1467,7 @@ export function handleSquareClick(sq) {
     }
     const result = gameState.playSnapCard(uiState.selectedCardIndex, uiState.fromSq, sq);
     if (result.error) { setHint(result.error); return; }
-    resetUiState(); setHint(''); render();
-    playoutEnemyTurn();
+    handlePostAction();
     return;
   }
 
@@ -1536,8 +1512,7 @@ export function handleSquareClick(sq) {
     }
     const result = gameState.playBlitzSecondMove(sq);
     if (result.error) { setHint(result.error); return; }
-    resetUiState(); setHint(''); render();
-    playoutEnemyTurn();
+    handlePostAction();
     return;
   }
 
@@ -1604,8 +1579,7 @@ export function handleSquareClick(sq) {
     }
     const result = gameState.playMoveTogetherSecond(uiState.fromSq, sq);
     if (result.error) { setHint(result.error); return; }
-    resetUiState(); setHint(''); render();
-    playoutEnemyTurn();
+    handlePostAction();
     return;
   }
 }

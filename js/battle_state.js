@@ -433,11 +433,6 @@ export class GameState {
     const winner = checkKingCaptured(this._state.board);
     if (winner) this.turn = winner;
 
-    const { playerPromos } = resolvePromotions(this._state);
-    if (playerPromos.length > 0) {
-      return { ok: true, needs_promotion: playerPromos };
-    }
-
     return { ok: true };
   }
 
@@ -472,11 +467,6 @@ export class GameState {
     const winner = checkKingCaptured(this._state.board);
     if (winner) this.turn = winner;
 
-    const { playerPromos } = resolvePromotions(this._state);
-    if (playerPromos.length > 0) {
-      return { ok: true, needs_promotion: playerPromos };
-    }
-
     return { ok: true };
   }
 
@@ -509,11 +499,6 @@ export class GameState {
 
     const winner = checkKingCaptured(this._state.board);
     if (winner) this.turn = winner;
-
-    const { playerPromos } = resolvePromotions(this._state);
-    if (playerPromos.length > 0) {
-      return { ok: true, needs_promotion: playerPromos };
-    }
 
     return { ok: true };
   }
@@ -562,11 +547,6 @@ export class GameState {
     const winner = checkKingCaptured(this._state.board);
     if (winner) this.turn = winner;
 
-    const { playerPromos } = resolvePromotions(this._state);
-    if (playerPromos.length > 0) {
-      return { ok: true, needs_promotion: playerPromos };
-    }
-
     return { ok: true };
   }
 
@@ -576,6 +556,11 @@ export class GameState {
     if (!piece || piece.type !== 'pawn') return { error: 'no promotable pawn on that square' };
     set(this._state.board, sq, makePiece(PIECE_FULL[promoType] || promoType, piece.owner));
     return { ok: true };
+  }
+
+  checkPromotions() {
+    const { playerPromos, autoPromoted } = resolvePromotions(this._state);
+    return { playerPromos, autoPromoted };
   }
 
   playPieceCard(cardIndex, pieceType, toSq) {
@@ -792,11 +777,6 @@ export class GameState {
 
     const winner = checkKingCaptured(this._state.board);
     if (winner) this.turn = winner;
-
-    const { playerPromos } = resolvePromotions(this._state);
-    if (playerPromos.length > 0) {
-      return { ok: true, needs_promotion: playerPromos };
-    }
 
     return { ok: true };
   }
