@@ -258,6 +258,8 @@ export class GameState {
 
     this._enemyAI = enemyDef.createAI();
     this._personality = enemyDef.personality;
+    this._enemyAiType = enemyDef.aiType;
+    this.enemyPhase = enemyDef.aiType === 'doubleMove' ? 'warn' : 'normal';
 
     // Cards
     const rawDeck = persistentDeck
@@ -947,10 +949,24 @@ export class GameState {
       return { pendingMoves: [], warnNext: false };
     }
 
-    const result = this._enemyAI.selectMove(this._state);
+    // Determine current phase and pass to AI
+    const phase = this._enemyAiType === 'doubleMove' ? this.enemyPhase : 'normal';
+    const result = this._enemyAI.selectMove(this._state, phase);
 
     if (!result) {
       return { pendingMoves: [], warnNext: false };
+    }
+
+    // Compute warnNext for next turn based on phase transition
+    let warnNext = false;
+    if (this._enemyAiType === 'doubleMove') {
+      if (phase === 'warn') {
+        this.enemyPhase = 'double';
+        warnNext = true; // next turn will be double
+      } else {
+        this.enemyPhase = 'warn';
+        warnNext = false; // next turn will be normal
+      }
     }
 
     // Double-move AI returns { _double: true, moves: [...] }
@@ -962,26 +978,20 @@ export class GameState {
         const winner = checkKingCaptured(this._state.board);
         if (winner) {
           this.turn = winner;
-          return { pendingMoves: [], warnNext: false };
+          return { pendingMoves: [], warnNext };
         }
       }
-      return { pendingMoves: rest, warnNext: result.warnNext ?? false };
+      return { pendingMoves: rest, warnNext };
     }
 
-    // warnNext flag from single-move (double-move AI first turn)
-    const warnNext = result.warnNext ?? false;
-    // Strip warnNext from action before applying
-    const cleanAction = warnNext ? { ...result } : result;
-    if (warnNext) delete cleanAction.warnNext;
-
-    this._applyEnemyAction(cleanAction);
-    if (cleanAction.source) {
-      this.lastMove = { from: cleanAction.source, to: cleanAction.targets?.[0] };
+    this._applyEnemyAction(result);
+    if (result.source) {
+      this.lastMove = { from: result.source, to: result.targets?.[0] };
     }
     const winner = checkKingCaptured(this._state.board);
     if (winner) {
       this.turn = winner;
-      return { pendingMoves: [], warnNext: false };
+      return { pendingMoves: [], warnNext };
     }
 
     return { pendingMoves: [], warnNext };

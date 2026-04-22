@@ -2,9 +2,9 @@
  * enemies2.js
  * Enemy definitions for engine2. Mirrors enemies.js but uses ai2/search.js.
  *
- * createAI() → { selectMove(state) → action|null }
+ * createAI() → { selectMove(state, phase?) → action|null }
  *   For default AI: single action per call.
- *   For double-move AI: alternates between single and double action calls.
+ *   For double-move AI: phase='warn' → single action; phase='double' → 2 moves.
  */
 
 import { selectAction } from './ai2/search.js';
@@ -14,7 +14,7 @@ import { ENEMIES, VALID_ENEMIES, REGULAR_ENEMIES, ELITE_ENEMY, ELITE_2_ENEMY, BO
 
 function defaultAI(personality) {
   return {
-    selectMove(state) {
+    selectMove(state, _phase = 'normal') {
       const action = selectAction(state, 'enemy', { personality, depth: 3, timeMs: 200 });
       console.log('[enemies2] defaultAI action=%s->%s', action?.source, action?.targets?.[0]);
       return action;
@@ -23,13 +23,16 @@ function defaultAI(personality) {
 }
 
 function doubleMoveAI(personality) {
-  let doubleMovePending = false;
   return {
-    selectMove(state) {
-      if (doubleMovePending) {
-        doubleMovePending = false;
-        // Select first move
-        const first = selectAction(state, 'enemy', { personality, depth: 3, timeMs: 200 });
+    selectMove(state, phase = 'warn') {
+      if (phase === 'double') {
+        // Select first move with double-move schedule so minimax sees the full sequence
+        const first = selectAction(state, 'enemy', {
+          personality,
+          depth: 3,
+          timeMs: 200,
+          schedule: ['enemy', 'enemy', 'player'],
+        });
         if (!first) return null;
 
         // Temporarily apply first move to pick second from updated board
@@ -39,14 +42,13 @@ function doubleMoveAI(personality) {
 
         console.log('[enemies2] doubleMoveAI first=%s->%s second=%s->%s',
           first?.source, first?.targets?.[0], second?.source, second?.targets?.[0]);
-        // Return a compound action with warnNext=false
-        return { _double: true, moves: second ? [first, second] : [first], warnNext: false };
+        // Return a compound action
+        return { _double: true, moves: second ? [first, second] : [first] };
       } else {
-        doubleMovePending = true;
+        // Warn turn: normal single move
         const action = selectAction(state, 'enemy', { personality, depth: 3, timeMs: 200 });
         console.log('[enemies2] doubleMoveAI warn action=%s->%s', action?.source, action?.targets?.[0]);
-        // Return action with warnNext=true flag
-        return action ? { ...action, warnNext: true } : null;
+        return action || null;
       }
     },
   };

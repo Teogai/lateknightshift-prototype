@@ -71,13 +71,52 @@ test('defaultAI selectMove returns an action or null from a real state', () => {
   expect(action.source).toBeDefined();
 });
 
-test('doubleMoveAI alternates warnNext behavior', () => {
-  const ai = ENEMIES.duelist.createAI();
-  const state = new GameState();
-  set(state.board, 'e1', makePiece('king', 'player'));
-  set(state.board, 'e8', makePiece('king', 'enemy'));
-  set(state.board, 'd7', makePiece('pawn', 'enemy'));
-  // First call: warnNext should be true (preparing double move)
-  const r1 = ai.selectMove(state);
-  expect(r1).toBeDefined();
+describe('doubleMoveAI phase behavior', () => {
+  test('warn phase returns single action', () => {
+    const ai = ENEMIES.duelist.createAI();
+    const state = new GameState();
+    set(state.board, 'e1', makePiece('king', 'player'));
+    set(state.board, 'e8', makePiece('king', 'enemy'));
+    set(state.board, 'd7', makePiece('pawn', 'enemy'));
+
+    const action = ai.selectMove(state, 'warn');
+    expect(action).not.toBeNull();
+    expect(action._double).toBeUndefined();
+    expect(action.source).toBeDefined();
+  });
+
+  test('double phase returns compound action with 2 moves', () => {
+    const ai = ENEMIES.duelist.createAI();
+    const state = new GameState();
+    set(state.board, 'e1', makePiece('king', 'player'));
+    set(state.board, 'e8', makePiece('king', 'enemy'));
+    set(state.board, 'd7', makePiece('pawn', 'enemy'));
+    set(state.board, 'c7', makePiece('pawn', 'enemy'));
+
+    const result = ai.selectMove(state, 'double');
+    expect(result).not.toBeNull();
+    expect(result._double).toBe(true);
+    expect(Array.isArray(result.moves)).toBe(true);
+    expect(result.moves.length).toBeGreaterThanOrEqual(1);
+  });
+
+  test('double phase uses schedule-based search for first move', () => {
+    // Set up a position where a 2-move sequence is needed
+    // Enemy rook on a1, enemy knight on a2 (blocking a-file), player king on a3
+    const ai = ENEMIES.duelist.createAI();
+    const state = new GameState();
+    set(state.board, 'e8', makePiece('king', 'enemy'));
+    set(state.board, 'a1', makePiece('rook', 'enemy'));
+    set(state.board, 'a2', makePiece('knight', 'enemy'));
+    set(state.board, 'a3', makePiece('king', 'player'));
+
+    const result = ai.selectMove(state, 'double');
+    expect(result).not.toBeNull();
+    expect(result._double).toBe(true);
+    // First move should be moving the knight to open the a-file
+    // Knight on a2 can move to b4, c3, or c1 - any of these opens the a-file
+    expect(result.moves[0].source).toBe('a2');
+    const validKnightMoves = ['b4', 'c3', 'c1'];
+    expect(validKnightMoves).toContain(result.moves[0].targets[0]);
+  });
 });

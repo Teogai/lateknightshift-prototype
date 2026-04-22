@@ -85,7 +85,8 @@
 - engine2 uses owner: 'player'|'enemy'|'neutral' (not chess.js color 'w'|'b')
 - King-capture is the win condition (not checkmate); movegen includes pseudo-legal king-capture targets
 - battle_state.js is the adapter between ui.js (old API shape) and engine2 internals
-- enemy2 AI: defaultAI → single action/turn; doubleMoveAI → alternates warn+double pattern
+- enemy2 AI: defaultAI → single action/turn; doubleMoveAI → schedule-based minimax with `['enemy','enemy','player']` turn pattern
+- BattleState tracks `enemyPhase` externally for doubleMove enemies (warn/double alternation)
 - board dict in toDict(): { sq: { type: fullName, color: 'white'|'black' } } for UI compatibility
 - Responsive UI: 768px breakpoint, mobile sidebar becomes top bar, board scales with clamp()
 

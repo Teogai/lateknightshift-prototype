@@ -6,7 +6,8 @@
  *
  * Public API:
  *   selectAction(state, owner, opts?) → Action
- *   opts: { depth?, timeMs?, personality?, overrideActions? }
+ *   opts: { depth?, timeMs?, personality?, overrideActions?, schedule? }
+ *   schedule: array of owners (e.g. ['enemy','player'] or ['enemy','enemy','player'])
  */
 
 import { generateLegalActions } from '../engine2/movegen.js';
@@ -118,18 +119,20 @@ function undoExplode(state, undos) {
 // ─── minimax ──────────────────────────────────────────────────────────────────
 
 /**
- * @param {object}   state       - GameState (mutated in-place, undone after each branch)
+ * @param {object}   state          - GameState (mutated in-place, undone after each branch)
  * @param {number}   depth
  * @param {number}   alpha
  * @param {number}   beta
- * @param {boolean}  maximizing  - true = enemy turn (maximising), false = player turn
- * @param {object}   personality - eval weight overrides
+ * @param {string[]} schedule       - array of owners for each ply (e.g. ['enemy','player'])
+ * @param {number}   scheduleIndex  - current position in schedule
+ * @param {object}   personality    - eval weight overrides
  * @returns {number}
  */
-function minimax(state, depth, alpha, beta, maximizing, personality) {
+function minimax(state, depth, alpha, beta, schedule, scheduleIndex, personality) {
   if (depth === 0) return evaluate(state, personality);
 
-  const owner = maximizing ? 'enemy' : 'player';
+  const owner = schedule[scheduleIndex % schedule.length];
+  const maximizing = owner === 'enemy';
   const actions = generateLegalActions(state, owner);
   const ordered = orderActions(actions, state.board);
 
@@ -144,7 +147,7 @@ function minimax(state, depth, alpha, beta, maximizing, personality) {
         if (playerKingGone(state.board)) {
           score = WIN_SCORE + depth; // win sooner is better
         } else {
-          score = minimax(state, depth - 1, alpha, beta, false, personality);
+          score = minimax(state, depth - 1, alpha, beta, schedule, scheduleIndex + 1, personality);
         }
         undoExplode(state, undos);
       } else {
@@ -154,7 +157,7 @@ function minimax(state, depth, alpha, beta, maximizing, personality) {
         } else if (enemyKingGone(state.board)) {
           score = LOSE_SCORE - depth;
         } else {
-          score = minimax(state, depth - 1, alpha, beta, false, personality);
+          score = minimax(state, depth - 1, alpha, beta, schedule, scheduleIndex + 1, personality);
         }
         state.undo();
       }
@@ -172,7 +175,7 @@ function minimax(state, depth, alpha, beta, maximizing, personality) {
         if (enemyKingGone(state.board)) {
           score = LOSE_SCORE - depth;
         } else {
-          score = minimax(state, depth - 1, alpha, beta, true, personality);
+          score = minimax(state, depth - 1, alpha, beta, schedule, scheduleIndex + 1, personality);
         }
         undoExplode(state, undos);
       } else {
@@ -182,7 +185,7 @@ function minimax(state, depth, alpha, beta, maximizing, personality) {
         } else if (playerKingGone(state.board)) {
           score = WIN_SCORE + depth;
         } else {
-          score = minimax(state, depth - 1, alpha, beta, true, personality);
+          score = minimax(state, depth - 1, alpha, beta, schedule, scheduleIndex + 1, personality);
         }
         state.undo();
       }
@@ -206,6 +209,7 @@ function minimax(state, depth, alpha, beta, maximizing, personality) {
  * @param {number}   opts.timeMs          - time budget in ms (default 200)
  * @param {object}   opts.personality     - eval weight overrides
  * @param {object[]} opts.overrideActions - inject additional actions (e.g. explode)
+ * @param {string[]} opts.schedule        - turn schedule (e.g. ['enemy','enemy','player'])
  * @returns {object|null} best action
  */
 export function selectAction(state, owner, {
@@ -213,6 +217,7 @@ export function selectAction(state, owner, {
   timeMs   = DEFAULT_TIME_MS,
   personality = {},
   overrideActions = [],
+  schedule = null,
 } = {}) {
   const actions = buildActions(state, owner, overrideActions);
 
@@ -239,6 +244,10 @@ export function selectAction(state, owner, {
   const d = adaptiveDepth(state.board, depth);
   const start = Date.now();
 
+  // Default schedule: alternating turns
+  const defaultSchedule = ['enemy', 'player'];
+  const activeSchedule = schedule || defaultSchedule;
+
   let bestAction = ordered[0];
   let bestScore  = -Infinity;
   let bestImmediate = -Infinity;
@@ -259,7 +268,7 @@ export function selectAction(state, owner, {
         if (playerKingGone(state.board)) {
           score = WIN_SCORE + curDepth;
         } else {
-          score = minimax(state, curDepth - 1, -Infinity, Infinity, false, personality);
+          score = minimax(state, curDepth - 1, -Infinity, Infinity, activeSchedule, 1, personality);
         }
         undoExplode(state, undos);
       } else {
@@ -270,7 +279,7 @@ export function selectAction(state, owner, {
         } else if (enemyKingGone(state.board)) {
           score = LOSE_SCORE - curDepth;
         } else {
-          score = minimax(state, curDepth - 1, -Infinity, Infinity, false, personality);
+          score = minimax(state, curDepth - 1, -Infinity, Infinity, activeSchedule, 1, personality);
         }
         state.undo();
       }

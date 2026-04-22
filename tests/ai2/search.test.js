@@ -265,7 +265,53 @@ describe('selectAction — personality', () => {
   });
 });
 
-// ─── test 6: king-capture mode — AI must move even with no "safe" squares ─────
+// ─── test 6: double-move schedule ─────────────────────────────────────────────
+
+describe('selectAction — double-move schedule', () => {
+  test('AI finds 2-move king capture sequence with double-move schedule', () => {
+    // Enemy rook on a1, enemy knight on a2 (blocking a-file), player king on a3
+    // Enemy king on e8
+    // With double-move schedule ['enemy', 'enemy', 'player']:
+    //   Move 1: knight a2→b4 (clears the a-file)
+    //   Move 2: rook a1→a3 (captures king)
+    const state = makeState([
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'a1', type: 'rook', owner: 'enemy' },
+      { sq: 'a2', type: 'knight', owner: 'enemy' },
+      { sq: 'a3', type: 'king', owner: 'player' },
+    ]);
+
+    // With double-move schedule: should find the knight move that enables rook capture
+    const doubleAction = selectAction(state, 'enemy', {
+      depth: 3,
+      schedule: ['enemy', 'enemy', 'player'],
+    });
+    expect(doubleAction).not.toBeNull();
+    // The AI should move the knight to open the a-file for the rook
+    expect(doubleAction.source).toBe('a2');
+    expect(doubleAction.targets[0]).toBe('b4');
+  });
+
+  test('AI captures king directly when possible even with double-move schedule', () => {
+    // Enemy rook on a1, player king on a4, enemy king on e8
+    // Rook can capture directly; double-move schedule shouldn't change this
+    const state = makeState([
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'a1', type: 'rook', owner: 'enemy' },
+      { sq: 'a4', type: 'king', owner: 'player' },
+    ]);
+
+    const action = selectAction(state, 'enemy', {
+      depth: 2,
+      schedule: ['enemy', 'enemy', 'player'],
+    });
+    expect(action).not.toBeNull();
+    expect(action.source).toBe('a1');
+    expect(action.targets[0]).toBe('a4');
+  });
+});
+
+// ─── test 7: king-capture mode — AI must move even with no "safe" squares ─────
 
 describe('selectAction — king-capture mode', () => {
   test('AI still moves when king has no safe squares', () => {
