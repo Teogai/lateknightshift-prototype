@@ -10,7 +10,7 @@ export const MAP_CONFIG = {
   transformFloor: 15,
   bossFloor: 16,
   eliteMinFloor: 6,
-  roomWeights: { monster: 45, elite: 15, event: 25, shop: 15 },
+  roomWeights: { monster: 45, elite: 15, piece_reward: 40 },
   minNodes: 1,
   maxNodes: 3,
 };

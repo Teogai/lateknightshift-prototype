@@ -84,17 +84,17 @@ test('enterRoom monster sets phase to battle', () => {
   r.enterRoom(0);
   expect(r.phase).toBe('battle');
 });
-test('enterRoom event sets phase to room', () => {
+test('enterRoom piece_reward sets phase to room', () => {
   const r = new RunState('knight');
-  r.currentNodes = [{ type: 'event', label: 'Event', icon: '' }];
+  r.currentNodes = [{ type: 'piece_reward', label: 'Piece reward', icon: '' }];
   r.enterRoom(0);
   expect(r.phase).toBe('room');
 });
 test('enterRoom stores pendingNode', () => {
   const r = new RunState('knight');
-  r.currentNodes = [{ type: 'shop', label: 'Shop', icon: '' }];
+  r.currentNodes = [{ type: 'piece_reward', label: 'Piece reward', icon: '' }];
   r.enterRoom(0);
-  expect(r.pendingNode.type).toBe('shop');
+  expect(r.pendingNode.type).toBe('piece_reward');
 });
 
 // --- generateNodes (fixed path) ---
