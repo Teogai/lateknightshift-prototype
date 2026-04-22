@@ -275,8 +275,6 @@ export class GameState {
     this.turn = 'player';
     this.redrawCountdown = REDRAW_COUNTDOWN_START;
     this.enemyWillDoubleMove = false;
-    this.movedThisTurn = new Set();
-    this.summonedThisTurn = new Set();
     this.lastMove = { from: null, to: null };
     this._blitzPieceSq = null;
     this._blitzCardIndex = null;
@@ -314,8 +312,6 @@ export class GameState {
       discard_size: this._state.discard.length,
       deck: this._state.deck.map(c => ({ ...c })),
       discard: this._state.discard.map(c => ({ ...c })),
-      moved_this_turn: [...this.movedThisTurn],
-      summoned_this_turn: [...this.summonedThisTurn],
       last_move: { from: this.lastMove.from, to: this.lastMove.to },
       in_check: inCheck,
       check_attacker_sq: checkAttackerSq,
@@ -330,7 +326,6 @@ export class GameState {
   legalDestinationsFor(sq) {
     const piece = get(this._state.board, sq);
     if (!piece || piece.owner !== 'player') return [];
-    if (this.summonedThisTurn.has(sq) || this.movedThisTurn.has(sq)) return [];
     const actions = generateLegalActions(this._state, 'player');
     return actions
       .filter(a => a.source === sq)
@@ -350,7 +345,6 @@ export class GameState {
   geometricDestsFor(sq, pattern) {
     const piece = get(this._state.board, sq);
     if (!piece || piece.owner !== 'player') return [];
-    if (this.movedThisTurn.has(sq)) return [];
     const board = this._state.board;
     const dests = [];
     for (let r = 0; r < 8; r++) {
@@ -368,7 +362,6 @@ export class GameState {
   pawnBoostDestsFor(sq) {
     const piece = get(this._state.board, sq);
     if (!piece || piece.owner !== 'player' || piece.type !== 'pawn') return [];
-    if (this.movedThisTurn.has(sq)) return [];
     const board = this._state.board;
     const [fromR, fromC] = sqToRC(sq);
     const dests = [];
@@ -394,8 +387,6 @@ export class GameState {
 
     const piece = get(this._state.board, fromSq);
     if (!piece || piece.owner !== 'player') return { error: 'no friendly piece on that square' };
-    if (this.summonedThisTurn.has(fromSq)) return { error: 'summoned pieces cannot move this turn' };
-    if (this.movedThisTurn.has(fromSq)) return { error: 'piece already moved this turn' };
 
     const isPromo = piece.type === 'pawn' && toSq[1] === '8';
     const targetPiece = get(this._state.board, toSq);
@@ -440,7 +431,6 @@ export class GameState {
     this._state.enPassant = isPawnDoublePush ? (toSq[0] + '3') : null;
 
     this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
-    this.movedThisTurn.add(toSq);
     this.lastMove = { from: fromSq, to: toSq };
 
     // Resolve push charm if present
@@ -467,7 +457,6 @@ export class GameState {
 
     const piece = get(this._state.board, fromSq);
     if (!piece || piece.owner !== 'player') return { error: 'no friendly piece on that square' };
-    if (this.movedThisTurn.has(fromSq)) return { error: 'piece already moved this turn' };
 
     if (!knightAttacks(fromSq).includes(toSq)) return { error: 'invalid knight move destination' };
 
@@ -479,7 +468,6 @@ export class GameState {
     set(this._state.board, toSq, piece);
 
     this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
-    this.movedThisTurn.add(toSq);
     this.lastMove = { from: fromSq, to: toSq };
 
     // Resolve push charm if present
@@ -504,7 +492,6 @@ export class GameState {
 
     const piece = get(this._state.board, fromSq);
     if (!piece || piece.owner !== 'player') return { error: 'no friendly piece on that square' };
-    if (this.movedThisTurn.has(fromSq)) return { error: 'piece already moved this turn' };
 
     const target = get(this._state.board, toSq);
     const isCapture = target && target.owner !== 'player';
@@ -515,7 +502,6 @@ export class GameState {
     set(this._state.board, toSq, piece);
 
     this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
-    this.movedThisTurn.add(toSq);
     this.lastMove = { from: fromSq, to: toSq };
 
     // Resolve push charm if present
@@ -553,7 +539,6 @@ export class GameState {
     const piece = get(this._state.board, fromSq);
     if (!piece || piece.owner !== 'player') return { error: 'no friendly piece on that square' };
     if (piece.type !== 'pawn') return { error: 'pawn boost can only be used on pawns' };
-    if (this.movedThisTurn.has(fromSq)) return { error: 'piece already moved this turn' };
 
     const dests = this.pawnBoostDestsFor(fromSq);
     if (!dests.includes(toSq)) return { error: 'invalid destination for pawn boost' };
@@ -565,7 +550,6 @@ export class GameState {
     set(this._state.board, toSq, piece);
 
     this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
-    this.movedThisTurn.add(toSq);
     this.lastMove = { from: fromSq, to: toSq };
 
     // Resolve push charm if present
@@ -611,7 +595,6 @@ export class GameState {
       newPiece.data.atomic = true;
     }
     set(this._state.board, toSq, newPiece);
-    this.summonedThisTurn.add(toSq);
     this._state.hand.splice(cardIndex, 1);
     this.lastMove = { from: null, to: toSq };
 
@@ -794,7 +777,6 @@ export class GameState {
 
     const piece = get(this._state.board, fromSq);
     if (!piece || piece.owner !== 'player') return { error: 'no friendly piece on that square' };
-    if (this.movedThisTurn.has(fromSq)) return { error: 'piece already moved this turn' };
 
     const target = get(this._state.board, toSq);
     if (target) return { error: 'destination must be empty' };
@@ -803,7 +785,6 @@ export class GameState {
     set(this._state.board, toSq, piece);
 
     this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
-    this.movedThisTurn.add(toSq);
     this.lastMove = { from: fromSq, to: toSq };
 
     const winner = checkKingCaptured(this._state.board);
@@ -847,7 +828,6 @@ export class GameState {
 
     const piece = get(this._state.board, fromSq);
     if (!piece || piece.owner !== 'player') return { error: 'no friendly piece on that square' };
-    if (this.movedThisTurn.has(fromSq)) return { error: 'piece already moved this turn' };
 
     const actions = generateLegalActions(this._state, 'player');
     const action = actions.find(a => a.source === fromSq && a.targets[0] === toSq);
@@ -857,7 +837,6 @@ export class GameState {
 
     this._blitzPieceSq = toSq;
     this._blitzCardIndex = cardIndex;
-    this.movedThisTurn.add(toSq);
     this.lastMove = { from: fromSq, to: toSq };
 
     return { ok: true };
@@ -882,7 +861,6 @@ export class GameState {
 
     this._blitzPieceSq = null;
     this._blitzCardIndex = null;
-    this.movedThisTurn.add(toSq);
     this.lastMove = { from: fromSq, to: toSq };
 
     const winner = checkKingCaptured(this._state.board);
@@ -898,7 +876,6 @@ export class GameState {
 
     const piece = get(this._state.board, fromSq);
     if (!piece || piece.owner !== 'player') return { error: 'no friendly piece on that square' };
-    if (this.movedThisTurn.has(fromSq)) return { error: 'piece already moved this turn' };
 
     const actions = generateLegalActions(this._state, 'player');
     const action = actions.find(a => a.source === fromSq && a.targets[0] === toSq);
@@ -908,7 +885,6 @@ export class GameState {
 
     this._moveTogetherFirstPieceSq = toSq;
     this._moveTogetherCardIndex = cardIndex;
-    this.movedThisTurn.add(toSq);
     this.lastMove = { from: fromSq, to: toSq };
 
     return { ok: true };
@@ -921,7 +897,6 @@ export class GameState {
 
     const piece = get(this._state.board, fromSq);
     if (!piece || piece.owner !== 'player') return { error: 'no friendly piece on that square' };
-    if (this.movedThisTurn.has(fromSq)) return { error: 'piece already moved this turn' };
 
     const actions = generateLegalActions(this._state, 'player');
     const action = actions.find(a => a.source === fromSq && a.targets[0] === toSq);
@@ -935,7 +910,6 @@ export class GameState {
 
     this._moveTogetherFirstPieceSq = null;
     this._moveTogetherCardIndex = null;
-    this.movedThisTurn.add(toSq);
     this.lastMove = { from: fromSq, to: toSq };
 
     const winner = checkKingCaptured(this._state.board);
@@ -975,8 +949,6 @@ export class GameState {
   startEnemyTurn() {
     if (this.turn !== 'player') return { error: 'not player turn' };
     this.turn = 'enemy';
-    this.summonedThisTurn.clear();
-    this.movedThisTurn.clear();
     this._blitzPieceSq = null;
     this._blitzCardIndex = null;
     this._moveTogetherFirstPieceSq = null;
@@ -1103,6 +1075,8 @@ export class GameState {
       this.redrawCountdown = REDRAW_COUNTDOWN_START;
       return { ok: true, free: true };
     }
+    // Costly redraw: reset countdown to START+1 so finishEnemyTurnSequence() decrements to START
+    this.redrawCountdown = REDRAW_COUNTDOWN_START + 1;
     return { ok: true, free: false };
   }
 

@@ -28,7 +28,6 @@ swap_move_target_selected → pick second friendly piece → execute swap
 ```
 
 ## Gameplay Behavior
-- Swapped pieces do **not** track `movedThisTurn` (unchanged from current behavior)
 - Card is discarded after use (unchanged)
 
 ## Test Plan

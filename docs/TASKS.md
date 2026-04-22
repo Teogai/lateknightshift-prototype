@@ -64,3 +64,4 @@
 - [2026-04-22] done: refactor cards into 4 types (piece/move/action/curse) with subtypes — updated config/cards.js, factories, battle_state.js, ui.js, tests, docs; 348 tests green
 - [2026-04-22] done: standardize piece card names and descriptions — names = piece name only (Pawn, Duck), descriptions follow 'Summon {piece} [location]' format; all descriptions concise (sacrifice grammar for brevity); keyword registry handles proper tooltip styling; added naming rules to docs/CARDS.md; 348 tests green
 - [2026-04-22] done: add confirm button to all selection screens — card reward, piece reward, square picker, upgrade, transform, shop, charm reward, charm apply, defeat, event room; yellow highlight on selected items, confirm button starts disabled; 347 tests green
+- [2026-04-22] done: fix redraw countdown bug — costly redraw now resets countdown to 5 (so finishEnemyTurnSequence decrements to 4); added tests for countdown reset + hand replacement; 387 tests green

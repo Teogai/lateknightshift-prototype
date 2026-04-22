@@ -236,3 +236,29 @@ test('CARD_CATALOG includes Move Together with config rarity', () => {
   expect(entry).toBeDefined();
   expect(entry.rarity).toBe(configDef.rarity);
 });
+
+// --- rarity propagation to instances ---
+test('CARD_CATALOG card instances include rarity', () => {
+  const entry = CARD_CATALOG.find(e => e.card().name === 'Queen Move');
+  expect(entry).toBeDefined();
+  const card = entry.card();
+  expect(card.rarity).toBe('rare');
+});
+
+test('STARTER_DECKS knight cards include rarity', () => {
+  const deck = STARTER_DECKS.knight;
+  expect(deck.length).toBeGreaterThan(0);
+  for (const card of deck) {
+    expect(card.rarity).toBeDefined();
+    expect(['common', 'uncommon', 'rare']).toContain(card.rarity);
+  }
+});
+
+test('buildStarterDeck returns cards with rarity', () => {
+  const deck = buildStarterDeck('knight');
+  expect(deck.length).toBeGreaterThan(0);
+  for (const card of deck) {
+    expect(card.rarity).toBeDefined();
+    expect(['common', 'uncommon', 'rare']).toContain(card.rarity);
+  }
+});

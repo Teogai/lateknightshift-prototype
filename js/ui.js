@@ -211,8 +211,6 @@ export function renderBoard() {
   const boardEl = document.getElementById('board');
   boardEl.innerHTML = '';
   const d = gameState ? gameState.toDict() : null;
-  const movedSet = new Set(d ? (d.moved_this_turn || []) : []);
-  const summonedSet = new Set(d ? (d.summoned_this_turn || []) : []);
   const lastFrom = d?.last_move?.from;
   const lastTo   = d?.last_move?.to;
   const inCheck  = d?.in_check;
@@ -260,9 +258,6 @@ export function renderBoard() {
         img.src = imageData ? imageData[piece.type] : '';
         img.className = 'piece-img';
         img.alt = piece.color + ' ' + piece.type;
-        if (piece.color === 'white' && (movedSet.has(sqName) || summonedSet.has(sqName))) {
-          div.classList.add('already-moved');
-        }
         div.appendChild(img);
         // Status badges
         if (piece.tags && piece.tags.length > 0) {

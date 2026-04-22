@@ -166,6 +166,34 @@ test('redrawHand when countdown > 0 does not execute enemy turn', () => {
   expect(state.turn).toBe('player');
 });
 
+test('redrawHand when countdown > 0 resets countdown to 5 immediately', () => {
+  const state = freshGame();
+  state.redrawCountdown = 2;
+  const result = state.redrawHand();
+  expect(result.free).toBe(false);
+  // Countdown should be reset to 5 so that finishEnemyTurnSequence() decrements to 4
+  expect(state.redrawCountdown).toBe(REDRAW_COUNTDOWN_START + 1);
+});
+
+test('after costly redraw + enemy turn, countdown is 4', () => {
+  const state = freshGame();
+  state.redrawCountdown = 2;
+  state.redrawHand();
+  // Simulate enemy turn finishing (which decrements countdown by 1)
+  state.finishEnemyTurnSequence();
+  expect(state.redrawCountdown).toBe(REDRAW_COUNTDOWN_START);
+});
+
+test('redrawHand replaces hand cards', () => {
+  const state = freshGame();
+  const firstHand = state.toDict().hand.map(c => c.name);
+  state.redrawCountdown = 2;
+  state.redrawHand();
+  const secondHand = state.toDict().hand.map(c => c.name);
+  // With probability essentially 1, at least one card should differ after a full reshuffle
+  expect(secondHand).not.toEqual(firstHand);
+});
+
 describe('debugMovePiece', () => {
   test('moves piece without consuming card', () => {
     const state = freshGame();
@@ -703,6 +731,17 @@ describe('new card play methods', () => {
     expect(state._blitzPieceSq).toBe('a4');
     state.startEnemyTurn();
     expect(state._blitzPieceSq).toBeNull();
+  });
+
+  test('blitz second move has legal destinations after first move', () => {
+    const state = makeStateWithCards([blitzCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'a1', type: 'rook', owner: 'player' },
+    ]);
+    state.playBlitzFirstMove(0, 'a1', 'a4');
+    const dests = state.legalDestinationsFor('a4');
+    expect(dests.length).toBeGreaterThan(0);
   });
 
   test('playMoveTogetherFirst moves piece and stores state', () => {

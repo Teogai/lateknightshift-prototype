@@ -131,6 +131,7 @@ function makeCardInstance(def) {
   }
   if (def.image) card.image = def.image;
   if (def.desc) card.desc = def.desc;
+  if (def.rarity) card.rarity = def.rarity;
   return card;
 }
 
@@ -150,6 +151,7 @@ export const CARD_CATALOG = CARD_DEFS.map(def => {
       const c = cardFn();
       if (def.image) c.image = def.image;
       if (def.desc) c.desc = def.desc;
+      if (def.rarity) c.rarity = def.rarity;
       return c;
     },
     rarity: def.rarity,
