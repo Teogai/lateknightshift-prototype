@@ -2,7 +2,7 @@ import { describe, test, expect } from 'vitest';
 import {
   moveCard, knightMoveCard, bishopMoveCard, rookMoveCard, queenMoveCard, pawnBoostCard,
   pieceCard, curseCard, upgradeCard,
-  summonDuckCard, moveDuckCard, stunCard, shieldCard, sacrificeCard, unblockCard,
+  summonDuckCard, moveDuckCard, stunCard, shieldCard, sacrificeCard, unblockCard, swapCard,
   CARD_CATALOG, STARTER_DECKS, buildStarterDeck, dealHand,
 } from '../../js/cards2/move_cards.js';
 import { STARTER_DECK_DEFS, CARD_DEFS } from '../../config/cards.js';
@@ -167,6 +167,19 @@ test('CARD_CATALOG includes Duck with config rarity', () => {
 test('CARD_CATALOG includes Move Duck with config rarity', () => {
   const entry = CARD_CATALOG.find(e => e.card().name === 'Move Duck');
   const configDef = CARD_DEFS.find(d => d.id === 'move_duck');
+  expect(entry).toBeDefined();
+  expect(entry.rarity).toBe(configDef.rarity);
+});
+
+test('swapCard has type action and actionType swap', () => {
+  const c = swapCard();
+  expect(c.type).toBe('action');
+  expect(c.actionType).toBe('swap');
+});
+
+test('CARD_CATALOG includes Swap with config rarity', () => {
+  const entry = CARD_CATALOG.find(e => e.card().name === 'Swap');
+  const configDef = CARD_DEFS.find(d => d.id === 'swap');
   expect(entry).toBeDefined();
   expect(entry.rarity).toBe(configDef.rarity);
 });

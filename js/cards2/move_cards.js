@@ -64,6 +64,10 @@ export function unblockCard() {
   return { name: 'Unblock', type: 'action', actionType: 'unblock' };
 }
 
+export function swapCard() {
+  return { name: 'Swap', type: 'action', actionType: 'swap' };
+}
+
 // Returns upgraded copy of a card (never mutates original)
 export function upgradeCard(card) {
   const c = { ...card };
@@ -90,6 +94,7 @@ const _factories = {
   shieldCard,
   sacrificeCard,
   unblockCard,
+  swapCard,
   curseCard,
 };
 
