@@ -175,8 +175,28 @@ describe('transform room', () => {
     const cardEl = roomContent.querySelector('.card');
     expect(cardEl).not.toBeNull();
     cardEl.click();
+    // Confirm button should now be enabled
+    const confirmBtn = roomContent.querySelector('.confirm-btn');
+    expect(confirmBtn).not.toBeNull();
+    expect(confirmBtn.disabled).toBe(false);
+    confirmBtn.click();
     expect(onChosen).toHaveBeenCalledTimes(1);
     expect(onChosen).toHaveBeenCalledWith(0, deck[0]);
+  });
+
+  test('transform screen confirm button is disabled until selection', () => {
+    const deck = [{ type: 'move', name: 'Move' }];
+    const onChosen = vi.fn();
+    renderTransformScreen(deck, onChosen);
+
+    const roomContent = document.getElementById('room-content');
+    const confirmBtn = roomContent.querySelector('.confirm-btn');
+    expect(confirmBtn).not.toBeNull();
+    expect(confirmBtn.disabled).toBe(true);
+    
+    // Clicking confirm while disabled should not invoke callback
+    confirmBtn.click();
+    expect(onChosen).not.toHaveBeenCalled();
   });
 
   test('charm apply screen only shows valid card types', () => {

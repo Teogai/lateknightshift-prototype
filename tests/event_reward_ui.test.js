@@ -55,11 +55,15 @@ describe('event reward board ui', () => {
     // Should render the card grid first
     expect(roomContent.querySelector('.card-scroll-grid')).not.toBeNull();
     
-    // Click the card to trigger square picker
+    // Select the card
     const cardBtn = roomContent.querySelector('.card-scroll-grid > *');
     expect(cardBtn).not.toBeNull();
-    
     cardBtn.click();
+    
+    // Click confirm to trigger square picker
+    const confirmBtn = roomContent.querySelector('.confirm-btn');
+    expect(confirmBtn).not.toBeNull();
+    confirmBtn.click();
     
     // Should render placement board
     const board = roomContent.querySelector('.placement-board');
@@ -79,6 +83,8 @@ describe('event reward board ui', () => {
     const roomContent = document.getElementById('room-content');
     const cardBtn = roomContent.querySelector('.card-scroll-grid > *');
     cardBtn.click();
+    const confirmBtn = roomContent.querySelector('.confirm-btn');
+    confirmBtn.click();
 
     const board = roomContent.querySelector('.placement-board');
     const images = board.querySelectorAll('img');
@@ -120,6 +126,11 @@ describe('event reward board ui', () => {
       
       // Clicking should not throw
       expect(() => cardBtn.click()).not.toThrow();
+      
+      // Click confirm to show board
+      const confirmBtn = roomContent.querySelector('.confirm-btn');
+      expect(confirmBtn).not.toBeNull();
+      confirmBtn.click();
       
       // Board should render
       const board = roomContent.querySelector('.placement-board');
@@ -169,8 +180,13 @@ describe('treasure reward board ui', () => {
       const btn = roomContent.querySelector('.piece-reward-btn');
       expect(btn).not.toBeNull();
       
-      // Clicking should not throw
-      expect(() => btn.click()).not.toThrow();
+      // Select piece
+      btn.click();
+      
+      // Click confirm to show board
+      const confirmBtn = roomContent.querySelector('.confirm-btn');
+      expect(confirmBtn).not.toBeNull();
+      confirmBtn.click();
       
       // Board should render
       const board = roomContent.querySelector('.placement-board');

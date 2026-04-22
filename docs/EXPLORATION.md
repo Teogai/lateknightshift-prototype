@@ -83,3 +83,36 @@ const typeMap    = { pawn: 'p', knight: 'n', bishop: 'b', rook: 'r', queen: 'q',
 ```
 
 Test: `tests/event_reward_ui.test.js` iterates all 6 piece types through both event room (`handleRoomEntered`) and treasure room (`renderPieceRewardScreen`) flows, verifying no throw and board renders.
+
+## Confirm button pattern for selection screens
+
+Pattern: any screen where user selects one item from a grid/row should use select-then-confirm, not immediate apply.
+
+### Implementation
+
+1. Track `selectedIndex` (or `selectedEl` + `selectedData`) in closure
+2. Click item: remove `.selected` from previous, add to clicked, store data
+3. Create Confirm button (starts `disabled`)
+4. Click Confirm: call callback with selected data
+
+### CSS
+- `.selected` class on items: `border-color: #f0e040; background: #3a3a1a;`
+- `.confirm-btn`: standard button style, `:disabled { opacity: 0.4; cursor: not-allowed; }`
+
+### Files with confirm buttons
+- `js/rewards.js`: `renderCardRewardScreen`, `renderPieceRewardScreen`, `renderSquarePicker`, `renderUpgradeScreen`, `renderTransformScreen`, `renderShopScreen`, `renderCharmRewardScreen`, `renderCharmApplyScreen`, `renderDefeatScreen`
+- `js/ui.js`: event room handler, `renderSquarePickerForPiece`
+
+### Test pattern
+```js
+// Select item
+const item = roomContent.querySelector('.card'); // or .piece-reward-btn, etc.
+item.click();
+
+// Click confirm
+const confirmBtn = roomContent.querySelector('.confirm-btn');
+expect(confirmBtn.disabled).toBe(false);
+confirmBtn.click();
+
+// Assert callback fired / next screen shown
+```

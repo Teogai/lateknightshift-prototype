@@ -208,6 +208,16 @@ export function applyCharmToCard(card, charm) {
   return { ...card, charm: { ...charm } };
 }
 
+// --- Helper ---
+
+function createConfirmButton(text = 'Confirm') {
+  const btn = document.createElement('button');
+  btn.className = 'confirm-btn';
+  btn.textContent = text;
+  btn.disabled = true;
+  return btn;
+}
+
 // --- Render functions ---
 
 export function renderCardRewardScreen(choices, onChosen, onReroll) {
@@ -216,11 +226,29 @@ export function renderCardRewardScreen(choices, onChosen, onReroll) {
   content.innerHTML = '<h2>Choose a card reward</h2>';
   const row = document.createElement('div');
   row.className = 'card-choices';
+  let selectedEl = null;
+  let selectedCard = null;
+  let selectedIndex = null;
+
   choices.forEach(({ card, rarity }, i) => {
-    const el = makeCardEl({ ...card, rarity }, { onClick: () => onChosen(i, card) });
+    const el = makeCardEl({ ...card, rarity });
+    el.addEventListener('click', () => {
+      if (selectedEl) selectedEl.classList.remove('selected');
+      selectedEl = el;
+      selectedEl.classList.add('selected');
+      selectedCard = card;
+      selectedIndex = i;
+      confirmBtn.disabled = false;
+    });
     row.appendChild(el);
   });
   content.appendChild(row);
+
+  const confirmBtn = createConfirmButton('Confirm');
+  confirmBtn.addEventListener('click', () => {
+    if (selectedCard !== null) onChosen(selectedIndex, selectedCard);
+  });
+  content.appendChild(confirmBtn);
 
   if (onReroll) {
     const rerollBtn = document.createElement('button');
@@ -237,16 +265,29 @@ export function renderPieceRewardScreen(choices, runState, onPlaced) {
   content.innerHTML = '<h2>Choose a piece reward</h2>';
   const row = document.createElement('div');
   row.className = 'piece-choices';
-  choices.forEach(({ piece, rarity, label }) => {
+  let selectedBtn = null;
+  let selectedChoice = null;
+
+  choices.forEach((choice) => {
     const btn = document.createElement('button');
-    btn.className = `piece-reward-btn rarity-${rarity}`;
-    btn.textContent = `${label}\n[${rarity}]`;
+    btn.className = `piece-reward-btn rarity-${choice.rarity}`;
+    btn.textContent = `${choice.label}\n[${choice.rarity}]`;
     btn.addEventListener('click', () => {
-      renderSquarePicker(piece, rarity, runState, onPlaced);
+      if (selectedBtn) selectedBtn.classList.remove('selected');
+      selectedBtn = btn;
+      selectedBtn.classList.add('selected');
+      selectedChoice = choice;
+      confirmBtn.disabled = false;
     });
     row.appendChild(btn);
   });
   content.appendChild(row);
+
+  const confirmBtn = createConfirmButton('Confirm');
+  confirmBtn.addEventListener('click', () => {
+    if (selectedChoice) renderSquarePicker(selectedChoice.piece, selectedChoice.rarity, runState, onPlaced);
+  });
+  content.appendChild(confirmBtn);
 }
 
 function renderSquarePicker(piece, rarity, runState, onPlaced) {
@@ -254,7 +295,7 @@ function renderSquarePicker(piece, rarity, runState, onPlaced) {
   if (!content) return;
   const typeMap = { pawn: 'p', knight: 'n', bishop: 'b', rook: 'r', queen: 'q', king: 'k' };
   const label = piece.charAt(0).toUpperCase() + piece.slice(1);
-  content.innerHTML = `<h2>Place your ${label} — click a rank 1–2 square</h2>`;
+  content.innerHTML = `<h2>Place your ${label} — select a rank 1–2 square</h2>`;
 
   const occupied = new Map();
   for (const { type, color, sq } of CHARACTER_PIECES[runState.character]) {
@@ -266,6 +307,8 @@ function renderSquarePicker(piece, rarity, runState, onPlaced) {
 
   const boardEl = document.createElement('div');
   boardEl.className = 'placement-board';
+  let selectedSq = null;
+  let selectedDiv = null;
 
   for (let rank = 8; rank >= 1; rank--) {
     for (let fileIdx = 0; fileIdx < 8; fileIdx++) {
@@ -286,8 +329,11 @@ function renderSquarePicker(piece, rarity, runState, onPlaced) {
       if (rank <= 2 && !placedPiece) {
         div.classList.add('summon-target');
         div.addEventListener('click', () => {
-          runState.addStartingPiece({ type: typeMap[piece], color: 'w' }, sq);
-          if (onPlaced) onPlaced({ piece, rarity }, sq);
+          if (selectedDiv) selectedDiv.classList.remove('selected');
+          selectedDiv = div;
+          selectedDiv.classList.add('selected');
+          selectedSq = sq;
+          confirmBtn.disabled = false;
         });
       } else if (rank > 2) {
         div.classList.add('sq-disabled');
@@ -298,6 +344,15 @@ function renderSquarePicker(piece, rarity, runState, onPlaced) {
   }
 
   content.appendChild(boardEl);
+
+  const confirmBtn = createConfirmButton('Confirm Placement');
+  confirmBtn.addEventListener('click', () => {
+    if (selectedSq) {
+      runState.addStartingPiece({ type: typeMap[piece], color: 'w' }, selectedSq);
+      if (onPlaced) onPlaced({ piece, rarity }, selectedSq);
+    }
+  });
+  content.appendChild(confirmBtn);
 }
 
 export function renderUpgradeScreen(deck, onChosen) {
@@ -306,13 +361,31 @@ export function renderUpgradeScreen(deck, onChosen) {
   content.innerHTML = '<h2>Choose a card to upgrade</h2>';
   const grid = document.createElement('div');
   grid.className = 'card-scroll-grid';
+  let selectedEl = null;
+  let selectedCard = null;
+  let selectedIndex = null;
+
   deck.forEach((card, i) => {
     if (card.type === 'curse') return;
-    const el = makeCardEl(card, { onClick: () => onChosen(i, card) });
+    const el = makeCardEl(card);
     if (card.upgraded) el.classList.add('already-upgraded');
+    el.addEventListener('click', () => {
+      if (selectedEl) selectedEl.classList.remove('selected');
+      selectedEl = el;
+      selectedEl.classList.add('selected');
+      selectedCard = card;
+      selectedIndex = i;
+      confirmBtn.disabled = false;
+    });
     grid.appendChild(el);
   });
   content.appendChild(grid);
+
+  const confirmBtn = createConfirmButton('Confirm');
+  confirmBtn.addEventListener('click', () => {
+    if (selectedCard !== null) onChosen(selectedIndex, selectedCard);
+  });
+  content.appendChild(confirmBtn);
 }
 
 export function renderTransformScreen(deck, onChosen) {
@@ -321,11 +394,29 @@ export function renderTransformScreen(deck, onChosen) {
   content.innerHTML = '<h2>Choose a card to transform</h2>';
   const grid = document.createElement('div');
   grid.className = 'card-scroll-grid';
+  let selectedEl = null;
+  let selectedCard = null;
+  let selectedIndex = null;
+
   deck.forEach((card, i) => {
-    const el = makeCardEl(card, { onClick: () => onChosen(i, card) });
+    const el = makeCardEl(card);
+    el.addEventListener('click', () => {
+      if (selectedEl) selectedEl.classList.remove('selected');
+      selectedEl = el;
+      selectedEl.classList.add('selected');
+      selectedCard = card;
+      selectedIndex = i;
+      confirmBtn.disabled = false;
+    });
     grid.appendChild(el);
   });
   content.appendChild(grid);
+
+  const confirmBtn = createConfirmButton('Confirm');
+  confirmBtn.addEventListener('click', () => {
+    if (selectedCard !== null) onChosen(selectedIndex, selectedCard);
+  });
+  content.appendChild(confirmBtn);
 }
 
 export function renderTransformResultScreen(oldCard, newCard, onContinue) {
@@ -359,11 +450,29 @@ export function renderShopScreen(deck, onChosen) {
   content.innerHTML = '<h2>Remove a card from your deck</h2>';
   const grid = document.createElement('div');
   grid.className = 'card-scroll-grid';
+  let selectedEl = null;
+  let selectedCard = null;
+  let selectedIndex = null;
+
   deck.forEach((card, i) => {
-    const el = makeCardEl(card, { onClick: () => onChosen(i, card) });
+    const el = makeCardEl(card);
+    el.addEventListener('click', () => {
+      if (selectedEl) selectedEl.classList.remove('selected');
+      selectedEl = el;
+      selectedEl.classList.add('selected');
+      selectedCard = card;
+      selectedIndex = i;
+      confirmBtn.disabled = false;
+    });
     grid.appendChild(el);
   });
   content.appendChild(grid);
+
+  const confirmBtn = createConfirmButton('Confirm');
+  confirmBtn.addEventListener('click', () => {
+    if (selectedCard !== null) onChosen(selectedIndex, selectedCard);
+  });
+  content.appendChild(confirmBtn);
 }
 
 export function renderDefeatScreen(onAddCurse, onRetry) {
@@ -371,15 +480,39 @@ export function renderDefeatScreen(onAddCurse, onRetry) {
   if (!content) return;
   content.innerHTML = '<h2>Defeated!</h2><p>Choose a consequence:</p>';
 
+  let selectedBtn = null;
+  let selectedAction = null;
+
   const curseBtn = document.createElement('button');
+  curseBtn.className = 'defeat-btn';
   curseBtn.textContent = 'Add a Curse card to your deck';
-  curseBtn.addEventListener('click', onAddCurse);
+  curseBtn.addEventListener('click', () => {
+    if (selectedBtn) selectedBtn.classList.remove('selected');
+    selectedBtn = curseBtn;
+    selectedBtn.classList.add('selected');
+    selectedAction = 'curse';
+    confirmBtn.disabled = false;
+  });
   content.appendChild(curseBtn);
 
   const retryBtn = document.createElement('button');
+  retryBtn.className = 'defeat-btn';
   retryBtn.textContent = 'Retry the battle (use a life)';
-  retryBtn.addEventListener('click', onRetry);
+  retryBtn.addEventListener('click', () => {
+    if (selectedBtn) selectedBtn.classList.remove('selected');
+    selectedBtn = retryBtn;
+    selectedBtn.classList.add('selected');
+    selectedAction = 'retry';
+    confirmBtn.disabled = false;
+  });
   content.appendChild(retryBtn);
+
+  const confirmBtn = createConfirmButton('Confirm');
+  confirmBtn.addEventListener('click', () => {
+    if (selectedAction === 'curse') onAddCurse();
+    else if (selectedAction === 'retry') onRetry();
+  });
+  content.appendChild(confirmBtn);
 }
 
 export function renderCharmRewardScreen(choices, onChosen) {
@@ -388,14 +521,31 @@ export function renderCharmRewardScreen(choices, onChosen) {
   content.innerHTML = '<h2>Choose a charm</h2>';
   const row = document.createElement('div');
   row.className = 'charm-choices';
+  let selectedBtn = null;
+  let selectedCharm = null;
+  let selectedIndex = null;
+
   choices.forEach(({ charm, rarity }, i) => {
     const btn = document.createElement('button');
     btn.className = `charm-reward-btn rarity-${rarity}`;
     btn.innerHTML = `<strong>${charm.name}</strong><br><small>${charm.desc}</small><br>[${rarity}]`;
-    btn.addEventListener('click', () => onChosen(i, charm));
+    btn.addEventListener('click', () => {
+      if (selectedBtn) selectedBtn.classList.remove('selected');
+      selectedBtn = btn;
+      selectedBtn.classList.add('selected');
+      selectedCharm = charm;
+      selectedIndex = i;
+      confirmBtn.disabled = false;
+    });
     row.appendChild(btn);
   });
   content.appendChild(row);
+
+  const confirmBtn = createConfirmButton('Confirm');
+  confirmBtn.addEventListener('click', () => {
+    if (selectedCharm !== null) onChosen(selectedIndex, selectedCharm);
+  });
+  content.appendChild(confirmBtn);
 }
 
 export function renderCharmApplyScreen(deck, charm, onChosen) {
@@ -404,12 +554,30 @@ export function renderCharmApplyScreen(deck, charm, onChosen) {
   content.innerHTML = `<h2>Apply ${charm.name} to a card</h2><p>${charm.desc}</p><p>Valid for: ${charm.validCardTypes.join(', ')} cards</p>`;
   const grid = document.createElement('div');
   grid.className = 'card-scroll-grid';
+  let selectedEl = null;
+  let selectedCard = null;
+  let selectedIndex = null;
+
   deck.forEach((card, i) => {
     if (card.type === 'curse') return;
     if (!charm.validCardTypes.includes(card.type)) return;
-    const el = makeCardEl(card, { onClick: () => onChosen(i, card) });
+    const el = makeCardEl(card);
     if (card.charm) el.classList.add('already-charmed');
+    el.addEventListener('click', () => {
+      if (selectedEl) selectedEl.classList.remove('selected');
+      selectedEl = el;
+      selectedEl.classList.add('selected');
+      selectedCard = card;
+      selectedIndex = i;
+      confirmBtn.disabled = false;
+    });
     grid.appendChild(el);
   });
   content.appendChild(grid);
+
+  const confirmBtn = createConfirmButton('Confirm');
+  confirmBtn.addEventListener('click', () => {
+    if (selectedCard !== null) onChosen(selectedIndex, selectedCard);
+  });
+  content.appendChild(confirmBtn);
 }

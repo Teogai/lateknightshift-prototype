@@ -36,3 +36,22 @@
 .piece-reward-btn.rarity-rare { border-color: #cc88ff; }
 .piece-reward-btn.rarity-legendary { border-color: #ffaa00; }
 .curse-card { color: #e05555; opacity: 0.6; }
+
+/* Confirm button */
+.confirm-btn {
+  padding: 0.6rem 1.2rem; font-size: 1rem;
+  background: #1e3a1e; color: #eee;
+  border: 1px solid #4a7a4a; border-radius: 4px; cursor: pointer;
+  margin-top: 0.5rem;
+}
+.confirm-btn:hover:not(:disabled) { background: #2a4a2a; }
+.confirm-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Charm reward selected */
+.charm-reward-btn.selected { border-color: #f0e040; background: #3a3a1a; }
+
+/* Defeat button selected */
+.defeat-btn.selected { border-color: #f0e040; background: #3a3a1a; }
+
+/* Square placement selected */
+.sq.selected { border: 3px solid #f0e040; }

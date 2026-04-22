@@ -811,18 +811,39 @@ export function handleRoomEntered(node) {
     content.innerHTML = '<h2>Choose a piece card to place on the board</h2>';
     const grid = document.createElement('div');
     grid.className = 'card-scroll-grid';
+    let selectedEl = null;
+    let selectedCard = null;
+    let selectedIndex = null;
+
     pieceCardIndices.forEach(({ card, index }) => {
-      const el = makeCardEl(card, { onClick: () => {
-        // Consume the piece card
-        runState.removeCard(index);
-        // Show square picker for the piece
-        const typeMap = { pawn: 'p', knight: 'n', bishop: 'b', rook: 'r', queen: 'q', king: 'k' };
-        const pieceType = typeMap[card.piece] || card.piece;
-        renderSquarePickerForPiece(pieceType, advanceAfterRoom);
-      }});
+      const el = makeCardEl(card);
+      el.addEventListener('click', () => {
+        if (selectedEl) selectedEl.classList.remove('selected');
+        selectedEl = el;
+        selectedEl.classList.add('selected');
+        selectedCard = card;
+        selectedIndex = index;
+        confirmBtn.disabled = false;
+      });
       grid.appendChild(el);
     });
     content.appendChild(grid);
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.className = 'confirm-btn';
+    confirmBtn.textContent = 'Confirm';
+    confirmBtn.disabled = true;
+    confirmBtn.addEventListener('click', () => {
+      if (selectedCard !== null) {
+        // Consume the piece card
+        runState.removeCard(selectedIndex);
+        // Show square picker for the piece
+        const typeMap = { pawn: 'p', knight: 'n', bishop: 'b', rook: 'r', queen: 'q', king: 'k' };
+        const pieceType = typeMap[selectedCard.piece] || selectedCard.piece;
+        renderSquarePickerForPiece(pieceType, advanceAfterRoom);
+      }
+    });
+    content.appendChild(confirmBtn);
   } else if (node.type === 'shop') {
     const choices = pickPieceCardChoices(3);
     renderCardRewardScreen(choices, (i, card) => {
@@ -1419,7 +1440,7 @@ function renderSquarePickerForPiece(pieceType, onPlaced) {
   const typeToName = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' };
   const fullName = typeToName[pieceType] || pieceType;
   const label = fullName.charAt(0).toUpperCase() + fullName.slice(1);
-  content.innerHTML = `<h2>Place your ${label} — click a rank 1–2 square</h2>`;
+  content.innerHTML = `<h2>Place your ${label} — select a rank 1–2 square</h2>`;
 
   const occupied = new Map();
   for (const { type, color, sq } of CHARACTER_PIECES[runState.character]) {
@@ -1431,6 +1452,8 @@ function renderSquarePickerForPiece(pieceType, onPlaced) {
 
   const boardEl = document.createElement('div');
   boardEl.className = 'placement-board';
+  let selectedSq = null;
+  let selectedDiv = null;
 
   for (let rank = 8; rank >= 1; rank--) {
     for (let fileIdx = 0; fileIdx < 8; fileIdx++) {
@@ -1453,8 +1476,11 @@ function renderSquarePickerForPiece(pieceType, onPlaced) {
       if (rank <= 2 && !placedPiece) {
         div.classList.add('summon-target');
         div.addEventListener('click', () => {
-          runState.addStartingPiece({ type: pieceType, color: 'w' }, sq);
-          if (onPlaced) onPlaced();
+          if (selectedDiv) selectedDiv.classList.remove('selected');
+          selectedDiv = div;
+          selectedDiv.classList.add('selected');
+          selectedSq = sq;
+          confirmBtn.disabled = false;
         });
       } else if (rank > 2) {
         div.classList.add('sq-disabled');
@@ -1465,6 +1491,18 @@ function renderSquarePickerForPiece(pieceType, onPlaced) {
   }
 
   content.appendChild(boardEl);
+
+  const confirmBtn = document.createElement('button');
+  confirmBtn.className = 'confirm-btn';
+  confirmBtn.textContent = 'Confirm Placement';
+  confirmBtn.disabled = true;
+  confirmBtn.addEventListener('click', () => {
+    if (selectedSq) {
+      runState.addStartingPiece({ type: pieceType, color: 'w' }, selectedSq);
+      if (onPlaced) onPlaced();
+    }
+  });
+  content.appendChild(confirmBtn);
 }
 
 export function startGame(character) {
