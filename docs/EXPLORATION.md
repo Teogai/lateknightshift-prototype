@@ -116,3 +116,17 @@ confirmBtn.click();
 
 // Assert callback fired / next screen shown
 ```
+
+## Multi-step card deselect guard
+
+Pattern: cards with multi-step flows (blitz, move_together) must prevent the player from deselecting the card mid-flow.
+
+**Bug**: `handleCardClick` had the "deselect on same card click" check before the "block multi-step" check, allowing players to reset the UI and play a different card after committing the first move.
+
+**Fix**: Move the `multiStepPhases.includes(uiState.phase)` guard **before** the `uiState.selectedCardIndex === index` deselect check in `js/ui.js:handleCardClick`.
+
+Phases that must block deselect:
+- `blitz_first_selected`, `blitz_second_selected`
+- `move_together_first_selected`, `move_together_second_piece`, `move_together_second_from_selected`
+
+Test: `tests/multistep_card_deselect.test.js` verifies clicking the same card in any multi-step phase does not call `resetUiState()`.

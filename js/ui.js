@@ -874,14 +874,14 @@ export function handleRoomEntered(node) {
 
 export function handleCardClick(index, card) {
   if (!gameState || gameState.toDict().turn !== 'player') return;
-  if (uiState.phase !== 'idle' && uiState.selectedCardIndex === index) {
-    resetUiState(); setHint(''); render(); return;
-  }
-  // Block switching cards during multi-step flows
+  // Block switching/deselecting cards during multi-step flows
   const multiStepPhases = ['blitz_first_selected', 'blitz_second_selected', 'move_together_first_selected', 'move_together_second_piece', 'move_together_second_from_selected'];
   if (multiStepPhases.includes(uiState.phase)) {
     setHint('Complete current card first');
     return;
+  }
+  if (uiState.phase !== 'idle' && uiState.selectedCardIndex === index) {
+    resetUiState(); setHint(''); render(); return;
   }
   const d = gameState.toDict();
   resetUiState();
