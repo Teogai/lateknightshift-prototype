@@ -326,20 +326,16 @@ export function makeCardEl(card, { onClick } = {}) {
   name.className = 'card-name' + (card.upgraded ? ' upgraded' : '');
   name.textContent = card.name;
   div.appendChild(name);
-  if (card.desc || card.charm) {
+  if (card.desc) {
     const descEl = document.createElement('div');
     descEl.className = 'card-desc';
-    let descText = card.desc || '';
-    if (card.charm) {
-      descText = descText ? `${descText} {${card.charm.id}}` : `{${card.charm.id}}`;
-    }
-    _parseCardDesc(descText, descEl);
+    _parseCardDesc(card.desc, descEl);
     div.appendChild(descEl);
   }
   if (card.charm) {
     const badge = document.createElement('div');
     badge.className = 'charm-badge';
-    badge.textContent = card.charm.name;
+    _parseCardDesc(`{${card.charm.id}}`, badge);
     div.appendChild(badge);
   }
   if (card.type === 'curse') {
