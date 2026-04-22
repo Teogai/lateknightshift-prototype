@@ -21,8 +21,8 @@
 ### Subtype fields
 
 - **piece** cards: `piece: 'pawn' | 'knight' | 'bishop' | 'rook' | 'queen' | 'duck'`
-- **move** cards: `moveVariant: 'knight' | 'bishop' | 'rook' | 'queen' | 'pawn_boost' | 'duck' | 'teleport' | 'blitz' | 'move_together'` (absent = standard move)
-- **action** cards: `actionType: 'stun' | 'shield' | 'sacrifice' | 'unblock' | 'swap' | 'snap'`
+- **move** cards: `moveVariant: 'knight' | 'bishop' | 'rook' | 'queen' | 'pawn_boost' | 'duck' | 'teleport' | 'blitz' | 'move_together' | 'swap'` (absent = standard move)
+- **action** cards: `actionType: 'stun' | 'shield' | 'sacrifice' | 'unblock' | 'snap'`
 
 ## Naming & Description Rules
 
