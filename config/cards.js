@@ -22,7 +22,7 @@ export const CARD_DEFS = [
   { id: 'shield',       name: 'Shield',         type: 'action', actionType: 'shield', rarity: 'uncommon', desc: 'Apply {shield}.' },
   { id: 'sacrifice',    name: 'Sacrifice',      type: 'action', actionType: 'sacrifice', rarity: 'uncommon', desc: 'Sacrifice {piece}. Destroy weaker.' },
   { id: 'unblock',      name: 'Unblock',        type: 'action', actionType: 'unblock', rarity: 'uncommon', desc: 'Apply {ghost} 5 turns.' },
-  { id: 'swap',         name: 'Swap',           type: 'action', actionType: 'swap', rarity: 'uncommon', desc: 'Swap place with friendly {piece}.' },
+  { id: 'swap',         name: 'Swap',           type: 'move',   moveVariant: 'swap', rarity: 'uncommon', desc: 'Swap place with friendly {piece}.' },
   { id: 'teleport',     name: 'Teleport',       type: 'move',   moveVariant: 'teleport', rarity: 'uncommon', desc: 'Teleport {piece} to empty square.' },
   { id: 'snap',         name: 'Snap',           type: 'action', actionType: 'snap', rarity: 'uncommon', desc: 'Capture at legal move without moving.' },
   { id: 'blitz',        name: 'Blitz',          type: 'move',   moveVariant: 'blitz', rarity: 'rare', desc: 'Move {piece} twice.' },
