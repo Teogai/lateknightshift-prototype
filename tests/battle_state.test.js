@@ -436,6 +436,37 @@ describe('new card play methods', () => {
     expect(piece.data.stunTurns).toBeUndefined();
   });
 
+  test('stun on enemy lasts exactly 2 enemy turns via turn cycle', () => {
+    const state = makeStateWithCards([stunCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'd4', type: 'rook', owner: 'enemy' },
+    ]);
+    state.playStunCard(0, 'd4');
+    const piece = get(state._state.board, 'd4');
+    expect(piece.data.stunTurns).toBe(2);
+
+    // End player turn, start enemy turn — should NOT decay stun yet
+    state.startEnemyTurn();
+    expect(piece.tags.has('stunned')).toBe(true);
+    expect(piece.data.stunTurns).toBe(2);
+
+    // End enemy turn — this is where decay happens
+    state.finishEnemyTurnSequence();
+    expect(piece.tags.has('stunned')).toBe(true);
+    expect(piece.data.stunTurns).toBe(1);
+
+    // Next turn cycle — enemy turn 2, should still be stunned
+    state.startEnemyTurn();
+    expect(piece.tags.has('stunned')).toBe(true);
+    expect(piece.data.stunTurns).toBe(1);
+
+    // End enemy turn 2 — stun expires
+    state.finishEnemyTurnSequence();
+    expect(piece.tags.has('stunned')).toBe(false);
+    expect(piece.data.stunTurns).toBeUndefined();
+  });
+
   test('playShieldCard adds shielded tag and attaches effect', () => {
     const state = makeStateWithCards([shieldCard()], [
       { sq: 'e1', type: 'king', owner: 'player' },

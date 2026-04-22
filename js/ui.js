@@ -42,7 +42,7 @@ const KEYWORD_REGISTRY = {
   queen:      { color: '#dddddd', desc: 'Queen: moves diagonal or straight.' },
   king:       { color: '#ffdd44', desc: 'King: moves 1 square. Lose if captured.' },
   piece:      { color: '#dddddd', desc: 'Any chess piece.' },
-  stun:       { color: '#ff6666', desc: 'Stun: cannot move.' },
+  stun:       { color: '#ff6666', desc: 'Stun: cannot move for 2 turns.' },
   ghost:      { color: '#aa88ff', desc: 'Ghost: does not block sliding moves.' },
   shield:     { color: '#44aaff', desc: 'Shield: blocks first capture.' },
   frozen:     { color: '#88ccff', desc: 'Frozen: cannot move.' },

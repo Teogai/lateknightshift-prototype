@@ -798,7 +798,6 @@ export class GameState {
     this.summonedThisTurn.clear();
     this.movedThisTurn.clear();
     this._decayGhostStatuses('enemy');
-    this._decayStunStatuses();
 
     if (!this._enemyAI) {
       return { pendingMoves: [], warnNext: false };

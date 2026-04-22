@@ -18,7 +18,7 @@ export const CARD_DEFS = [
   { id: 'pawn_boost',   name: 'Pawn Boost',     type: 'move',   moveVariant: 'pawn_boost', rarity: 'common', image: './img/pawn-boost.png', desc: 'Slide {pawn} forward.' },
   { id: 'summon_duck',  name: 'Summon Duck',    type: 'summon_duck', rarity: 'uncommon', image: './img/duck.png', desc: 'Place {duck} anywhere.' },
   { id: 'move_duck',    name: 'Move Duck',      type: 'move_duck',   rarity: 'uncommon', image: './img/duck.png', desc: 'Move any {duck}.' },
-  { id: 'stun',         name: 'Stun',           type: 'stun',   rarity: 'common', desc: 'Apply {stun}.' },
+  { id: 'stun',         name: 'Stun',           type: 'stun',   rarity: 'common', desc: 'Apply {stun} for 2 turns.' },
   { id: 'shield',       name: 'Shield',         type: 'shield', rarity: 'uncommon', desc: 'Apply {shield}.' },
   { id: 'sacrifice',    name: 'Sacrifice',      type: 'sacrifice', rarity: 'uncommon', desc: 'Sacrifice {piece}. Destroy weaker.' },
   { id: 'unblock',      name: 'Unblock',        type: 'unblock', rarity: 'uncommon', desc: 'Apply {ghost} 5 turns.' },
