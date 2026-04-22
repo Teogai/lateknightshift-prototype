@@ -915,21 +915,23 @@ export function handleCardClick(index, card) {
   } else if (card.type === 'move' && card.moveVariant === 'pawn_boost') {
     setHint('Pawn Boost: click a friendly pawn to slide forward');
   } else if (card.type === 'piece') {
-    const validRanks = ['1', '2'];
-    uiState.summonTargets = 'abcdefgh'.split('').flatMap(f =>
-      validRanks.map(r => f + r)
-    ).filter(sq => !d.board[sq]);
-    setHint(`Click a highlighted square to place ${card.piece}`);
-  } else if (card.type === 'piece' && card.piece === 'duck') {
-    uiState.phase = 'summon_duck_selected';
-    uiState.summonTargets = [];
-    for (let r = 0; r < 8; r++) {
-      for (let c = 0; c < 8; c++) {
-        const sqName = rcToSq(r, c);
-        if (!d.board[sqName]) uiState.summonTargets.push(sqName);
+    if (card.piece === 'duck') {
+      uiState.phase = 'summon_duck_selected';
+      uiState.summonTargets = [];
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const sqName = rcToSq(r, c);
+          if (!d.board[sqName]) uiState.summonTargets.push(sqName);
+        }
       }
+      setHint('Click any empty square to place duck');
+    } else {
+      const validRanks = ['1', '2'];
+      uiState.summonTargets = 'abcdefgh'.split('').flatMap(f =>
+        validRanks.map(r => f + r)
+      ).filter(sq => !d.board[sq]);
+      setHint(`Click a highlighted square to place ${card.piece}`);
     }
-    setHint('Click any empty square to place duck');
   } else if (card.type === 'move' && card.moveVariant === 'duck') {
     uiState.phase = 'move_duck_selected';
     setHint('Click a duck to move');

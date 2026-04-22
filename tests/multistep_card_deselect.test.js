@@ -144,4 +144,14 @@ describe('multi-step card deselect bug', () => {
     expect(ui.uiState.phase).toBe('blitz_first_selected');
     spy.mockRestore();
   });
+
+  test('duck summon card allows any empty square, not just ranks 1-2', () => {
+    const card = { type: 'piece', piece: 'duck', name: 'Duck' };
+    ui.handleCardClick(0, card);
+
+    expect(ui.uiState.phase).toBe('summon_duck_selected');
+    expect(ui.uiState.summonTargets).toContain('d5');
+    expect(ui.uiState.summonTargets).toContain('a8');
+    expect(ui.uiState.summonTargets).not.toContain('e1'); // occupied by king
+  });
 });
