@@ -19,7 +19,13 @@
 8. Restart docker stack
 9. Commit
 
-**CRITICAL: Steps 1-8 must be completed IN ORDER. No skipping steps. No shortcuts. If you skip any step, you are violating the workflow.**
+**CRITICAL: Steps 1-9 must be completed IN ORDER. No skipping steps. No shortcuts. If you skip any step, you are violating the workflow.**
+
+## Tunnel vision prevention
+- **Before declaring any task complete, re-read the TDD loop steps (1-9) and verify ALL were executed**
+- Use TodoWrite tool for every task with explicit checklist items including "Commit changes" and "Update docs"
+- Final self-check before stopping: "Did I write tests? Did I run them? Did I commit? Did I update docs?"
+- When a fix seems obvious: still write the failing test first — obvious fixes are where tests get skipped most
 
 ## TDD for debugging — reproduce bugs with tests
 - When a bug is reported, write a test that replicates the real scenario and makes it fail

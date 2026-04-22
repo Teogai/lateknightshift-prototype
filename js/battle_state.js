@@ -18,6 +18,7 @@ import { ENEMIES, VALID_ENEMIES } from './enemies2.js';
 import { VALID_CHARACTERS, CHARACTER_PIECES, HAND_SIZE, REDRAW_COUNTDOWN_START, VALID_PROMO } from './engine2/constants2.js';
 import { attachEffect } from './engine2/effects.js';
 import { makeShieldEffect } from './engine2/effect_types/shield.js';
+import { resolvePromotions } from './engine2/promotion.js';
 
 export { VALID_ENEMIES } from './enemies2.js';
 export { VALID_CHARACTERS, CHARACTER_PIECES } from './engine2/constants2.js';
@@ -388,7 +389,6 @@ export class GameState {
     const piece = get(this._state.board, fromSq);
     if (!piece || piece.owner !== 'player') return { error: 'no friendly piece on that square' };
 
-    const isPromo = piece.type === 'pawn' && toSq[1] === '8';
     const targetPiece = get(this._state.board, toSq);
     const isCapture = targetPiece && targetPiece.owner !== 'player';
     const isKingCapture = targetPiece?.type === 'king' && targetPiece?.owner === 'enemy';
@@ -398,33 +398,22 @@ export class GameState {
       const action = actions.find(a => a.source === fromSq && a.targets[0] === toSq);
       if (!action) return { error: 'illegal move' };
 
-      if (isPromo && promotion === null) {
-        // Move piece without promotion (will ask for promotion via modal)
-        set(this._state.board, fromSq, null);
-        set(this._state.board, toSq, piece);
-      } else {
-        const promoType = isPromo && promotion ? PIECE_FULL[promotion] || promotion : null;
-        if (promoType) {
-          action.payload = { ...(action.payload || {}), promotion: promoType };
-        }
-        this._state.play(action);
+      if (promotion) {
+        const promoType = PIECE_FULL[promotion] || promotion;
+        action.payload = { ...(action.payload || {}), promotion: promoType };
       }
+      this._state.play(action);
     } else {
       // King capture: bypass legality check
-      if (isPromo && promotion === null) {
-        set(this._state.board, fromSq, null);
-        set(this._state.board, toSq, piece);
-      } else {
-        const promoType = isPromo && promotion ? PIECE_FULL[promotion] || promotion : null;
-        const action = {
-          kind: 'move',
-          source: fromSq,
-          targets: [toSq],
-          piece,
-          ...(promoType ? { payload: { promotion: promoType } } : {}),
-        };
-        this._state.play(action);
-      }
+      const promoType = promotion ? PIECE_FULL[promotion] || promotion : null;
+      const action = {
+        kind: 'move',
+        source: fromSq,
+        targets: [toSq],
+        piece,
+        ...(promoType ? { payload: { promotion: promoType } } : {}),
+      };
+      this._state.play(action);
     }
 
     const isPawnDoublePush = piece.type === 'pawn' && fromSq[1] === '2' && toSq[1] === '4';
@@ -444,9 +433,11 @@ export class GameState {
     const winner = checkKingCaptured(this._state.board);
     if (winner) this.turn = winner;
 
-    if (isPromo && promotion === null) {
-      return { ok: true, needs_promotion: [toSq] };
+    const { playerPromos } = resolvePromotions(this._state);
+    if (playerPromos.length > 0) {
+      return { ok: true, needs_promotion: playerPromos };
     }
+
     return { ok: true };
   }
 
@@ -481,7 +472,11 @@ export class GameState {
     const winner = checkKingCaptured(this._state.board);
     if (winner) this.turn = winner;
 
-    if (piece.type === 'pawn' && toSq[1] === '8') return { ok: true, needs_promotion: [toSq] };
+    const { playerPromos } = resolvePromotions(this._state);
+    if (playerPromos.length > 0) {
+      return { ok: true, needs_promotion: playerPromos };
+    }
+
     return { ok: true };
   }
 
@@ -515,7 +510,11 @@ export class GameState {
     const winner = checkKingCaptured(this._state.board);
     if (winner) this.turn = winner;
 
-    if (piece.type === 'pawn' && toSq[1] === '8') return { ok: true, needs_promotion: [toSq] };
+    const { playerPromos } = resolvePromotions(this._state);
+    if (playerPromos.length > 0) {
+      return { ok: true, needs_promotion: playerPromos };
+    }
+
     return { ok: true };
   }
 
@@ -563,15 +562,19 @@ export class GameState {
     const winner = checkKingCaptured(this._state.board);
     if (winner) this.turn = winner;
 
-    if (piece.type === 'pawn' && toSq[1] === '8') return { ok: true, needs_promotion: [toSq] };
+    const { playerPromos } = resolvePromotions(this._state);
+    if (playerPromos.length > 0) {
+      return { ok: true, needs_promotion: playerPromos };
+    }
+
     return { ok: true };
   }
 
   applyPromotion(sq, promoType) {
     if (!VALID_PROMO.has(promoType)) return { error: 'invalid promotion piece' };
     const piece = get(this._state.board, sq);
-    if (!piece || piece.type !== 'pawn' || piece.owner !== 'player') return { error: 'no promotable pawn on that square' };
-    set(this._state.board, sq, makePiece(PIECE_FULL[promoType] || promoType, 'player'));
+    if (!piece || piece.type !== 'pawn') return { error: 'no promotable pawn on that square' };
+    set(this._state.board, sq, makePiece(PIECE_FULL[promoType] || promoType, piece.owner));
     return { ok: true };
   }
 
@@ -790,6 +793,11 @@ export class GameState {
     const winner = checkKingCaptured(this._state.board);
     if (winner) this.turn = winner;
 
+    const { playerPromos } = resolvePromotions(this._state);
+    if (playerPromos.length > 0) {
+      return { ok: true, needs_promotion: playerPromos };
+    }
+
     return { ok: true };
   }
 
@@ -1007,6 +1015,9 @@ export class GameState {
       if (winner) { this.turn = winner; break; }
     }
 
+    // Auto-promote any enemy pawns that reached rank 1
+    resolvePromotions(this._state);
+
     this.enemyWillDoubleMove = warnNext;
 
     if (this.turn !== 'player_won' && this.turn !== 'enemy_won') {
@@ -1034,6 +1045,8 @@ export class GameState {
       this.turn = winner;
       return { ok: true, gameEnded: true };
     }
+    // Auto-promote any enemy pawns that reached rank 1
+    resolvePromotions(this._state);
     return { ok: true, gameEnded: false };
   }
 

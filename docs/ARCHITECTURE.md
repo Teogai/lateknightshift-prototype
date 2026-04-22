@@ -36,6 +36,7 @@
 - `js/engine2/tiles.js` — TILE_DEFS, makeTile(type)
 - `js/engine2/view.js` — getView(state, perspective)
 - `js/engine2/constants2.js` — re-exports HAND_SIZE, REDRAW_COUNTDOWN_START, VALID_PROMO from config/game.js and CHARACTER_PIECES, VALID_CHARACTERS from config/characters.js
+- `js/engine2/promotion.js` — centralized pawn promotion detection; see docs/PROMOTION.md
 - `js/engine2/effect_types/shield.js`, `effect_types/explode.js`
 
 ## ai2 (engine2 AI)
@@ -72,6 +73,7 @@
 - `docs/ENEMIES.md` — enemy roster, AI types, personalities
 - `docs/TASKS.md` — task log
 - `docs/EXPLORATION.md` — reusable patterns for common tasks
+- `docs/PROMOTION.md` — pawn promotion system, centralized detection
 
 ## Stack
 - Vite v5 (dev server)

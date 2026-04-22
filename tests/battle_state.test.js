@@ -647,6 +647,17 @@ describe('new card play methods', () => {
     expect(result.error).toBeDefined();
   });
 
+  test('playTeleportCard detects promotion for white pawn reaching rank 8', () => {
+    const state = makeStateWithCards([teleportCard()], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'a7', type: 'pawn', owner: 'player' },
+    ]);
+    const result = state.playTeleportCard(0, 'a7', 'a8');
+    expect(result.error).toBeUndefined();
+    expect(result.needs_promotion).toEqual(['a8']);
+  });
+
   test('playSnapCard captures enemy without moving', () => {
     const state = makeStateWithCards([snapCard()], [
       { sq: 'e1', type: 'king', owner: 'player' },
