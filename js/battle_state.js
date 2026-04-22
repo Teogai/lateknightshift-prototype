@@ -403,6 +403,11 @@ export class GameState {
       if (promotion) {
         const promoType = PIECE_FULL[promotion] || promotion;
         action.payload = { ...(action.payload || {}), promotion: promoType };
+      } else if (action.payload?.promotion) {
+        // No promotion choice provided: strip auto-promotion so
+        // checkPromotions can show the promotion modal instead.
+        const { promotion: _, ...restPayload } = action.payload;
+        action.payload = Object.keys(restPayload).length > 0 ? restPayload : undefined;
       }
       this._state.play(action);
     } else {

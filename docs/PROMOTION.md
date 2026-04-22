@@ -48,6 +48,12 @@ Called after every successful card play.
 - **Enemy pawns**: auto-promote to queen immediately
 - **No card method returns `needs_promotion`** — all promotion detection is centralized
 
+## Implementation Detail: playMoveCard
+`playMoveCard()` uses the engine's `generateLegalActions()` which returns promotion actions (queen/rook/bishop/knight) when a pawn reaches the back rank. To keep promotion detection centralized:
+- When **no** `promotion` parameter is passed, `playMoveCard()` **strips** `payload.promotion` from the engine action before playing it
+- This leaves the pawn on the back rank, allowing `checkPromotions()` to detect it and trigger the promotion modal
+- When a `promotion` parameter **is** passed (e.g. from the modal), it is applied to the action and the pawn promotes immediately
+
 ## Integration Points
 Card handlers in `js/ui.js` that call `handlePostAction()`:
 - `from_selected` (regular move)

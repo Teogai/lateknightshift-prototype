@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import { GameState, knightAttacks } from '../js/battle_state.js';
-import { pawnBoostCard, summonDuckCard, moveDuckCard, stunCard, shieldCard, sacrificeCard, unblockCard, swapCard,
+import { moveCard, pawnBoostCard, summonDuckCard, moveDuckCard, stunCard, shieldCard, sacrificeCard, unblockCard, swapCard,
   teleportCard, snapCard, blitzCard, moveTogetherCard, knightMoveCard } from '../js/cards2/move_cards.js';
 import { makePiece } from '../js/engine2/pieces.js';
 import { get, set } from '../js/engine2/board.js';
@@ -366,6 +366,55 @@ describe('pawn boost', () => {
   });
 });
 
+
+
+describe('move card promotion', () => {
+  function makeStateWithMoveCard(placements) {
+    const state = new GameState('knight', 'pawn_pusher');
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) state._state.board[r][c] = null;
+    for (const { sq, type, owner } of placements) {
+      set(state._state.board, sq, makePiece(type, owner));
+    }
+    state._state.hand = [moveCard()];
+    state._state.deck = [];
+    state._state.discard = [];
+    return state;
+  }
+
+  test('playMoveCard with pawn to rank 8 leaves pawn for checkPromotions', () => {
+    const state = makeStateWithMoveCard([
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'a7', type: 'pawn', owner: 'player' },
+    ]);
+    const result = state.playMoveCard(0, 'a7', 'a8');
+    expect(result.error).toBeUndefined();
+    // Pawn should NOT be auto-promoted - should still be a pawn
+    const board = state.toDict().board;
+    expect(board['a8'].type).toBe('pawn');
+    expect(board['a8'].color).toBe('white');
+    // checkPromotions should detect it
+    const promo = state.checkPromotions();
+    expect(promo.playerPromos).toEqual(['a8']);
+  });
+
+  test('playMoveCard with explicit promotion choice works', () => {
+    const state = makeStateWithMoveCard([
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'a7', type: 'pawn', owner: 'player' },
+    ]);
+    const result = state.playMoveCard(0, 'a7', 'a8', 'q');
+    expect(result.error).toBeUndefined();
+    // Pawn should be promoted to queen immediately
+    const board = state.toDict().board;
+    expect(board['a8'].type).toBe('queen');
+    expect(board['a8'].color).toBe('white');
+    // No pending promotions
+    const promo = state.checkPromotions();
+    expect(promo.playerPromos).toEqual([]);
+  });
+});
 describe('new card play methods', () => {
   function makeStateWithCards(cards, placements) {
     const state = new GameState('knight', 'pawn_pusher');
