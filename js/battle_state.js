@@ -221,7 +221,7 @@ function checkAndResolveAtomic(board, fromSq, toSq, wasCapture) {
 // ─── BattleState (adapter) ────────────────────────────────────────────────────
 
 export class GameState {
-  constructor(character, enemy = 'pawn_pusher', persistentDeck = null, startingPieces = []) {
+  constructor(character, enemy = 'pawn_pusher', persistentDeck = null, startingPieces = [], runState = null) {
     if (!VALID_CHARACTERS.has(character)) throw new Error(`unknown character: ${character}`);
     if (!VALID_ENEMIES.has(enemy)) throw new Error(`unknown enemy: ${enemy}`);
 
@@ -270,6 +270,7 @@ export class GameState {
     this.turn = 'player';
     this.redrawCountdown = REDRAW_COUNTDOWN_START;
     this.enemyWillDoubleMove = false;
+    this.runState = runState;
     this.lastMove = { from: null, to: null };
     this._blitzPieceSq = null;
     this._blitzCardIndex = null;

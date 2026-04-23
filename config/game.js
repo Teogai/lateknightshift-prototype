@@ -5,12 +5,12 @@
  */
 
 export const MAP_CONFIG = {
-  totalFloors: 16,
-  treasureFloor: 9,
-  transformFloor: 15,
-  bossFloor: 16,
-  eliteMinFloor: 6,
-  roomWeights: { monster: 45, elite: 15, piece_reward: 40 },
+  totalFloors: 19,
+  treasureFloor: 11,
+  transformFloor: 18,
+  bossFloor: 19,
+  eliteMinFloor: 7,
+  roomWeights: { monster: 45, elite: 15, piece_reward: 40, relic: 15 },
   minNodes: 1,
   maxNodes: 3,
 };

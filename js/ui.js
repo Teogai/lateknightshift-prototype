@@ -676,6 +676,7 @@ function startBattle(nodeType) {
     enemy,
     runState.deck,
     runState.startingPieces,
+    runState,
   );
   resetUiState();
   showScreen('screen-game');
