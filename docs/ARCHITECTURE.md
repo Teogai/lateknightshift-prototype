@@ -54,6 +54,12 @@
 ## charms
 - `js/charms.js` — CHARM_CATALOG, getCharmById(), canApplyCharm()
 
+## relics
+- `config/relics.js` — RELIC_DEFS
+- `js/relics.js` — RELIC_CATALOG, pickRelicChoices()
+- `css/relics.css` — relic bar styles
+- See `docs/RELICS.md` for full relic system
+
 ## Tests
 - `tests/` — Vitest suite
 - `tests/engine2/` — engine2 unit tests
