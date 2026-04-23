@@ -381,7 +381,32 @@ export class GameState {
     if (card.unplayable) return { error: 'card is unplayable' };
 
     const piece = get(this._state.board, fromSq);
-    if (!piece || piece.owner !== 'player') return { error: 'no friendly piece on that square' };
+    const hasDuckHandler = this.runState?.relics?.some(r => r.id === 'duck_handler');
+    const isDuck = piece?.type === 'duck';
+    if (!piece || (piece.owner !== 'player' && !(isDuck && hasDuckHandler))) {
+      return { error: 'no friendly piece on that square' };
+    }
+
+    // For duck with Duck Handler: king-like moves, no captures
+    if (isDuck && hasDuckHandler) {
+      const [fr, fc] = sqToRC(fromSq);
+      const [tr, tc] = sqToRC(toSq);
+      const dr = Math.abs(tr - fr);
+      const dc = Math.abs(tc - fc);
+      if (dr > 1 || dc > 1 || (dr === 0 && dc === 0)) {
+        return { error: 'not a legal destination' };
+      }
+      const target = get(this._state.board, toSq);
+      if (target) {
+        return { error: 'not a legal destination' };
+      }
+      // Move duck
+      set(this._state.board, fromSq, null);
+      set(this._state.board, toSq, piece);
+      this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
+      this.lastMove = { from: fromSq, to: toSq };
+      return { ok: true };
+    }
 
     const targetPiece = get(this._state.board, toSq);
     const isCapture = targetPiece && targetPiece.owner !== 'player';

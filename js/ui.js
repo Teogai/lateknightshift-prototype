@@ -1076,8 +1076,25 @@ export function handleSquareClick(sq) {
   if (uiState.phase === 'card_selected') {
     if (uiState.selectedCardType === 'move' && !uiState.selectedMoveVariant) {
       const piece = d.board[sq];
-      if (piece && piece.color === 'white') {
-        uiState.legalDests = gameState.legalDestinationsFor(sq);
+      const hasDuckHandler = runState?.relics?.some(r => r.id === 'duck_handler');
+      if (piece && (piece.color === 'white' || (hasDuckHandler && piece.type === 'duck'))) {
+        if (hasDuckHandler && piece.type === 'duck') {
+          // Generate king-like moves for duck (no captures)
+          const [r, c] = sqToRC(sq);
+          const moves = [];
+          for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+              if (dr === 0 && dc === 0) continue;
+              const nr = r + dr, nc = c + dc;
+              if (!inBounds(nr, nc)) continue;
+              const nsq = rcToSq(nr, nc);
+              if (!d.board[nsq]) moves.push(nsq);
+            }
+          }
+          uiState.legalDests = moves;
+        } else {
+          uiState.legalDests = gameState.legalDestinationsFor(sq);
+        }
         uiState.phase = 'from_selected';
         uiState.fromSq = sq;
         setHint('Click a highlighted square to move to');

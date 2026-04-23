@@ -117,3 +117,27 @@ describe('Slammer relic', () => {
     expect(board[r][c]).not.toBeNull();
   });
 });
+
+import { GameState } from '../js/battle_state.js';
+
+describe('Duck Handler relic', () => {
+  it('allows moving duck with normal move card', () => {
+    const gs = new GameState('knight');
+    gs._state.board[4][4] = makePiece('duck', 'neutral');
+    gs._state.hand = [{ type: 'move', name: 'Move' }];
+    gs.runState = { relics: [{ id: 'duck_handler' }] };
+    const result = gs.playMoveCard(0, 'e4', 'e5');
+    expect(result.error).toBeUndefined();
+    expect(result.ok).toBe(true);
+  });
+
+  it('duck moves like king but cannot capture', () => {
+    const gs = new GameState('knight');
+    gs._state.board[4][4] = makePiece('duck', 'neutral');
+    gs._state.board[3][4] = makePiece('pawn', 'enemy');
+    gs._state.hand = [{ type: 'move', name: 'Move' }];
+    gs.runState = { relics: [{ id: 'duck_handler' }] };
+    const result = gs.playMoveCard(0, 'e4', 'e5');
+    expect(result.error).toBe('not a legal destination');
+  });
+});
