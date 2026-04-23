@@ -926,6 +926,60 @@ describe('new card play methods', () => {
     expect(result.error).toBeDefined();
   });
 
+  test('playMoveCard with atomic_move triggers explosion on capture', () => {
+    const state = makeStateWithCards([
+      { name: 'Atomic Move', type: 'move', moveVariant: 'atomic' }
+    ], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'd4', type: 'pawn', owner: 'player' },
+      { sq: 'e5', type: 'pawn', owner: 'enemy' },
+      { sq: 'd5', type: 'pawn', owner: 'enemy' },
+    ]);
+    // d4 pawn captures e5 pawn — atomic should destroy d5 too
+    const result = state.playMoveCard(0, 'd4', 'e5');
+    expect(result.error).toBeUndefined();
+    const board = state.toDict().board;
+    expect(board['e5'].type).toBe('pawn'); // our pawn moved there
+    expect(board['e5'].color).toBe('white');
+    expect(board['d5']).toBeUndefined(); // destroyed by atomic
+  });
+
+  test('playMoveCard with atomic_move does not explode on non-capture', () => {
+    const state = makeStateWithCards([
+      { name: 'Atomic Move', type: 'move', moveVariant: 'atomic' }
+    ], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'd6', type: 'knight', owner: 'player' },
+      { sq: 'd5', type: 'pawn', owner: 'enemy' },
+    ]);
+    // d6 knight moves to e4 (no capture) — no explosion
+    const result = state.playMoveCard(0, 'd6', 'e4');
+    expect(result.error).toBeUndefined();
+    const board = state.toDict().board;
+    expect(board['e4'].type).toBe('knight');
+    expect(board['d5'].type).toBe('pawn'); // still alive
+  });
+
+  test('playMoveCard with push_move pushes adjacent pieces', () => {
+    const state = makeStateWithCards([
+      { name: 'Push Move', type: 'move', moveVariant: 'push' }
+    ], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'd4', type: 'knight', owner: 'player' },
+      { sq: 'e5', type: 'pawn', owner: 'enemy' },
+    ]);
+    // Knight moves to f5 (next to e5 pawn) — push should push e5 to d5
+    const result = state.playMoveCard(0, 'd4', 'f5');
+    expect(result.error).toBeUndefined();
+    const board = state.toDict().board;
+    expect(board['f5'].type).toBe('knight');
+    expect(board['d5'].type).toBe('pawn'); // pushed from e5
+    expect(board['e5']).toBeUndefined();
+  });
+
   test('move together state clears on enemy turn start', () => {
     const state = makeStateWithCards([moveTogetherCard()], [
       { sq: 'e1', type: 'king', owner: 'player' },
