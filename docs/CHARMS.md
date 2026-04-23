@@ -13,7 +13,7 @@ Charms enhance cards. Obtained from elite battles.
 
 | ID | Name | Valid Cards | Effect |
 |----|------|-------------|--------|
-| `push` | Push | `move` | After moving, push all adjacent pieces 1 square away. Chain push supported. |
+| `push` | Push | `move` | After moving, push all adjacent pieces 1 square away. Only if square behind is empty and on-board. |
 | `atomic` | Atomic | `piece` | Summoned piece becomes atomic. Explodes in 3x3 area on capture (both capturing and being captured). |
 
 ## Data
@@ -42,8 +42,8 @@ Charms enhance cards. Obtained from elite battles.
 ### Push Charm
 - Resolved after move card resolves (`playMoveCard`, `playKnightMoveCard`, etc.)
 - From destination square, checks all 8 directions for adjacent pieces
-- Chain push: if pushed piece would land on another piece, that piece is also pushed
-- Off-board: chain stops (structure ready for future "push off board" effect)
+- Push only if square directly behind piece is empty and on-board
+- Blocked by any piece behind or at board edge — piece stays in place
 
 ### Atomic Charm
 - Applied to piece cards: summoned piece gets `data.atomic = true`

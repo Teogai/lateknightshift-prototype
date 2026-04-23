@@ -140,14 +140,13 @@ function matchesPattern(board, fromSq, toSq, patternType) {
 }
 
 /** Resolve push effect: push all adjacent pieces 1 square away from center.
- *  Chain push: if a piece would be pushed into another piece, push that piece too.
+ *  Only pushes if the square directly behind the piece is empty and on-board.
  *  Returns array of { from, to } for all pushed pieces.
  */
 function resolvePush(board, centerSq) {
   const [cr, cc] = sqToRC(centerSq);
   const DIRS = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
   const pushes = [];
-  const pushed = new Set();
 
   for (const [dr, dc] of DIRS) {
     const r = cr + dr, c = cc + dc;
@@ -155,37 +154,16 @@ function resolvePush(board, centerSq) {
     const sq = rcToSq(r, c);
     const piece = get(board, sq);
     if (!piece) continue;
-    if (pushed.has(sq)) continue;
 
-    // Try to push this piece
-    const chain = [{ from: sq, piece }];
-    let curR = r, curC = c;
-    while (true) {
-      const nextR = curR + dr, nextC = curC + dc;
-      if (!inBounds(nextR, nextC)) break; // Off-board, can't push
-      const nextSq = rcToSq(nextR, nextC);
-      const nextPiece = get(board, nextSq);
-      if (!nextPiece) {
-        // Empty square, push chain here
-        for (let i = chain.length - 1; i >= 0; i--) {
-          const { from, piece: p } = chain[i];
-          set(board, from, null);
-        }
-        // Place all pieces in their new positions
-        let placeR = nextR, placeC = nextC;
-        for (let i = chain.length - 1; i >= 0; i--) {
-          set(board, rcToSq(placeR, placeC), chain[i].piece);
-          pushes.push({ from: chain[i].from, to: rcToSq(placeR, placeC) });
-          pushed.add(chain[i].from);
-          placeR -= dr; placeC -= dc;
-        }
-        break;
-      } else {
-        // Another piece in the way, add to chain
-        chain.push({ from: nextSq, piece: nextPiece });
-        curR = nextR; curC = nextC;
-      }
-    }
+    const nextR = r + dr, nextC = c + dc;
+    if (!inBounds(nextR, nextC)) continue; // Off-board, can't push
+    const nextSq = rcToSq(nextR, nextC);
+    if (get(board, nextSq)) continue; // Occupied, can't push
+
+    // Push this single piece
+    set(board, sq, null);
+    set(board, nextSq, piece);
+    pushes.push({ from: sq, to: nextSq });
   }
 
   return pushes;
