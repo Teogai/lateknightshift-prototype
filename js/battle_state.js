@@ -143,10 +143,11 @@ function matchesPattern(board, fromSq, toSq, patternType) {
  *  Only pushes if the square directly behind the piece is empty and on-board.
  *  Returns array of { from, to } for all pushed pieces.
  */
-function resolvePush(board, centerSq) {
+export function resolvePush(board, centerSq, runState = null) {
   const [cr, cc] = sqToRC(centerSq);
   const DIRS = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
   const pushes = [];
+  const hasSlammer = runState?.relics?.some(r => r.id === 'slammer');
 
   for (const [dr, dc] of DIRS) {
     const r = cr + dr, c = cc + dc;
@@ -156,6 +157,19 @@ function resolvePush(board, centerSq) {
     if (!piece) continue;
 
     const nextR = r + dr, nextC = c + dc;
+    const blocked = !inBounds(nextR, nextC) || get(board, rcToSq(nextR, nextC));
+
+    if (blocked && hasSlammer) {
+      // Slammer: destroy the pushed piece
+      const shielded = piece.tags?.has('shielded');
+      if (shielded) {
+        piece.tags.delete('shielded');
+      } else {
+        set(board, sq, null);
+      }
+      continue;
+    }
+
     if (!inBounds(nextR, nextC)) continue; // Off-board, can't push
     const nextSq = rcToSq(nextR, nextC);
     if (get(board, nextSq)) continue; // Occupied, can't push
@@ -409,7 +423,7 @@ export class GameState {
 
     // Resolve push charm if present
     if (card.charm?.id === 'push') {
-      resolvePush(this._state.board, toSq);
+      resolvePush(this._state.board, toSq, this.runState);
     }
 
     // Resolve atomic explosion if capture by atomic piece
@@ -443,7 +457,7 @@ export class GameState {
 
     // Resolve push charm if present
     if (card.charm?.id === 'push') {
-      resolvePush(this._state.board, toSq);
+      resolvePush(this._state.board, toSq, this.runState);
     }
 
     // Resolve atomic explosion if capture by atomic piece
@@ -476,7 +490,7 @@ export class GameState {
 
     // Resolve push charm if present
     if (card.charm?.id === 'push') {
-      resolvePush(this._state.board, toSq);
+      resolvePush(this._state.board, toSq, this.runState);
     }
 
     // Resolve atomic explosion if capture by atomic piece
@@ -523,7 +537,7 @@ export class GameState {
 
     // Resolve push charm if present
     if (card.charm?.id === 'push') {
-      resolvePush(this._state.board, toSq);
+      resolvePush(this._state.board, toSq, this.runState);
     }
 
     // Resolve atomic explosion if capture by atomic piece
