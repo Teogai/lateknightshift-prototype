@@ -84,6 +84,14 @@ export function moveTogetherCard() {
   return { name: 'Move Together', type: 'move', moveVariant: 'move_together' };
 }
 
+export function atomicMoveCard() {
+  return { name: 'Atomic Move', type: 'move', moveVariant: 'atomic' };
+}
+
+export function pushMoveCard() {
+  return { name: 'Push Move', type: 'move', moveVariant: 'push' };
+}
+
 // Returns upgraded copy of a card (never mutates original)
 export function upgradeCard(card) {
   const c = { ...card };
@@ -115,6 +123,8 @@ const _factories = {
   snapCard,
   blitzCard,
   moveTogetherCard,
+  atomicMoveCard,
+  pushMoveCard,
   curseCard,
 };
 
