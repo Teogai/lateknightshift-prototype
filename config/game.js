@@ -27,6 +27,7 @@ export const PIECE_RARITY_WEIGHTS = {
 export const LIVES = 1;
 export const REWARD_CHOICES = 3;
 export const PIECE_REWARD_CHOICES = 3;
+export const RELIC_REWARD_CHOICES = 3;
 
 export const HAND_SIZE = 6;
 export const REDRAW_COUNTDOWN_START = 4;
