@@ -874,6 +874,10 @@ export function handleCardClick(index, card) {
     setHint('Queen Move: click a friendly piece to move diagonally or straight');
   } else if (card.type === 'move' && card.moveVariant === 'pawn_boost') {
     setHint('Pawn Boost: click a friendly pawn to slide forward');
+  } else if (card.type === 'move' && card.moveVariant === 'atomic') {
+    setHint('Atomic Move: click a friendly piece to move and explode on capture');
+  } else if (card.type === 'move' && card.moveVariant === 'push') {
+    setHint('Push Move: click a friendly piece to move and push adjacent pieces');
   } else if (card.type === 'piece') {
     if (card.piece === 'duck') {
       uiState.phase = 'summon_duck_selected';
