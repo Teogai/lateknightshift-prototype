@@ -15,6 +15,7 @@ export class RunState {
     this.currentNodes = [];
     this.pendingEnemy = null;
     this.pendingNode = null;
+    this.relics = [];
     this.advanceToFloor(1);
   }
 
