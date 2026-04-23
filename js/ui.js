@@ -186,6 +186,21 @@ export function resetUiState() {
   uiState.debugDests = [];
 }
 
+export function renderRelicBar(runState) {
+  const bar = document.getElementById('relic-bar');
+  if (!bar) return;
+  bar.innerHTML = '';
+  if (!runState?.relics?.length) return;
+
+  for (const relic of runState.relics) {
+    const el = document.createElement('div');
+    el.className = 'relic-bar-item';
+    el.innerHTML = `<span class="relic-bar-label">${relic.name}</span>`;
+    el.title = relic.desc;
+    bar.appendChild(el);
+  }
+}
+
 export function showScreen(id) {
   ALL_SCREENS.forEach(s => {
     const el = document.getElementById(s);
@@ -194,6 +209,7 @@ export function showScreen(id) {
       else el.classList.add('hidden');
     }
   });
+  renderRelicBar(runState);
 }
 
 export function setHint(text) {

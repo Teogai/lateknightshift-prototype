@@ -51,3 +51,15 @@ describe('relic reward screen', () => {
     expect(content.querySelectorAll('.relic-choice').length).toBeGreaterThan(0);
   });
 });
+
+import { renderRelicBar } from '../js/ui.js';
+
+describe('relic bar', () => {
+  it('renders owned relics', () => {
+    document.body.innerHTML = '<div id="relic-bar"></div>';
+    const runState = { relics: [{ id: 'slammer', name: 'Slammer' }] };
+    renderRelicBar(runState);
+    const bar = document.getElementById('relic-bar');
+    expect(bar.textContent).toContain('Slammer');
+  });
+});
