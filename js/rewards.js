@@ -1,5 +1,6 @@
 import { CARD_CATALOG, curseCard, STARTER_DECKS } from './cards2/move_cards.js';
-import { CARD_RARITY_WEIGHTS, PIECE_RARITY_WEIGHTS, REWARD_CHOICES, PIECE_REWARD_CHOICES } from '../config/game.js';
+import { CARD_RARITY_WEIGHTS, PIECE_RARITY_WEIGHTS, REWARD_CHOICES, PIECE_REWARD_CHOICES, RELIC_REWARD_CHOICES } from '../config/game.js';
+import { pickRelicChoices } from './relics.js';
 import { CHARM_CATALOG } from './charms.js';
 import { makeCardEl } from './ui.js';
 import { CHARACTER_PIECES } from './engine2/constants2.js';
@@ -249,14 +250,41 @@ export function renderCardRewardScreen(choices, onChosen, onReroll, title = 'Cho
     if (selectedCard !== null) onChosen(selectedIndex, selectedCard);
   });
   content.appendChild(confirmBtn);
+}
 
-  if (onReroll) {
-    const rerollBtn = document.createElement('button');
-    rerollBtn.textContent = 'Debug: Reroll';
-    rerollBtn.className = 'debug-btn';
-    rerollBtn.addEventListener('click', onReroll);
-    content.appendChild(rerollBtn);
+export function renderRelicRewardScreen(runState, onDone) {
+  const content = document.getElementById('room-content');
+  if (!content) return;
+  content.innerHTML = '<h2>Choose a Relic</h2>';
+
+  const choices = pickRelicChoices(RELIC_REWARD_CHOICES, runState);
+  if (choices.length === 0) {
+    content.innerHTML += '<p>No relics available.</p>';
+    const btn = document.createElement('button');
+    btn.textContent = 'Continue';
+    btn.addEventListener('click', onDone);
+    content.appendChild(btn);
+    return;
   }
+
+  const grid = document.createElement('div');
+  grid.className = 'relic-grid';
+
+  for (const relic of choices) {
+    const el = document.createElement('div');
+    el.className = 'relic-choice';
+    el.innerHTML = `
+      <div class="relic-name">${relic.name}</div>
+      <div class="relic-desc">${relic.desc}</div>
+    `;
+    el.addEventListener('click', () => {
+      runState.addRelic({ ...relic });
+      onDone();
+    });
+    grid.appendChild(el);
+  }
+
+  content.appendChild(grid);
 }
 
 export function renderPieceRewardScreen(choices, runState, onPlaced) {

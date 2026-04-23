@@ -39,3 +39,15 @@ describe('relic room type', () => {
     expect(RELIC_REWARD_CHOICES).toBe(3);
   });
 });
+
+import { renderRelicRewardScreen } from '../js/rewards.js';
+
+describe('relic reward screen', () => {
+  it('renders without error', () => {
+    document.body.innerHTML = '<div id="screen-room"><div id="room-content"></div></div>';
+    const runState = { relics: [], addRelic(r) { this.relics.push(r); } };
+    expect(() => renderRelicRewardScreen(runState, () => {})).not.toThrow();
+    const content = document.getElementById('room-content');
+    expect(content.querySelectorAll('.relic-choice').length).toBeGreaterThan(0);
+  });
+});

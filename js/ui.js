@@ -5,7 +5,7 @@ import { FIXED_PATH } from './map.js';
 import {
   renderCardRewardScreen, renderPieceRewardScreen, renderUpgradeScreen,
   renderTransformScreen, renderTransformResultScreen, renderShopScreen, renderDefeatScreen,
-  renderCharmRewardScreen, renderCharmApplyScreen,
+  renderCharmRewardScreen, renderCharmApplyScreen, renderRelicRewardScreen,
   pickCardChoices, pickPieceChoices, pickPieceCardChoices, pickCharmChoices, pickTransformCard, applyCharmToCard,
 } from './rewards.js';
 import { ENEMIES, REGULAR_ENEMIES, ELITE_ENEMY, BOSS_ENEMY } from './enemies2.js';
@@ -841,6 +841,8 @@ export function handleRoomEntered(node) {
   } else if (node.type === 'treasure') {
     const choices = pickPieceChoices(3);
     renderPieceRewardScreen(choices, runState, () => advanceAfterRoom());
+  } else if (node.type === 'relic') {
+    renderRelicRewardScreen(runState, () => advanceAfterRoom());
   }
 }
 
