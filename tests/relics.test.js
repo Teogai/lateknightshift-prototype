@@ -61,6 +61,55 @@ describe('relic reward screen', () => {
     const content = document.getElementById('room-content');
     expect(content.querySelectorAll('.relic-choice').length).toBeGreaterThan(0);
   });
+
+  it('confirm button is disabled until selection', () => {
+    document.body.innerHTML = '<div id="screen-room"><div id="room-content"></div></div>';
+    const runState = { relics: [], addRelic(r) { this.relics.push(r); } };
+    renderRelicRewardScreen(runState, () => {});
+    const content = document.getElementById('room-content');
+    const confirmBtn = content.querySelector('.confirm-btn');
+    expect(confirmBtn).not.toBeNull();
+    expect(confirmBtn.disabled).toBe(true);
+  });
+
+  it('clicking relic selects it and enables confirm', () => {
+    document.body.innerHTML = '<div id="screen-room"><div id="room-content"></div></div>';
+    const runState = { relics: [], addRelic(r) { this.relics.push(r); } };
+    renderRelicRewardScreen(runState, () => {});
+    const content = document.getElementById('room-content');
+    const choices = content.querySelectorAll('.relic-choice');
+    choices[0].click();
+    expect(choices[0].classList.contains('selected')).toBe(true);
+    const confirmBtn = content.querySelector('.confirm-btn');
+    expect(confirmBtn.disabled).toBe(false);
+  });
+
+  it('confirm applies relic and calls onDone', () => {
+    document.body.innerHTML = '<div id="screen-room"><div id="room-content"></div></div>';
+    const runState = { relics: [], addRelic(r) { this.relics.push(r); } };
+    let doneCalled = false;
+    renderRelicRewardScreen(runState, () => { doneCalled = true; });
+    const content = document.getElementById('room-content');
+    const choices = content.querySelectorAll('.relic-choice');
+    choices[0].click();
+    const confirmBtn = content.querySelector('.confirm-btn');
+    confirmBtn.click();
+    expect(runState.relics.length).toBe(1);
+    expect(doneCalled).toBe(true);
+  });
+
+  it('reroll button regenerates choices', () => {
+    document.body.innerHTML = '<div id="screen-room"><div id="room-content"></div></div>';
+    const runState = { relics: [], addRelic(r) { this.relics.push(r); } };
+    let rerollCount = 0;
+    renderRelicRewardScreen(runState, () => {}, () => { rerollCount++; });
+    const content = document.getElementById('room-content');
+    const rerollBtn = content.querySelector('.debug-btn');
+    expect(rerollBtn).not.toBeNull();
+    expect(rerollBtn.textContent).toBe('Reroll');
+    rerollBtn.click();
+    expect(rerollCount).toBe(1);
+  });
 });
 
 import { renderRelicBar } from '../js/ui.js';
@@ -72,6 +121,21 @@ describe('relic bar', () => {
     renderRelicBar(runState);
     const bar = document.getElementById('relic-bar');
     expect(bar.textContent).toContain('Slammer');
+  });
+
+  it('shows custom tooltip on hover', () => {
+    document.body.innerHTML = '<div id="relic-bar"></div>';
+    const runState = { relics: [{ id: 'slammer', name: 'Slammer', desc: 'Push destroys blocked pieces' }] };
+    renderRelicBar(runState);
+    const bar = document.getElementById('relic-bar');
+    const item = bar.querySelector('.relic-bar-item');
+    item.dispatchEvent(new Event('mouseenter'));
+    const tooltip = document.querySelector('.keyword-tooltip');
+    expect(tooltip).not.toBeNull();
+    expect(tooltip.style.display).toBe('block');
+    expect(tooltip.textContent).toContain('Push destroys blocked pieces');
+    item.dispatchEvent(new Event('mouseleave'));
+    expect(tooltip.style.display).toBe('none');
   });
 });
 

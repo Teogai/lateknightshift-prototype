@@ -196,7 +196,13 @@ export function renderRelicBar(runState) {
     const el = document.createElement('div');
     el.className = 'relic-bar-item';
     el.innerHTML = `<span class="relic-bar-label">${relic.name}</span>`;
-    el.title = relic.desc;
+    el.addEventListener('mouseenter', () => {
+      const rect = el.getBoundingClientRect();
+      _showTooltip(relic.desc, '#ffdd44', rect);
+    });
+    el.addEventListener('mouseleave', () => {
+      _hideTooltip();
+    });
     bar.appendChild(el);
   }
 }
@@ -561,26 +567,32 @@ function showBattleReward() {
 
   if (nodeType === 'elite') {
     // Elite gives charm reward
-    const choices = pickCharmChoices(3);
+    const showCharmReward = () => {
+      const choices = pickCharmChoices(3);
+      renderCharmRewardScreen(choices, (i, charm) => {
+        renderCharmApplyScreen(runState.deck, charm, (deckIdx) => {
+          const card = runState.deck[deckIdx];
+          const result = applyCharmToCard(card, charm);
+          if (result.error) {
+            alert(result.error);
+            return;
+          }
+          runState.deck[deckIdx] = result;
+          advanceAfterRoom();
+        });
+      }, showCharmReward);
+    };
     runState.phase = 'room';
     showScreen('screen-room');
-    renderCharmRewardScreen(choices, (i, charm) => {
-      renderCharmApplyScreen(runState.deck, charm, (deckIdx) => {
-        const card = runState.deck[deckIdx];
-        const result = applyCharmToCard(card, charm);
-        if (result.error) {
-          alert(result.error);
-          return;
-        }
-        runState.deck[deckIdx] = result;
-        advanceAfterRoom();
-      });
-    });
+    showCharmReward();
   } else if (nodeType === 'treasure') {
-    const choices = pickPieceChoices(3);
+    const showTreasureReward = () => {
+      const choices = pickPieceChoices(3);
+      renderPieceRewardScreen(choices, runState, () => advanceAfterRoom(), showTreasureReward);
+    };
     runState.phase = 'room';
     showScreen('screen-room');
-    renderPieceRewardScreen(choices, runState, () => advanceAfterRoom());
+    showTreasureReward();
   } else {
     const showCardReward = () => {
       const choices = pickCardChoices(3, runState.character);
@@ -840,26 +852,35 @@ export function handleRoomEntered(node) {
     };
     showPieceReward();
   } else if (node.type === 'transform') {
-    renderTransformScreen(runState.deck, (deckIdx, oldCard) => {
-      const newCard = pickTransformCard(oldCard, runState.character);
-      // Handle charm retention
-      let finalCard = newCard;
-      if (oldCard.charm) {
-        const result = applyCharmToCard(newCard, oldCard.charm);
-        if (!result.error) {
-          finalCard = result;
+    const showTransform = () => {
+      renderTransformScreen(runState.deck, (deckIdx, oldCard) => {
+        const newCard = pickTransformCard(oldCard, runState.character);
+        // Handle charm retention
+        let finalCard = newCard;
+        if (oldCard.charm) {
+          const result = applyCharmToCard(newCard, oldCard.charm);
+          if (!result.error) {
+            finalCard = result;
+          }
         }
-      }
-      renderTransformResultScreen(oldCard, finalCard, () => {
-        runState.transformCard(deckIdx, finalCard);
-        advanceAfterRoom();
-      });
-    });
+        renderTransformResultScreen(oldCard, finalCard, () => {
+          runState.transformCard(deckIdx, finalCard);
+          advanceAfterRoom();
+        });
+      }, showTransform);
+    };
+    showTransform();
   } else if (node.type === 'treasure') {
-    const choices = pickPieceChoices(3);
-    renderPieceRewardScreen(choices, runState, () => advanceAfterRoom());
+    const showTreasure = () => {
+      const choices = pickPieceChoices(3);
+      renderPieceRewardScreen(choices, runState, () => advanceAfterRoom(), showTreasure);
+    };
+    showTreasure();
   } else if (node.type === 'relic') {
-    renderRelicRewardScreen(runState, () => advanceAfterRoom());
+    const showRelic = () => {
+      renderRelicRewardScreen(runState, () => advanceAfterRoom(), showRelic);
+    };
+    showRelic();
   }
 }
 

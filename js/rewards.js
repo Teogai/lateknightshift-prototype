@@ -250,9 +250,19 @@ export function renderCardRewardScreen(choices, onChosen, onReroll, title = 'Cho
     if (selectedCard !== null) onChosen(selectedIndex, selectedCard);
   });
   content.appendChild(confirmBtn);
+
+  // Debug reroll button
+  if (onReroll) {
+    const rerollBtn = document.createElement('button');
+    rerollBtn.className = 'debug-btn';
+    rerollBtn.textContent = 'Reroll';
+    rerollBtn.style.marginTop = '0.5rem';
+    rerollBtn.addEventListener('click', onReroll);
+    content.appendChild(rerollBtn);
+  }
 }
 
-export function renderRelicRewardScreen(runState, onDone) {
+export function renderRelicRewardScreen(runState, onDone, onReroll) {
   const content = document.getElementById('room-content');
   if (!content) return;
   content.innerHTML = '<h2>Choose a Relic</h2>';
@@ -270,6 +280,9 @@ export function renderRelicRewardScreen(runState, onDone) {
   const grid = document.createElement('div');
   grid.className = 'relic-grid';
 
+  let selectedEl = null;
+  let selectedRelic = null;
+
   for (const relic of choices) {
     const el = document.createElement('div');
     el.className = 'relic-choice';
@@ -278,16 +291,38 @@ export function renderRelicRewardScreen(runState, onDone) {
       <div class="relic-desc">${relic.desc}</div>
     `;
     el.addEventListener('click', () => {
-      runState.addRelic({ ...relic });
-      onDone();
+      if (selectedEl) selectedEl.classList.remove('selected');
+      selectedEl = el;
+      selectedEl.classList.add('selected');
+      selectedRelic = relic;
+      confirmBtn.disabled = false;
     });
     grid.appendChild(el);
   }
 
   content.appendChild(grid);
+
+  const confirmBtn = createConfirmButton('Confirm');
+  confirmBtn.addEventListener('click', () => {
+    if (selectedRelic) {
+      runState.addRelic({ ...selectedRelic });
+      onDone();
+    }
+  });
+  content.appendChild(confirmBtn);
+
+  // Debug reroll button
+  if (onReroll) {
+    const rerollBtn = document.createElement('button');
+    rerollBtn.className = 'debug-btn';
+    rerollBtn.textContent = 'Reroll';
+    rerollBtn.style.marginTop = '0.5rem';
+    rerollBtn.addEventListener('click', onReroll);
+    content.appendChild(rerollBtn);
+  }
 }
 
-export function renderPieceRewardScreen(choices, runState, onPlaced) {
+export function renderPieceRewardScreen(choices, runState, onPlaced, onReroll) {
   const content = document.getElementById('room-content');
   if (!content) return;
   content.innerHTML = '<h2>Choose a piece reward</h2>';
@@ -316,6 +351,16 @@ export function renderPieceRewardScreen(choices, runState, onPlaced) {
     if (selectedChoice) renderSquarePicker(selectedChoice.piece, selectedChoice.rarity, runState, onPlaced);
   });
   content.appendChild(confirmBtn);
+
+  // Debug reroll button
+  if (onReroll) {
+    const rerollBtn = document.createElement('button');
+    rerollBtn.className = 'debug-btn';
+    rerollBtn.textContent = 'Reroll';
+    rerollBtn.style.marginTop = '0.5rem';
+    rerollBtn.addEventListener('click', onReroll);
+    content.appendChild(rerollBtn);
+  }
 }
 
 function renderSquarePicker(piece, rarity, runState, onPlaced) {
@@ -383,7 +428,7 @@ function renderSquarePicker(piece, rarity, runState, onPlaced) {
   content.appendChild(confirmBtn);
 }
 
-export function renderUpgradeScreen(deck, onChosen) {
+export function renderUpgradeScreen(deck, onChosen, onReroll) {
   const content = document.getElementById('room-content');
   if (!content) return;
   content.innerHTML = '<h2>Choose a card to upgrade</h2>';
@@ -414,9 +459,19 @@ export function renderUpgradeScreen(deck, onChosen) {
     if (selectedCard !== null) onChosen(selectedIndex, selectedCard);
   });
   content.appendChild(confirmBtn);
+
+  // Debug reroll button
+  if (onReroll) {
+    const rerollBtn = document.createElement('button');
+    rerollBtn.className = 'debug-btn';
+    rerollBtn.textContent = 'Reroll';
+    rerollBtn.style.marginTop = '0.5rem';
+    rerollBtn.addEventListener('click', onReroll);
+    content.appendChild(rerollBtn);
+  }
 }
 
-export function renderTransformScreen(deck, onChosen) {
+export function renderTransformScreen(deck, onChosen, onReroll) {
   const content = document.getElementById('room-content');
   if (!content) return;
   content.innerHTML = '<h2>Choose a card to transform</h2>';
@@ -445,6 +500,16 @@ export function renderTransformScreen(deck, onChosen) {
     if (selectedCard !== null) onChosen(selectedIndex, selectedCard);
   });
   content.appendChild(confirmBtn);
+
+  // Debug reroll button
+  if (onReroll) {
+    const rerollBtn = document.createElement('button');
+    rerollBtn.className = 'debug-btn';
+    rerollBtn.textContent = 'Reroll';
+    rerollBtn.style.marginTop = '0.5rem';
+    rerollBtn.addEventListener('click', onReroll);
+    content.appendChild(rerollBtn);
+  }
 }
 
 export function renderTransformResultScreen(oldCard, newCard, onContinue) {
@@ -472,7 +537,7 @@ export function renderTransformResultScreen(oldCard, newCard, onContinue) {
   content.appendChild(btn);
 }
 
-export function renderShopScreen(deck, onChosen) {
+export function renderShopScreen(deck, onChosen, onReroll) {
   const content = document.getElementById('room-content');
   if (!content) return;
   content.innerHTML = '<h2>Remove a card from your deck</h2>';
@@ -501,9 +566,19 @@ export function renderShopScreen(deck, onChosen) {
     if (selectedCard !== null) onChosen(selectedIndex, selectedCard);
   });
   content.appendChild(confirmBtn);
+
+  // Debug reroll button
+  if (onReroll) {
+    const rerollBtn = document.createElement('button');
+    rerollBtn.className = 'debug-btn';
+    rerollBtn.textContent = 'Reroll';
+    rerollBtn.style.marginTop = '0.5rem';
+    rerollBtn.addEventListener('click', onReroll);
+    content.appendChild(rerollBtn);
+  }
 }
 
-export function renderDefeatScreen(onAddCurse, onRetry) {
+export function renderDefeatScreen(onAddCurse, onRetry, onReroll) {
   const content = document.getElementById('defeat-content');
   if (!content) return;
   content.innerHTML = '<h2>Defeated!</h2><p>Choose a consequence:</p>';
@@ -541,9 +616,19 @@ export function renderDefeatScreen(onAddCurse, onRetry) {
     else if (selectedAction === 'retry') onRetry();
   });
   content.appendChild(confirmBtn);
+
+  // Debug reroll button
+  if (onReroll) {
+    const rerollBtn = document.createElement('button');
+    rerollBtn.className = 'debug-btn';
+    rerollBtn.textContent = 'Reroll';
+    rerollBtn.style.marginTop = '0.5rem';
+    rerollBtn.addEventListener('click', onReroll);
+    content.appendChild(rerollBtn);
+  }
 }
 
-export function renderCharmRewardScreen(choices, onChosen) {
+export function renderCharmRewardScreen(choices, onChosen, onReroll) {
   const content = document.getElementById('room-content');
   if (!content) return;
   content.innerHTML = '<h2>Choose a charm</h2>';
@@ -574,6 +659,16 @@ export function renderCharmRewardScreen(choices, onChosen) {
     if (selectedCharm !== null) onChosen(selectedIndex, selectedCharm);
   });
   content.appendChild(confirmBtn);
+
+  // Debug reroll button
+  if (onReroll) {
+    const rerollBtn = document.createElement('button');
+    rerollBtn.className = 'debug-btn';
+    rerollBtn.textContent = 'Reroll';
+    rerollBtn.style.marginTop = '0.5rem';
+    rerollBtn.addEventListener('click', onReroll);
+    content.appendChild(rerollBtn);
+  }
 }
 
 export function renderCharmApplyScreen(deck, charm, onChosen) {

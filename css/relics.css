@@ -34,3 +34,48 @@
   font-weight: 600;
   color: #ffdd44;
 }
+
+/* Relic reward screen */
+.relic-grid {
+  display: flex;
+  flex-direction: row;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.relic-choice {
+  width: 150px;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0.75rem 0.5rem;
+  background: #1e2a1e;
+  color: #eee;
+  border: 1px solid #4a7a4a;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.relic-choice:hover {
+  border-color: #aaa;
+}
+
+.relic-choice.selected {
+  border-color: #f0e040;
+  background: #3a3a1a;
+}
+
+.relic-name {
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.relic-desc {
+  font-size: 0.85rem;
+  color: #ccc;
+}

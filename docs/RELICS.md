@@ -3,9 +3,10 @@
 Permanent upgrades that persist for the entire run.
 
 ## How to obtain
-- Enter a `relic` room on the map path (floors 4, 8, 12, 6, 17)
-- Choose 1 of 3 offered relics
+- Enter a `relic` room on the map path
+- Choose 1 of 3 offered relics (select-then-confirm pattern)
 - Already-owned relics are excluded from choices
+- Debug reroll button available to regenerate choices
 
 ## Relic List
 
@@ -17,5 +18,6 @@ Permanent upgrades that persist for the entire run.
 ## Implementation
 - Data: `config/relics.js`, `js/relics.js`
 - UI bar: `css/relics.css`, `#relic-bar` in `index.html`
+- Bar tooltip: custom tooltip via `_showTooltip`/`_hideTooltip` (not native `title`)
 - Effects: `js/battle_state.js` (Slammer in `resolvePush`, Duck Handler in `playMoveCard`)
-- Reward screen: `js/rewards.js` `renderRelicRewardScreen()`
+- Reward screen: `js/rewards.js` `renderRelicRewardScreen()` — select-then-confirm, `.relic-grid` + `.relic-choice` CSS
