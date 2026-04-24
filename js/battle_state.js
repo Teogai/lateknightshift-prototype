@@ -116,7 +116,7 @@ function findAttacker(board, targetSq, attackerOwner) {
 }
 
 /** Validate geometric pattern (bishop/rook/queen) from src to dest on board. */
-function matchesPattern(board, fromSq, toSq, patternType) {
+export function matchesPattern(board, fromSq, toSq, patternType) {
   const [ff, fr] = sqToRC(fromSq);
   const [tf, tr] = sqToRC(toSq);
   const dr = tf - ff, dc = tr - fr;
@@ -463,19 +463,41 @@ export class GameState {
     const isDuck = piece?.type === 'duck';
     if (!isDuck || !hasDuckHandler) return null;
 
-    const [fr, fc] = sqToRC(fromSq);
-    const [tr, tc] = sqToRC(toSq);
-    const dr = Math.abs(tr - fr);
-    const dc = Math.abs(tc - fc);
-    if (dr > 1 || dc > 1 || (dr === 0 && dc === 0)) {
+    const card = this._state.hand[cardIndex];
+    const variant = card.moveVariant;
+
+    // Validate destination based on card variant
+    let isValid = false;
+    if (!variant || variant === 'blitz' || variant === 'move_together') {
+      // Normal/blitz/move_together: king-like move (1 square, no capture)
+      const [fr, fc] = sqToRC(fromSq);
+      const [tr, tc] = sqToRC(toSq);
+      const dr = Math.abs(tr - fr);
+      const dc = Math.abs(tc - fc);
+      isValid = dr <= 1 && dc <= 1 && !(dr === 0 && dc === 0);
+    } else if (variant === 'knight') {
+      isValid = knightAttacks(fromSq).includes(toSq);
+    } else if (variant === 'bishop') {
+      isValid = matchesPattern(this._state.board, fromSq, toSq, 'b');
+    } else if (variant === 'rook') {
+      isValid = matchesPattern(this._state.board, fromSq, toSq, 'r');
+    } else if (variant === 'queen') {
+      isValid = matchesPattern(this._state.board, fromSq, toSq, 'q');
+    } else if (variant === 'teleport') {
+      isValid = true; // Any square, checked below for emptiness
+    } else if (variant === 'swap') {
+      // Swap: handled in playSwapMoveCard
+      return null;
+    }
+
+    if (!isValid) {
       return { error: 'not a legal destination' };
     }
+
     const target = get(this._state.board, toSq);
     if (target) {
       return { error: 'not a legal destination' };
     }
-
-    const card = this._state.hand[cardIndex];
     // Move duck
     set(this._state.board, fromSq, null);
     set(this._state.board, toSq, piece);
@@ -820,7 +842,20 @@ export class GameState {
     const piece1 = get(this._state.board, fromSq);
     const piece2 = get(this._state.board, toSq);
     if (!piece1 || !piece2) return { error: 'both squares must have pieces' };
-    if (piece1.owner !== 'player' || piece2.owner !== 'player') return { error: 'both pieces must be friendly' };
+
+    const hasDuckHandler = this.runState?.relics?.some(r => r.id === 'duck_handler');
+    const isDuck1 = piece1.type === 'duck';
+    const isDuck2 = piece2.type === 'duck';
+
+    if (hasDuckHandler && (isDuck1 || isDuck2)) {
+      // Duck + friendly piece swap allowed with Duck Handler
+      const friendlyPiece = isDuck1 ? piece2 : piece1;
+      if (friendlyPiece.owner !== 'player') {
+        return { error: 'both pieces must be friendly' };
+      }
+    } else {
+      if (piece1.owner !== 'player' || piece2.owner !== 'player') return { error: 'both pieces must be friendly' };
+    }
 
     set(this._state.board, fromSq, piece2);
     set(this._state.board, toSq, piece1);
@@ -837,6 +872,10 @@ export class GameState {
     if (card.type !== 'move' || card.moveVariant !== 'teleport') return { error: 'not a teleport card' };
 
     const piece = get(this._state.board, fromSq);
+    // Try duck handler first
+    const duckResult = this._tryDuckMove(cardIndex, fromSq, toSq, true);
+    if (duckResult) return duckResult;
+
     if (!piece || piece.owner !== 'player') return { error: 'no friendly piece on that square' };
 
     const target = get(this._state.board, toSq);
@@ -888,6 +927,16 @@ export class GameState {
     if (card.type !== 'move' || card.moveVariant !== 'blitz') return { error: 'not a blitz card' };
 
     const piece = get(this._state.board, fromSq);
+    // Try duck handler first (don't discard on first move)
+    const duckResult = this._tryDuckMove(cardIndex, fromSq, toSq, false);
+    if (duckResult) {
+      if (duckResult.error) return duckResult;
+      this._blitzPieceSq = toSq;
+      this._blitzCardIndex = cardIndex;
+      this.lastMove = { from: fromSq, to: toSq };
+      return { ok: true };
+    }
+
     if (!piece || piece.owner !== 'player') return { error: 'no friendly piece on that square' };
 
     const actions = generateLegalActions(this._state, 'player');
@@ -908,6 +957,21 @@ export class GameState {
 
     const fromSq = this._blitzPieceSq;
     const piece = get(this._state.board, fromSq);
+    const cardIndex = this._blitzCardIndex;
+    const card = this._state.hand[cardIndex];
+
+    // Try duck handler first
+    const duckResult = this._tryDuckMove(cardIndex, fromSq, toSq, false);
+    if (duckResult) {
+      if (duckResult.error) return duckResult;
+      // Discard the card now
+      this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
+      this._blitzPieceSq = null;
+      this._blitzCardIndex = null;
+      this.lastMove = { from: fromSq, to: toSq };
+      return { ok: true };
+    }
+
     if (!piece) return { error: 'piece no longer on board' };
 
     const actions = generateLegalActions(this._state, 'player');
@@ -917,7 +981,6 @@ export class GameState {
     this._state.play(action);
 
     // Discard the card now
-    const cardIndex = this._blitzCardIndex;
     this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
 
     this._blitzPieceSq = null;

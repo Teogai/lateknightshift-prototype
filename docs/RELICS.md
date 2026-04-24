@@ -13,7 +13,7 @@ Permanent upgrades that persist for the entire run.
 | ID | Name | Effect |
 |----|------|--------|
 | `slammer` | Slammer | When push is blocked, destroy the pushed piece. Shield blocks this. |
-| `duck_handler` | Duck Handler | Move cards can move ducks like a king. Cannot capture. Works with standard move, knight move, blitz, move together, swap, and teleport cards. |
+| `duck_handler` | Duck Handler | Move cards can move ducks using the card's movement pattern. Cannot capture. Normal/blitz/move_together = king moves; knight = L-shape; bishop/rook/queen = geometric; teleport = any empty square; swap = exchange with friendly piece. |
 
 ## Implementation
 - Data: `config/relics.js`, `js/relics.js`

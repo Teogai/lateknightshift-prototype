@@ -1,4 +1,4 @@
-import { GameState, knightAttacks, VALID_ENEMIES, PIECE_VALUES } from './battle_state.js';
+import { GameState, knightAttacks, matchesPattern, VALID_ENEMIES, PIECE_VALUES } from './battle_state.js';
 import { sqToRC, rcToSq, inBounds } from './engine2/board.js';
 import { CHARACTER_PIECES } from './engine2/constants2.js';
 import { RunState } from './run.js';
@@ -1049,18 +1049,58 @@ export function hidePieceDetail() {
 }
 
 /** Generate king-like destination squares for a duck (no captures). */
-function duckDestsFor(board, sq) {
-  const [r, c] = sqToRC(sq);
+function duckDestsFor(board, sq, moveVariant = null) {
   const moves = [];
-  for (let dr = -1; dr <= 1; dr++) {
-    for (let dc = -1; dc <= 1; dc++) {
-      if (dr === 0 && dc === 0) continue;
-      const nr = r + dr, nc = c + dc;
-      if (!inBounds(nr, nc)) continue;
-      const nsq = rcToSq(nr, nc);
-      if (!board[nsq]) moves.push(nsq);
+
+  if (!moveVariant || moveVariant === 'blitz' || moveVariant === 'move_together') {
+    // Normal/blitz/move_together: king-like moves (1 square, no capture)
+    const [r, c] = sqToRC(sq);
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue;
+        const nr = r + dr, nc = c + dc;
+        if (!inBounds(nr, nc)) continue;
+        const nsq = rcToSq(nr, nc);
+        if (!board[nsq]) moves.push(nsq);
+      }
+    }
+  } else if (moveVariant === 'knight') {
+    // Knight: L-shape moves to empty squares
+    moves.push(...knightAttacks(sq).filter(nsq => !board[nsq]));
+  } else if (moveVariant === 'bishop' || moveVariant === 'rook' || moveVariant === 'queen') {
+    // Geometric moves to empty squares
+    const patternMap = { bishop: 'b', rook: 'r', queen: 'q' };
+    const pattern = patternMap[moveVariant];
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const nsq = rcToSq(r, c);
+        if (nsq === sq) continue;
+        if (board[nsq]) continue;
+        if (matchesPattern(board, sq, nsq, pattern)) {
+          moves.push(nsq);
+        }
+      }
+    }
+  } else if (moveVariant === 'teleport') {
+    // Teleport: any empty square
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const nsq = rcToSq(r, c);
+        if (nsq !== sq && !board[nsq]) moves.push(nsq);
+      }
+    }
+  } else if (moveVariant === 'swap') {
+    // Swap: friendly pieces (not empty squares)
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const nsq = rcToSq(r, c);
+        if (nsq === sq) continue;
+        const piece = board[nsq];
+        if (piece && piece.color === 'white') moves.push(nsq);
+      }
     }
   }
+
   return moves;
 }
 
@@ -1152,7 +1192,7 @@ export function handleSquareClick(sq) {
         uiState.phase = 'knight_from_selected';
         uiState.fromSq = sq;
         if (hasDuckHandler && piece.type === 'duck') {
-          uiState.knightTargets = duckDestsFor(d.board, sq);
+          uiState.knightTargets = duckDestsFor(d.board, sq, 'knight');
         } else {
           uiState.knightTargets = knightAttacks(sq).filter(t => {
             const p = d.board[t];
@@ -1166,11 +1206,16 @@ export function handleSquareClick(sq) {
       }
     } else if (uiState.selectedCardType === 'move' && ['bishop', 'rook', 'queen'].includes(uiState.selectedMoveVariant)) {
       const piece = d.board[sq];
-      if (piece && piece.color === 'white') {
+      const hasDuckHandler = runState?.relics?.some(r => r.id === 'duck_handler');
+      if (piece && (piece.color === 'white' || (hasDuckHandler && piece.type === 'duck'))) {
         const patternMap = { bishop: 'b', rook: 'r', queen: 'q' };
         uiState.phase = 'geometric_from_selected';
         uiState.fromSq = sq;
-        uiState.geometricTargets = gameState.geometricDestsFor(sq, patternMap[uiState.selectedMoveVariant]);
+        if (hasDuckHandler && piece.type === 'duck') {
+          uiState.geometricTargets = duckDestsFor(d.board, sq, uiState.selectedMoveVariant);
+        } else {
+          uiState.geometricTargets = gameState.geometricDestsFor(sq, patternMap[uiState.selectedMoveVariant]);
+        }
         setHint('Click a highlighted square to move to');
         render();
       } else {
@@ -1409,16 +1454,21 @@ export function handleSquareClick(sq) {
 
   if (uiState.phase === 'swap_move_selected') {
     const piece = d.board[sq];
-    if (piece && piece.color === 'white') {
+    const hasDuckHandler = runState?.relics?.some(r => r.id === 'duck_handler');
+    if (piece && (piece.color === 'white' || (hasDuckHandler && piece.type === 'duck'))) {
       uiState.fromSq = sq;
       uiState.phase = 'swap_move_target_selected';
-      uiState.legalDests = [];
-      for (let r = 0; r < 8; r++) {
-        for (let c = 0; c < 8; c++) {
-          const dest = 'abcdefgh'[c] + (r + 1);
-          const friendly = d.board[dest];
-          if (friendly && friendly.color === 'white' && dest !== sq) {
-            uiState.legalDests.push(dest);
+      if (hasDuckHandler && piece.type === 'duck') {
+        uiState.legalDests = duckDestsFor(d.board, sq, 'swap');
+      } else {
+        uiState.legalDests = [];
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            const dest = 'abcdefgh'[c] + (r + 1);
+            const friendly = d.board[dest];
+            if (friendly && friendly.color === 'white' && dest !== sq) {
+              uiState.legalDests.push(dest);
+            }
           }
         }
       }
@@ -1453,14 +1503,19 @@ export function handleSquareClick(sq) {
 
   if (uiState.phase === 'teleport_selected') {
     const piece = d.board[sq];
-    if (piece && piece.color === 'white') {
+    const hasDuckHandler = runState?.relics?.some(r => r.id === 'duck_handler');
+    if (piece && (piece.color === 'white' || (hasDuckHandler && piece.type === 'duck'))) {
       uiState.fromSq = sq;
       uiState.phase = 'teleport_from_selected';
-      uiState.legalDests = [];
-      for (let r = 0; r < 8; r++) {
-        for (let c = 0; c < 8; c++) {
-          const dest = 'abcdefgh'[c] + (r + 1);
-          if (!d.board[dest]) uiState.legalDests.push(dest);
+      if (hasDuckHandler && piece.type === 'duck') {
+        uiState.legalDests = duckDestsFor(d.board, sq, 'teleport');
+      } else {
+        uiState.legalDests = [];
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            const dest = 'abcdefgh'[c] + (r + 1);
+            if (!d.board[dest]) uiState.legalDests.push(dest);
+          }
         }
       }
       setHint('Click an empty square to teleport to');
@@ -1534,7 +1589,7 @@ export function handleSquareClick(sq) {
       uiState.fromSq = sq;
       uiState.phase = 'blitz_first_selected';
       if (hasDuckHandler && piece.type === 'duck') {
-        uiState.legalDests = duckDestsFor(d.board, sq);
+        uiState.legalDests = duckDestsFor(d.board, sq, 'blitz');
       } else {
         uiState.legalDests = gameState.legalDestinationsFor(sq);
       }
@@ -1564,7 +1619,7 @@ export function handleSquareClick(sq) {
     const hasDuckHandler = runState?.relics?.some(r => r.id === 'duck_handler');
     const destPiece = d.board[sq];
     if (hasDuckHandler && destPiece?.type === 'duck') {
-      uiState.legalDests = duckDestsFor(d.board, sq);
+      uiState.legalDests = duckDestsFor(d.board, sq, 'blitz');
     } else {
       uiState.legalDests = gameState.legalDestinationsFor(sq);
     }
@@ -1590,7 +1645,7 @@ export function handleSquareClick(sq) {
       uiState.fromSq = sq;
       uiState.phase = 'move_together_first_selected';
       if (hasDuckHandler && piece.type === 'duck') {
-        uiState.legalDests = duckDestsFor(d.board, sq);
+        uiState.legalDests = duckDestsFor(d.board, sq, 'move_together');
       } else {
         uiState.legalDests = gameState.legalDestinationsFor(sq);
       }
@@ -1631,7 +1686,7 @@ export function handleSquareClick(sq) {
       uiState.fromSq = sq;
       uiState.phase = 'move_together_second_from_selected';
       if (hasDuckHandler && piece.type === 'duck') {
-        uiState.legalDests = duckDestsFor(d.board, sq);
+        uiState.legalDests = duckDestsFor(d.board, sq, 'move_together');
       } else {
         uiState.legalDests = gameState.legalDestinationsFor(sq);
       }

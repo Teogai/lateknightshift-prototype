@@ -218,14 +218,20 @@ describe('Duck Handler relic', () => {
 
   it('allows moving duck with knight move card', () => {
     const gs = new GameState('knight');
+    // Clear the board to avoid blocking pieces
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        gs._state.board[r][c] = null;
+      }
+    }
     gs._state.board[4][4] = makePiece('duck', 'neutral');
     gs._state.hand = [{ type: 'move', moveVariant: 'knight', name: 'Knight Move' }];
     gs.runState = { relics: [{ id: 'duck_handler' }] };
-    // Knight-like king move from e4 to e5 (adjacent)
-    const result = gs.playKnightMoveCard(0, 'e4', 'e5');
+    // L-shape knight move from e4 to f6
+    const result = gs.playKnightMoveCard(0, 'e4', 'f6');
     expect(result.error).toBeUndefined();
     expect(result.ok).toBe(true);
-    expect(gs.toDict().board['e5']?.type).toBe('duck');
+    expect(gs.toDict().board['f6']?.type).toBe('duck');
   });
 
   it('allows moving duck with move_together card first move', () => {
@@ -240,5 +246,120 @@ describe('Duck Handler relic', () => {
     expect(result.error).toBeUndefined();
     expect(result.ok).toBe(true);
     expect(gs._moveTogetherFirstPieceSq).toBe('e5');
+  });
+
+  // Duck Handler pattern-aware tests
+  it('duck moves in knight pattern with knight move card', () => {
+    const gs = new GameState('knight');
+    gs._state.board[4][4] = makePiece('duck', 'neutral');
+    gs._state.hand = [{ type: 'move', moveVariant: 'knight', name: 'Knight Move' }];
+    gs.runState = { relics: [{ id: 'duck_handler' }] };
+    // e4 to f6 is an L-shape knight move
+    const result = gs.playKnightMoveCard(0, 'e4', 'f6');
+    expect(result.error).toBeUndefined();
+    expect(result.ok).toBe(true);
+    expect(gs.toDict().board['f6']?.type).toBe('duck');
+  });
+
+  it('duck cannot capture with knight move card', () => {
+    const gs = new GameState('knight');
+    gs._state.board[4][4] = makePiece('duck', 'neutral');
+    gs._state.board[2][5] = makePiece('pawn', 'enemy');
+    gs._state.hand = [{ type: 'move', moveVariant: 'knight', name: 'Knight Move' }];
+    gs.runState = { relics: [{ id: 'duck_handler' }] };
+    // f6 is occupied by enemy pawn, duck cannot capture
+    const result = gs.playKnightMoveCard(0, 'e4', 'f6');
+    expect(result.error).toBe('not a legal destination');
+  });
+
+  it('duck moves diagonally with bishop move card', () => {
+    const gs = new GameState('knight');
+    gs._state.board[4][4] = makePiece('duck', 'neutral');
+    gs._state.hand = [{ type: 'move', moveVariant: 'bishop', name: 'Bishop Move' }];
+    gs.runState = { relics: [{ id: 'duck_handler' }] };
+    // e4 to g6 is diagonal
+    const result = gs.playBishopMoveCard(0, 'e4', 'g6');
+    expect(result.error).toBeUndefined();
+    expect(result.ok).toBe(true);
+    expect(gs.toDict().board['g6']?.type).toBe('duck');
+  });
+
+  it('duck moves orthogonally with rook move card', () => {
+    const gs = new GameState('knight');
+    // Clear the board to avoid blocking pieces
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        gs._state.board[r][c] = null;
+      }
+    }
+    gs._state.board[4][4] = makePiece('duck', 'neutral');
+    gs._state.hand = [{ type: 'move', moveVariant: 'rook', name: 'Rook Move' }];
+    gs.runState = { relics: [{ id: 'duck_handler' }] };
+    // e4 to a4 is orthogonal
+    const result = gs.playRookMoveCard(0, 'e4', 'a4');
+    expect(result.error).toBeUndefined();
+    expect(result.ok).toBe(true);
+    expect(gs.toDict().board['a4']?.type).toBe('duck');
+  });
+
+  it('duck moves in queen pattern with queen move card', () => {
+    const gs = new GameState('knight');
+    // Clear the board to avoid blocking pieces
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        gs._state.board[r][c] = null;
+      }
+    }
+    gs._state.board[4][4] = makePiece('duck', 'neutral');
+    gs._state.hand = [{ type: 'move', moveVariant: 'queen', name: 'Queen Move' }];
+    gs.runState = { relics: [{ id: 'duck_handler' }] };
+    // e4 to h4 is straight (queen can do this)
+    const result = gs.playQueenMoveCard(0, 'e4', 'h4');
+    expect(result.error).toBeUndefined();
+    expect(result.ok).toBe(true);
+    expect(gs.toDict().board['h4']?.type).toBe('duck');
+  });
+
+  it('duck teleports to any empty square with teleport card', () => {
+    const gs = new GameState('knight');
+    gs._state.board[4][4] = makePiece('duck', 'neutral');
+    gs._state.hand = [{ type: 'move', moveVariant: 'teleport', name: 'Teleport' }];
+    gs.runState = { relics: [{ id: 'duck_handler' }] };
+    // e4 to a8 (far away empty square)
+    const result = gs.playTeleportCard(0, 'e4', 'a8');
+    expect(result.error).toBeUndefined();
+    expect(result.ok).toBe(true);
+    expect(gs.toDict().board['a8']?.type).toBe('duck');
+  });
+
+  it('duck can swap with friendly piece using swap card', () => {
+    const gs = new GameState('knight');
+    gs._state.board[4][4] = makePiece('duck', 'neutral');
+    gs._state.board[3][3] = makePiece('knight', 'player');
+    gs._state.hand = [{ type: 'move', moveVariant: 'swap', name: 'Swap' }];
+    gs.runState = { relics: [{ id: 'duck_handler' }] };
+    // Swap duck at e4 with knight at d5
+    const result = gs.playSwapMoveCard(0, 'e4', 'd5');
+    expect(result.error).toBeUndefined();
+    expect(result.ok).toBe(true);
+    expect(gs.toDict().board['d5']?.type).toBe('duck');
+    expect(gs.toDict().board['e4']?.type).toBe('knight');
+  });
+
+  it('duck blitz gets two king moves with Duck Handler', () => {
+    const gs = new GameState('knight');
+    gs._state.board[4][4] = makePiece('duck', 'neutral');
+    gs._state.hand = [{ type: 'move', moveVariant: 'blitz', name: 'Blitz' }];
+    gs.runState = { relics: [{ id: 'duck_handler' }] };
+    // First king move: e4 to e5
+    const result1 = gs.playBlitzFirstMove(0, 'e4', 'e5');
+    expect(result1.error).toBeUndefined();
+    expect(result1.ok).toBe(true);
+    expect(gs.toDict().board['e5']?.type).toBe('duck');
+    // Second king move: e5 to e6
+    const result2 = gs.playBlitzSecondMove('e6');
+    expect(result2.error).toBeUndefined();
+    expect(result2.ok).toBe(true);
+    expect(gs.toDict().board['e6']?.type).toBe('duck');
   });
 });
