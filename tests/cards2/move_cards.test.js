@@ -4,6 +4,7 @@ import {
   pieceCard, curseCard, upgradeCard,
   summonDuckCard, moveDuckCard, stunCard, shieldCard, sacrificeCard, unblockCard, swapCard,
   teleportCard, snapCard, blitzCard, moveTogetherCard,
+  atomicMoveCard, pushMoveCard,
   CARD_CATALOG, STARTER_DECKS, buildStarterDeck, dealHand,
 } from '../../js/cards2/move_cards.js';
 import { STARTER_DECK_DEFS, CARD_DEFS } from '../../config/cards.js';
@@ -233,6 +234,32 @@ test('moveTogetherCard has type move and moveVariant move_together', () => {
 test('CARD_CATALOG includes Move Together with config rarity', () => {
   const entry = CARD_CATALOG.find(e => e.card().name === 'Move Together');
   const configDef = CARD_DEFS.find(d => d.id === 'move_together');
+  expect(entry).toBeDefined();
+  expect(entry.rarity).toBe(configDef.rarity);
+});
+
+test('atomicMoveCard has type move and moveVariant atomic', () => {
+  const c = atomicMoveCard();
+  expect(c.type).toBe('move');
+  expect(c.moveVariant).toBe('atomic');
+});
+
+test('pushMoveCard has type move and moveVariant push', () => {
+  const c = pushMoveCard();
+  expect(c.type).toBe('move');
+  expect(c.moveVariant).toBe('push');
+});
+
+test('CARD_CATALOG includes Atomic Move with config rarity', () => {
+  const entry = CARD_CATALOG.find(e => e.card().name === 'Atomic Move');
+  const configDef = CARD_DEFS.find(d => d.id === 'atomic_move');
+  expect(entry).toBeDefined();
+  expect(entry.rarity).toBe(configDef.rarity);
+});
+
+test('CARD_CATALOG includes Push Move with config rarity', () => {
+  const entry = CARD_CATALOG.find(e => e.card().name === 'Push Move');
+  const configDef = CARD_DEFS.find(d => d.id === 'push_move');
   expect(entry).toBeDefined();
   expect(entry.rarity).toBe(configDef.rarity);
 });

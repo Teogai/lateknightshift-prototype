@@ -169,7 +169,9 @@ function resolvePush(board, centerSq) {
   return pushes;
 }
 
-/** Resolve atomic explosion: destroy all pieces in 3x3 area centered on sq. */
+/** Resolve atomic explosion: destroy all pieces in 3x3 area centered on sq,
+ *  EXCEPT the piece that just moved there (at centerSq).
+ */
 function resolveAtomicExplosion(board, centerSq) {
   const [cr, cc] = sqToRC(centerSq);
   const destroyed = [];
@@ -178,6 +180,7 @@ function resolveAtomicExplosion(board, centerSq) {
       const r = cr + dr, c = cc + dc;
       if (!inBounds(r, c)) continue;
       const sq = rcToSq(r, c);
+      if (sq === centerSq) continue; // Don't destroy the piece that just moved here
       const piece = get(board, sq);
       if (piece) {
         destroyed.push({ sq, piece });
@@ -407,13 +410,15 @@ export class GameState {
     this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
     this.lastMove = { from: fromSq, to: toSq };
 
-    // Resolve push charm if present
-    if (card.charm?.id === 'push') {
+    // Resolve push effect (card ability or charm)
+    if (card.moveVariant === 'push' || card.charm?.id === 'push') {
       resolvePush(this._state.board, toSq);
     }
 
-    // Resolve atomic explosion if capture by atomic piece
-    checkAndResolveAtomic(this._state.board, fromSq, toSq, isCapture);
+    // Resolve atomic explosion (card ability or charm)
+    if ((card.moveVariant === 'atomic' && isCapture) || card.charm?.id === 'atomic') {
+      resolveAtomicExplosion(this._state.board, toSq);
+    }
 
     const winner = checkKingCaptured(this._state.board);
     if (winner) this.turn = winner;
