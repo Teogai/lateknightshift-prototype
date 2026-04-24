@@ -119,3 +119,9 @@ test('elite min floor returns first elite enemy', () => {
 test('floor 15 returns second elite enemy', () => {
   expect(generateNodes(15)[0]).toMatchObject({ type: 'elite', enemyKey: ELITE_2_ENEMY });
 });
+test('floor 6 returns relic room', () => {
+  expect(generateNodes(6)[0].type).toBe('relic');
+});
+test('floor 17 returns relic room', () => {
+  expect(generateNodes(17)[0].type).toBe('relic');
+});

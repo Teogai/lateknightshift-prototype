@@ -18,7 +18,7 @@ export const FIXED_PATH = [
   { type: 'piece_reward',enemy: null,             label: 'Piece reward' },
   { type: 'relic',       enemy: null,             label: 'Relic' },
   { type: 'monster',     enemy: 'bishop_pair',    label: 'Bishop Pair' },
-  { type: 'piece_reward',enemy: null,             label: 'Piece reward' },
+  { type: 'relic',       enemy: null,             label: 'Relic' },
   { type: 'elite',       enemy: 'duelist',        label: 'Duelist' },
   { type: 'relic',       enemy: null,             label: 'Relic' },
   { type: 'transform',   enemy: null,             label: 'Transform' },
@@ -29,7 +29,7 @@ export const FIXED_PATH = [
   { type: 'piece_reward',enemy: null,             label: 'Piece reward' },
   { type: 'elite',       enemy: 'duelist_2',      label: 'Duelist II' },
   { type: 'monster',     enemy: 'high_command',   label: 'High Command' },
-  { type: 'piece_reward',enemy: null,             label: 'Piece reward' },
+  { type: 'relic',       enemy: null,             label: 'Relic' },
   { type: 'transform',   enemy: null,             label: 'Transform' },
   { type: 'boss',        enemy: 'boss_duelist',   label: 'Boss' },
 ];

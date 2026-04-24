@@ -3,7 +3,7 @@
 Permanent upgrades that persist for the entire run.
 
 ## How to obtain
-- Enter a `relic` room on the map path
+- Enter a `relic` room on the map path (floors 4, 8, 12, 6, 17)
 - Choose 1 of 3 offered relics
 - Already-owned relics are excluded from choices
 
