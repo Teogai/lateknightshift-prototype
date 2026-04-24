@@ -1,4 +1,5 @@
-import { GameState, knightAttacks, VALID_ENEMIES, rcToSq, PIECE_VALUES } from './battle_state.js';
+import { GameState, knightAttacks, VALID_ENEMIES, PIECE_VALUES } from './battle_state.js';
+import { sqToRC, rcToSq, inBounds } from './engine2/board.js';
 import { CHARACTER_PIECES } from './engine2/constants2.js';
 import { RunState } from './run.js';
 import { FIXED_PATH } from './map.js';
