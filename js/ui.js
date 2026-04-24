@@ -98,7 +98,7 @@ function _parseCardDesc(desc, container) {
   while ((match = regex.exec(desc)) !== null) {
     const before = desc.slice(lastIdx, match.index);
     if (before) container.appendChild(document.createTextNode(before));
-    const key = match[1];
+    const key = match[1].toLowerCase();
     const info = KEYWORD_REGISTRY[key];
     const span = document.createElement('span');
     span.className = 'keyword' + (info ? ` keyword-${key}` : '');
