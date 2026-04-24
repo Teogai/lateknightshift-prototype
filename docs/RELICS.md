@@ -13,11 +13,12 @@ Permanent upgrades that persist for the entire run.
 | ID | Name | Effect |
 |----|------|--------|
 | `slammer` | Slammer | When push is blocked, destroy the pushed piece. Shield blocks this. |
-| `duck_handler` | Duck Handler | Normal move cards can move ducks like a king. Cannot capture. |
+| `duck_handler` | Duck Handler | Move cards can move ducks like a king. Cannot capture. Works with standard move, knight move, blitz, move together, swap, and teleport cards. |
 
 ## Implementation
 - Data: `config/relics.js`, `js/relics.js`
 - UI bar: `css/relics.css`, `#relic-bar` in `index.html`
 - Bar tooltip: custom tooltip via `_showTooltip`/`_hideTooltip` (not native `title`)
-- Effects: `js/battle_state.js` (Slammer in `resolvePush`, Duck Handler in `playMoveCard`)
+- Effects: `js/battle_state.js` (Slammer in `resolvePush`, Duck Handler in `_tryDuckMove` helper used by all move methods)
+- UI duck destinations: `js/ui.js` `duckDestsFor()` generates king-like moves for ducks
 - Reward screen: `js/rewards.js` `renderRelicRewardScreen()` — select-then-confirm, `.relic-grid` + `.relic-choice` CSS

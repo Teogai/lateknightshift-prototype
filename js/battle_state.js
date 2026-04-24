@@ -393,23 +393,8 @@ export class GameState {
 
     // For duck with Duck Handler: king-like moves, no captures
     if (isDuck && hasDuckHandler) {
-      const [fr, fc] = sqToRC(fromSq);
-      const [tr, tc] = sqToRC(toSq);
-      const dr = Math.abs(tr - fr);
-      const dc = Math.abs(tc - fc);
-      if (dr > 1 || dc > 1 || (dr === 0 && dc === 0)) {
-        return { error: 'not a legal destination' };
-      }
-      const target = get(this._state.board, toSq);
-      if (target) {
-        return { error: 'not a legal destination' };
-      }
-      // Move duck
-      set(this._state.board, fromSq, null);
-      set(this._state.board, toSq, piece);
-      this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
-      this.lastMove = { from: fromSq, to: toSq };
-      return { ok: true };
+      const duckResult = this._tryDuckMove(cardIndex, fromSq, toSq, true);
+      if (duckResult) return duckResult;
     }
 
     const targetPiece = get(this._state.board, toSq);
@@ -466,12 +451,66 @@ export class GameState {
     return { ok: true };
   }
 
+  /**
+   * Try to handle a duck move with Duck Handler relic.
+   * Returns {ok: true} if handled, {error: ...} if invalid duck move,
+   * or null if not a duck (caller should handle normally).
+   * @param {boolean} discard - whether to discard the card immediately
+   */
+  _tryDuckMove(cardIndex, fromSq, toSq, discard = true) {
+    const piece = get(this._state.board, fromSq);
+    const hasDuckHandler = this.runState?.relics?.some(r => r.id === 'duck_handler');
+    const isDuck = piece?.type === 'duck';
+    if (!isDuck || !hasDuckHandler) return null;
+
+    const [fr, fc] = sqToRC(fromSq);
+    const [tr, tc] = sqToRC(toSq);
+    const dr = Math.abs(tr - fr);
+    const dc = Math.abs(tc - fc);
+    if (dr > 1 || dc > 1 || (dr === 0 && dc === 0)) {
+      return { error: 'not a legal destination' };
+    }
+    const target = get(this._state.board, toSq);
+    if (target) {
+      return { error: 'not a legal destination' };
+    }
+
+    const card = this._state.hand[cardIndex];
+    // Move duck
+    set(this._state.board, fromSq, null);
+    set(this._state.board, toSq, piece);
+    this.lastMove = { from: fromSq, to: toSq };
+
+    if (discard) {
+      this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
+    }
+
+    // Resolve push charm if present
+    if (card.charm?.id === 'push') {
+      resolvePush(this._state.board, toSq, this.runState);
+    }
+
+    // Resolve atomic charm if present
+    if (card.charm?.id === 'atomic') {
+      resolveAtomicExplosion(this._state.board, toSq);
+    }
+
+    const winner = checkKingCaptured(this._state.board);
+    if (winner) this.turn = winner;
+
+    return { ok: true };
+  }
+
   playKnightMoveCard(cardIndex, fromSq, toSq) {
     if (cardIndex < 0 || cardIndex >= this._state.hand.length) return { error: 'invalid card index' };
     const card = this._state.hand[cardIndex];
     if (card.type !== 'move' || card.moveVariant !== 'knight') return { error: 'not a knight_move card' };
 
     const piece = get(this._state.board, fromSq);
+    // Try duck handler first
+    const duckResult = this._tryDuckMove(cardIndex, fromSq, toSq, true);
+    if (duckResult) return duckResult;
+
     if (!piece || piece.owner !== 'player') return { error: 'no friendly piece on that square' };
 
     if (!knightAttacks(fromSq).includes(toSq)) return { error: 'invalid knight move destination' };
@@ -506,6 +545,10 @@ export class GameState {
     if (card.type !== 'move' || card.moveVariant !== expectedVariant) return { error: `not a ${expectedVariant} move card` };
 
     const piece = get(this._state.board, fromSq);
+    // Try duck handler first
+    const duckResult = this._tryDuckMove(cardIndex, fromSq, toSq, true);
+    if (duckResult) return duckResult;
+
     if (!piece || piece.owner !== 'player') return { error: 'no friendly piece on that square' };
 
     const target = get(this._state.board, toSq);
@@ -893,6 +936,15 @@ export class GameState {
     if (card.type !== 'move' || card.moveVariant !== 'move_together') return { error: 'not a move_together card' };
 
     const piece = get(this._state.board, fromSq);
+    // Try duck handler first (don't discard on first move)
+    const duckResult = this._tryDuckMove(cardIndex, fromSq, toSq, false);
+    if (duckResult) {
+      if (duckResult.error) return duckResult;
+      this._moveTogetherFirstPieceSq = toSq;
+      this._moveTogetherCardIndex = cardIndex;
+      return { ok: true };
+    }
+
     if (!piece || piece.owner !== 'player') return { error: 'no friendly piece on that square' };
 
     const actions = generateLegalActions(this._state, 'player');
@@ -905,6 +957,19 @@ export class GameState {
     this._moveTogetherCardIndex = cardIndex;
     this.lastMove = { from: fromSq, to: toSq };
 
+    // Resolve push charm if present
+    if (card.charm?.id === 'push') {
+      resolvePush(this._state.board, toSq, this.runState);
+    }
+
+    // Resolve atomic charm if present
+    if (card.charm?.id === 'atomic') {
+      resolveAtomicExplosion(this._state.board, toSq);
+    }
+
+    const winner = checkKingCaptured(this._state.board);
+    if (winner) this.turn = winner;
+
     return { ok: true };
   }
 
@@ -914,6 +979,21 @@ export class GameState {
     if (fromSq === this._moveTogetherFirstPieceSq) return { error: 'must move a different piece' };
 
     const piece = get(this._state.board, fromSq);
+    const cardIndex = this._moveTogetherCardIndex;
+    const card = this._state.hand[cardIndex];
+
+    // Try duck handler first
+    const duckResult = this._tryDuckMove(cardIndex, fromSq, toSq, false);
+    if (duckResult) {
+      if (duckResult.error) return duckResult;
+      // Discard the card now
+      this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
+      this._moveTogetherFirstPieceSq = null;
+      this._moveTogetherCardIndex = null;
+      this.lastMove = { from: fromSq, to: toSq };
+      return { ok: true };
+    }
+
     if (!piece || piece.owner !== 'player') return { error: 'no friendly piece on that square' };
 
     const actions = generateLegalActions(this._state, 'player');
@@ -923,12 +1003,21 @@ export class GameState {
     this._state.play(action);
 
     // Discard the card now
-    const cardIndex = this._moveTogetherCardIndex;
     this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
 
     this._moveTogetherFirstPieceSq = null;
     this._moveTogetherCardIndex = null;
     this.lastMove = { from: fromSq, to: toSq };
+
+    // Resolve push charm if present
+    if (card.charm?.id === 'push') {
+      resolvePush(this._state.board, toSq, this.runState);
+    }
+
+    // Resolve atomic charm if present
+    if (card.charm?.id === 'atomic') {
+      resolveAtomicExplosion(this._state.board, toSq);
+    }
 
     const winner = checkKingCaptured(this._state.board);
     if (winner) this.turn = winner;

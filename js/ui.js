@@ -1047,6 +1047,22 @@ export function hidePieceDetail() {
   uiState.pieceDetailSq = null;
 }
 
+/** Generate king-like destination squares for a duck (no captures). */
+function duckDestsFor(board, sq) {
+  const [r, c] = sqToRC(sq);
+  const moves = [];
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      if (dr === 0 && dc === 0) continue;
+      const nr = r + dr, nc = c + dc;
+      if (!inBounds(nr, nc)) continue;
+      const nsq = rcToSq(nr, nc);
+      if (!board[nsq]) moves.push(nsq);
+    }
+  }
+  return moves;
+}
+
 export function handleSquareClick(sq) {
   const d = gameState ? gameState.toDict() : null;
 
@@ -1130,13 +1146,18 @@ export function handleSquareClick(sq) {
       }
     } else if (uiState.selectedCardType === 'move' && uiState.selectedMoveVariant === 'knight') {
       const piece = d.board[sq];
-      if (piece && piece.color === 'white') {
+      const hasDuckHandler = runState?.relics?.some(r => r.id === 'duck_handler');
+      if (piece && (piece.color === 'white' || (hasDuckHandler && piece.type === 'duck'))) {
         uiState.phase = 'knight_from_selected';
         uiState.fromSq = sq;
-        uiState.knightTargets = knightAttacks(sq).filter(t => {
-          const p = d.board[t];
-          return !p || p.color === 'black';
-        });
+        if (hasDuckHandler && piece.type === 'duck') {
+          uiState.knightTargets = duckDestsFor(d.board, sq);
+        } else {
+          uiState.knightTargets = knightAttacks(sq).filter(t => {
+            const p = d.board[t];
+            return !p || p.color === 'black';
+          });
+        }
         setHint('Click a highlighted square to teleport');
         render();
       } else {
@@ -1507,10 +1528,15 @@ export function handleSquareClick(sq) {
 
   if (uiState.phase === 'blitz_selected') {
     const piece = d.board[sq];
-    if (piece && piece.color === 'white') {
+    const hasDuckHandler = runState?.relics?.some(r => r.id === 'duck_handler');
+    if (piece && (piece.color === 'white' || (hasDuckHandler && piece.type === 'duck'))) {
       uiState.fromSq = sq;
       uiState.phase = 'blitz_first_selected';
-      uiState.legalDests = gameState.legalDestinationsFor(sq);
+      if (hasDuckHandler && piece.type === 'duck') {
+        uiState.legalDests = duckDestsFor(d.board, sq);
+      } else {
+        uiState.legalDests = gameState.legalDestinationsFor(sq);
+      }
       setHint('Blitz: click first destination');
       render();
     } else {
@@ -1534,7 +1560,13 @@ export function handleSquareClick(sq) {
     if (result.error) { setHint(result.error); return; }
     uiState.fromSq = sq;
     uiState.phase = 'blitz_second_selected';
-    uiState.legalDests = gameState.legalDestinationsFor(sq);
+    const hasDuckHandler = runState?.relics?.some(r => r.id === 'duck_handler');
+    const destPiece = d.board[sq];
+    if (hasDuckHandler && destPiece?.type === 'duck') {
+      uiState.legalDests = duckDestsFor(d.board, sq);
+    } else {
+      uiState.legalDests = gameState.legalDestinationsFor(sq);
+    }
     setHint('Blitz: click second destination');
     render();
     return;
@@ -1552,10 +1584,15 @@ export function handleSquareClick(sq) {
 
   if (uiState.phase === 'move_together_selected') {
     const piece = d.board[sq];
-    if (piece && piece.color === 'white') {
+    const hasDuckHandler = runState?.relics?.some(r => r.id === 'duck_handler');
+    if (piece && (piece.color === 'white' || (hasDuckHandler && piece.type === 'duck'))) {
       uiState.fromSq = sq;
       uiState.phase = 'move_together_first_selected';
-      uiState.legalDests = gameState.legalDestinationsFor(sq);
+      if (hasDuckHandler && piece.type === 'duck') {
+        uiState.legalDests = duckDestsFor(d.board, sq);
+      } else {
+        uiState.legalDests = gameState.legalDestinationsFor(sq);
+      }
       setHint('Move Together: click first destination');
       render();
     } else {
@@ -1585,13 +1622,18 @@ export function handleSquareClick(sq) {
 
   if (uiState.phase === 'move_together_second_piece') {
     const piece = d.board[sq];
-    if (piece && piece.color === 'white') {
+    const hasDuckHandler = runState?.relics?.some(r => r.id === 'duck_handler');
+    if (piece && (piece.color === 'white' || (hasDuckHandler && piece.type === 'duck'))) {
       if (sq === gameState._moveTogetherFirstPieceSq) {
         setHint('Cannot move same piece twice'); return;
       }
       uiState.fromSq = sq;
       uiState.phase = 'move_together_second_from_selected';
-      uiState.legalDests = gameState.legalDestinationsFor(sq);
+      if (hasDuckHandler && piece.type === 'duck') {
+        uiState.legalDests = duckDestsFor(d.board, sq);
+      } else {
+        uiState.legalDests = gameState.legalDestinationsFor(sq);
+      }
       setHint('Move Together: click second destination');
       render();
     } else {

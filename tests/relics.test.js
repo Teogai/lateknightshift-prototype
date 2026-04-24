@@ -215,4 +215,30 @@ describe('Duck Handler relic', () => {
     const result = gs.playMoveCard(0, 'e4', 'e5');
     expect(result.error).toBe('not a legal destination');
   });
+
+  it('allows moving duck with knight move card', () => {
+    const gs = new GameState('knight');
+    gs._state.board[4][4] = makePiece('duck', 'neutral');
+    gs._state.hand = [{ type: 'move', moveVariant: 'knight', name: 'Knight Move' }];
+    gs.runState = { relics: [{ id: 'duck_handler' }] };
+    // Knight-like king move from e4 to e5 (adjacent)
+    const result = gs.playKnightMoveCard(0, 'e4', 'e5');
+    expect(result.error).toBeUndefined();
+    expect(result.ok).toBe(true);
+    expect(gs.toDict().board['e5']?.type).toBe('duck');
+  });
+
+  it('allows moving duck with move_together card first move', () => {
+    const gs = new GameState('knight');
+    // Place a player knight on e4 and a duck on d4
+    gs._state.board[4][4] = makePiece('duck', 'neutral');
+    gs._state.board[4][3] = makePiece('knight', 'player');
+    gs._state.hand = [{ type: 'move', moveVariant: 'move_together', name: 'Move Together' }];
+    gs.runState = { relics: [{ id: 'duck_handler' }] };
+    // Move duck from e4 to e5 as first move of move_together
+    const result = gs.playMoveTogetherFirst(0, 'e4', 'e5');
+    expect(result.error).toBeUndefined();
+    expect(result.ok).toBe(true);
+    expect(gs._moveTogetherFirstPieceSq).toBe('e5');
+  });
 });

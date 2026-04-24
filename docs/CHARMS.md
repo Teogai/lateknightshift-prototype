@@ -41,6 +41,7 @@ Charms enhance cards. Obtained from elite battles.
 
 ### Push Charm
 - Resolved after move card resolves (`playMoveCard`, `playKnightMoveCard`, etc.)
+- Also resolved on **both moves** of multi-step cards (`playBlitzFirstMove`, `playBlitzSecondMove`, `playMoveTogetherFirst`, `playMoveTogetherSecond`)
 - From destination square, checks all 8 directions for adjacent pieces
 - Push only if square directly behind piece is empty and on-board
 - Blocked by any piece behind or at board edge — piece stays in place
