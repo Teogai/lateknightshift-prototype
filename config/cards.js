@@ -27,8 +27,8 @@ export const CARD_DEFS = [
   { id: 'snap',         name: 'Snap',           type: 'action', actionType: 'snap', rarity: 'uncommon', desc: 'Capture at legal move without moving.' },
   { id: 'blitz',        name: 'Blitz',          type: 'move',   moveVariant: 'blitz', rarity: 'rare', desc: 'Move {piece} twice.' },
   { id: 'move_together',name: 'Move Together',  type: 'move',   moveVariant: 'move_together', rarity: 'uncommon', desc: 'Move 2 friendly {piece}s.' },
-  { id: 'atomic_move',  name: 'Atomic Move',  type: 'move', moveVariant: 'atomic', rarity: 'common', desc: 'Move {piece}. If capture, destroy 3x3 area.' },
-  { id: 'push_move',    name: 'Push Move',    type: 'move', moveVariant: 'push',   rarity: 'common', desc: 'Move {piece}. Push adjacent pieces 1 square away.' },
+  { id: 'atomic_move',  name: 'Atomic Move',  type: 'move', moveVariant: 'atomic', rarity: 'common', desc: 'Move {piece}. {Atomic}' },
+  { id: 'push_move',    name: 'Push Move',    type: 'move', moveVariant: 'push',   rarity: 'common', desc: 'Move {piece}. {Push}' },
   { id: 'curse',        name: 'Curse',          type: 'curse',  rarity: 'common', desc: 'Unplayable.' },
   { id: 'curse_sloth',  name: 'Curse of Sloth', type: 'curse',  rarity: 'common', desc: 'Unplayable.' },
 ];

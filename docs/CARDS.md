@@ -34,8 +34,10 @@
   - `Apply {shield}.` not `Apply {shield} to a piece.`
   - `Move any {duck}.` not `Move any {duck} to an empty square.`
 - **Keywords**: wrap piece/status names in `{}` for tooltip styling
-  - `{pawn}`, `{knight}`, `{stun}`, `{shield}`, `{ghost}`
+  - `{pawn}`, `{knight}`, `{stun}`, `{shield}`, `{ghost}`, `{atomic}`, `{push}`
   - Registry in `js/ui.js` `KEYWORD_REGISTRY`
+- **Effect keywords on move cards**: append effect keyword to base move description
+  - Example: `Move {piece}. {Atomic}` for atomic move, `Move {piece}. {Push}` for push move
 
 ## Reward Pool
 - Card rewards exclude **starter cards** (character-specific) and **piece cards** (separate piece reward pool)

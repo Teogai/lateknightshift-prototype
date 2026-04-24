@@ -1165,6 +1165,17 @@ export function handleSquareClick(sq) {
       } else {
         setHint('Pick a friendly pawn');
       }
+    } else if (uiState.selectedCardType === 'move' && ['atomic', 'push'].includes(uiState.selectedMoveVariant)) {
+      const piece = d.board[sq];
+      if (piece && piece.color === 'white') {
+        uiState.phase = 'from_selected';
+        uiState.fromSq = sq;
+        uiState.legalDests = gameState.legalDestinationsFor(sq);
+        setHint('Click a highlighted square to move to');
+        render();
+      } else {
+        setHint('Pick a friendly piece');
+      }
     } else if (uiState.selectedCardType === 'piece') {
       if (uiState.summonTargets.length && !uiState.summonTargets.includes(sq)) {
         setHint('Invalid placement square'); return;
