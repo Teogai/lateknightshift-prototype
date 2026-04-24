@@ -39,3 +39,116 @@ describe('pickRelicChoices', () => {
     expect(choices.length).toBe(0);
   });
 });
+
+describe('relic room type', () => {
+  it('exists in ROOM_META', () => {
+    expect(ROOM_META.relic).toBeDefined();
+    expect(ROOM_META.relic.label).toBe('Relic');
+  });
+
+  it('has RELIC_REWARD_CHOICES constant', () => {
+    expect(RELIC_REWARD_CHOICES).toBe(3);
+  });
+});
+
+import { renderRelicRewardScreen } from '../js/rewards.js';
+
+describe('relic reward screen', () => {
+  it('renders without error', () => {
+    document.body.innerHTML = '<div id="screen-room"><div id="room-content"></div></div>';
+    const runState = { relics: [], addRelic(r) { this.relics.push(r); } };
+    expect(() => renderRelicRewardScreen(runState, () => {})).not.toThrow();
+    const content = document.getElementById('room-content');
+    expect(content.querySelectorAll('.relic-choice').length).toBeGreaterThan(0);
+  });
+});
+
+import { renderRelicBar } from '../js/ui.js';
+
+describe('relic bar', () => {
+  it('renders owned relics', () => {
+    document.body.innerHTML = '<div id="relic-bar"></div>';
+    const runState = { relics: [{ id: 'slammer', name: 'Slammer' }] };
+    renderRelicBar(runState);
+    const bar = document.getElementById('relic-bar');
+    expect(bar.textContent).toContain('Slammer');
+  });
+});
+
+import { makePiece } from '../js/engine2/pieces.js';
+import { set, get, sqToRC } from '../js/engine2/board.js';
+import { resolvePush } from '../js/battle_state.js';
+
+describe('Slammer relic', () => {
+  function createEmptyBoard() {
+    return Array.from({ length: 8 }, () => Array(8).fill(null));
+  }
+
+  it('destroys pushed piece when blocked by edge', () => {
+    const board = createEmptyBoard();
+    const [r, c] = sqToRC('e8');
+    board[r][c] = makePiece('rook', 'black');
+    const runState = { relics: [{ id: 'slammer' }] };
+    // Push from e7 - piece at e8 is pushed north off board
+    resolvePush(board, 'e7', runState);
+    expect(board[r][c]).toBeNull();
+  });
+
+  it('destroys pushed piece when blocked by another piece', () => {
+    const board = createEmptyBoard();
+    const [r7, c7] = sqToRC('e7');
+    const [r8, c8] = sqToRC('e8');
+    board[r7][c7] = makePiece('pawn', 'black');
+    board[r8][c8] = makePiece('rook', 'black');
+    const runState = { relics: [{ id: 'slammer' }] };
+    // Push from e6 - piece at e7 is pushed north into e8 (occupied)
+    resolvePush(board, 'e6', runState);
+    expect(board[r7][c7]).toBeNull();
+    expect(board[r8][c8]).not.toBeNull();
+  });
+
+  it('shield blocks slammer destruction', () => {
+    const board = createEmptyBoard();
+    const [r, c] = sqToRC('e8');
+    const piece = makePiece('rook', 'black');
+    piece.tags.add('shielded');
+    board[r][c] = piece;
+    const runState = { relics: [{ id: 'slammer' }] };
+    resolvePush(board, 'e7', runState);
+    expect(board[r][c]).not.toBeNull();
+    expect(board[r][c].tags.has('shielded')).toBe(false);
+  });
+
+  it('does not destroy without slammer relic', () => {
+    const board = createEmptyBoard();
+    const [r, c] = sqToRC('e8');
+    board[r][c] = makePiece('rook', 'black');
+    // No runState / no slammer
+    resolvePush(board, 'e7');
+    expect(board[r][c]).not.toBeNull();
+  });
+});
+
+import { GameState } from '../js/battle_state.js';
+
+describe('Duck Handler relic', () => {
+  it('allows moving duck with normal move card', () => {
+    const gs = new GameState('knight');
+    gs._state.board[4][4] = makePiece('duck', 'neutral');
+    gs._state.hand = [{ type: 'move', name: 'Move' }];
+    gs.runState = { relics: [{ id: 'duck_handler' }] };
+    const result = gs.playMoveCard(0, 'e4', 'e5');
+    expect(result.error).toBeUndefined();
+    expect(result.ok).toBe(true);
+  });
+
+  it('duck moves like king but cannot capture', () => {
+    const gs = new GameState('knight');
+    gs._state.board[4][4] = makePiece('duck', 'neutral');
+    gs._state.board[3][4] = makePiece('pawn', 'enemy');
+    gs._state.hand = [{ type: 'move', name: 'Move' }];
+    gs.runState = { relics: [{ id: 'duck_handler' }] };
+    const result = gs.playMoveCard(0, 'e4', 'e5');
+    expect(result.error).toBe('not a legal destination');
+  });
+});

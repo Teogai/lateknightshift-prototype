@@ -116,6 +116,6 @@ test('boss floor returns boss node', () => {
 test('elite min floor returns first elite enemy', () => {
   expect(generateNodes(MAP_CONFIG.eliteMinFloor)[0]).toMatchObject({ type: 'elite', enemyKey: ELITE_ENEMY });
 });
-test('floor 12 returns second elite enemy', () => {
-  expect(generateNodes(12)[0]).toMatchObject({ type: 'elite', enemyKey: ELITE_2_ENEMY });
+test('floor 15 returns second elite enemy', () => {
+  expect(generateNodes(15)[0]).toMatchObject({ type: 'elite', enemyKey: ELITE_2_ENEMY });
 });

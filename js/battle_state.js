@@ -143,10 +143,11 @@ function matchesPattern(board, fromSq, toSq, patternType) {
  *  Only pushes if the square directly behind the piece is empty and on-board.
  *  Returns array of { from, to } for all pushed pieces.
  */
-function resolvePush(board, centerSq) {
+export function resolvePush(board, centerSq, runState = null) {
   const [cr, cc] = sqToRC(centerSq);
   const DIRS = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
   const pushes = [];
+  const hasSlammer = runState?.relics?.some(r => r.id === 'slammer');
 
   for (const [dr, dc] of DIRS) {
     const r = cr + dr, c = cc + dc;
@@ -156,6 +157,19 @@ function resolvePush(board, centerSq) {
     if (!piece) continue;
 
     const nextR = r + dr, nextC = c + dc;
+    const blocked = !inBounds(nextR, nextC) || get(board, rcToSq(nextR, nextC));
+
+    if (blocked && hasSlammer) {
+      // Slammer: destroy the pushed piece
+      const shielded = piece.tags?.has('shielded');
+      if (shielded) {
+        piece.tags.delete('shielded');
+      } else {
+        set(board, sq, null);
+      }
+      continue;
+    }
+
     if (!inBounds(nextR, nextC)) continue; // Off-board, can't push
     const nextSq = rcToSq(nextR, nextC);
     if (get(board, nextSq)) continue; // Occupied, can't push
@@ -210,7 +224,7 @@ function checkAndResolveAtomic(board, fromSq, toSq, wasCapture) {
 // ─── BattleState (adapter) ────────────────────────────────────────────────────
 
 export class GameState {
-  constructor(character, enemy = 'pawn_pusher', persistentDeck = null, startingPieces = []) {
+  constructor(character, enemy = 'pawn_pusher', persistentDeck = null, startingPieces = [], runState = null) {
     if (!VALID_CHARACTERS.has(character)) throw new Error(`unknown character: ${character}`);
     if (!VALID_ENEMIES.has(enemy)) throw new Error(`unknown enemy: ${enemy}`);
 
@@ -259,6 +273,7 @@ export class GameState {
     this.turn = 'player';
     this.redrawCountdown = REDRAW_COUNTDOWN_START;
     this.enemyWillDoubleMove = false;
+    this.runState = runState;
     this.lastMove = { from: null, to: null };
     this._blitzPieceSq = null;
     this._blitzCardIndex = null;
@@ -370,7 +385,32 @@ export class GameState {
     if (card.unplayable) return { error: 'card is unplayable' };
 
     const piece = get(this._state.board, fromSq);
-    if (!piece || piece.owner !== 'player') return { error: 'no friendly piece on that square' };
+    const hasDuckHandler = this.runState?.relics?.some(r => r.id === 'duck_handler');
+    const isDuck = piece?.type === 'duck';
+    if (!piece || (piece.owner !== 'player' && !(isDuck && hasDuckHandler))) {
+      return { error: 'no friendly piece on that square' };
+    }
+
+    // For duck with Duck Handler: king-like moves, no captures
+    if (isDuck && hasDuckHandler) {
+      const [fr, fc] = sqToRC(fromSq);
+      const [tr, tc] = sqToRC(toSq);
+      const dr = Math.abs(tr - fr);
+      const dc = Math.abs(tc - fc);
+      if (dr > 1 || dc > 1 || (dr === 0 && dc === 0)) {
+        return { error: 'not a legal destination' };
+      }
+      const target = get(this._state.board, toSq);
+      if (target) {
+        return { error: 'not a legal destination' };
+      }
+      // Move duck
+      set(this._state.board, fromSq, null);
+      set(this._state.board, toSq, piece);
+      this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
+      this.lastMove = { from: fromSq, to: toSq };
+      return { ok: true };
+    }
 
     const targetPiece = get(this._state.board, toSq);
     const isCapture = targetPiece && targetPiece.owner !== 'player';
@@ -412,7 +452,7 @@ export class GameState {
 
     // Resolve push effect (card ability or charm)
     if (card.moveVariant === 'push' || card.charm?.id === 'push') {
-      resolvePush(this._state.board, toSq);
+      resolvePush(this._state.board, toSq, this.runState);
     }
 
     // Resolve atomic explosion (card ability or charm)
@@ -448,7 +488,7 @@ export class GameState {
 
     // Resolve push charm if present
     if (card.charm?.id === 'push') {
-      resolvePush(this._state.board, toSq);
+      resolvePush(this._state.board, toSq, this.runState);
     }
 
     // Resolve atomic explosion if capture by atomic piece
@@ -481,7 +521,7 @@ export class GameState {
 
     // Resolve push charm if present
     if (card.charm?.id === 'push') {
-      resolvePush(this._state.board, toSq);
+      resolvePush(this._state.board, toSq, this.runState);
     }
 
     // Resolve atomic explosion if capture by atomic piece
@@ -528,7 +568,7 @@ export class GameState {
 
     // Resolve push charm if present
     if (card.charm?.id === 'push') {
-      resolvePush(this._state.board, toSq);
+      resolvePush(this._state.board, toSq, this.runState);
     }
 
     // Resolve atomic explosion if capture by atomic piece

@@ -43,6 +43,10 @@ export class RunState {
     this.startingPieces.push({ piece, square });
   }
 
+  addRelic(relic) {
+    this.relics.push(relic);
+  }
+
   removeCard(index) {
     this.deck.splice(index, 1);
   }

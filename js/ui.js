@@ -5,7 +5,7 @@ import { FIXED_PATH } from './map.js';
 import {
   renderCardRewardScreen, renderPieceRewardScreen, renderUpgradeScreen,
   renderTransformScreen, renderTransformResultScreen, renderShopScreen, renderDefeatScreen,
-  renderCharmRewardScreen, renderCharmApplyScreen,
+  renderCharmRewardScreen, renderCharmApplyScreen, renderRelicRewardScreen,
   pickCardChoices, pickPieceChoices, pickPieceCardChoices, pickCharmChoices, pickTransformCard, applyCharmToCard,
 } from './rewards.js';
 import { ENEMIES, REGULAR_ENEMIES, ELITE_ENEMY, BOSS_ENEMY } from './enemies2.js';
@@ -186,6 +186,21 @@ export function resetUiState() {
   uiState.debugDests = [];
 }
 
+export function renderRelicBar(runState) {
+  const bar = document.getElementById('relic-bar');
+  if (!bar) return;
+  bar.innerHTML = '';
+  if (!runState?.relics?.length) return;
+
+  for (const relic of runState.relics) {
+    const el = document.createElement('div');
+    el.className = 'relic-bar-item';
+    el.innerHTML = `<span class="relic-bar-label">${relic.name}</span>`;
+    el.title = relic.desc;
+    bar.appendChild(el);
+  }
+}
+
 export function showScreen(id) {
   ALL_SCREENS.forEach(s => {
     const el = document.getElementById(s);
@@ -194,6 +209,7 @@ export function showScreen(id) {
       else el.classList.add('hidden');
     }
   });
+  renderRelicBar(runState);
 }
 
 export function setHint(text) {
@@ -660,6 +676,7 @@ function startBattle(nodeType) {
     enemy,
     runState.deck,
     runState.startingPieces,
+    runState,
   );
   resetUiState();
   showScreen('screen-game');
@@ -841,6 +858,8 @@ export function handleRoomEntered(node) {
   } else if (node.type === 'treasure') {
     const choices = pickPieceChoices(3);
     renderPieceRewardScreen(choices, runState, () => advanceAfterRoom());
+  } else if (node.type === 'relic') {
+    renderRelicRewardScreen(runState, () => advanceAfterRoom());
   }
 }
 
@@ -1062,8 +1081,25 @@ export function handleSquareClick(sq) {
   if (uiState.phase === 'card_selected') {
     if (uiState.selectedCardType === 'move' && !uiState.selectedMoveVariant) {
       const piece = d.board[sq];
-      if (piece && piece.color === 'white') {
-        uiState.legalDests = gameState.legalDestinationsFor(sq);
+      const hasDuckHandler = runState?.relics?.some(r => r.id === 'duck_handler');
+      if (piece && (piece.color === 'white' || (hasDuckHandler && piece.type === 'duck'))) {
+        if (hasDuckHandler && piece.type === 'duck') {
+          // Generate king-like moves for duck (no captures)
+          const [r, c] = sqToRC(sq);
+          const moves = [];
+          for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+              if (dr === 0 && dc === 0) continue;
+              const nr = r + dr, nc = c + dc;
+              if (!inBounds(nr, nc)) continue;
+              const nsq = rcToSq(nr, nc);
+              if (!d.board[nsq]) moves.push(nsq);
+            }
+          }
+          uiState.legalDests = moves;
+        } else {
+          uiState.legalDests = gameState.legalDestinationsFor(sq);
+        }
         uiState.phase = 'from_selected';
         uiState.fromSq = sq;
         setHint('Click a highlighted square to move to');
