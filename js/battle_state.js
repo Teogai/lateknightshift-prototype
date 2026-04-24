@@ -367,10 +367,7 @@ export class GameState {
     // Player pawns move forward = decreasing row (toward rank 8)
     for (let r = fromR - 1; r >= 0; r--) {
       const target = board[r][fromC];
-      if (target) {
-        if (target.owner !== 'player') dests.push(rcToSq(r, fromC));
-        break;
-      }
+      if (target) break; // stop before any piece (no captures)
       dests.push(rcToSq(r, fromC));
     }
     return dests;
@@ -623,7 +620,7 @@ export class GameState {
     if (!dests.includes(toSq)) return { error: 'invalid destination for pawn boost' };
 
     const target = get(this._state.board, toSq);
-    const isCapture = target && target.owner !== 'player';
+    if (target) return { error: 'pawn boost cannot capture' };
 
     set(this._state.board, fromSq, null);
     set(this._state.board, toSq, piece);
@@ -637,7 +634,7 @@ export class GameState {
     }
 
     // Resolve atomic explosion if capture by atomic piece
-    checkAndResolveAtomic(this._state.board, fromSq, toSq, isCapture);
+    checkAndResolveAtomic(this._state.board, fromSq, toSq, false);
 
     const winner = checkKingCaptured(this._state.board);
     if (winner) this.turn = winner;

@@ -19,7 +19,7 @@ Files touched (in order):
 
 **Non-geometric variants** (knight, pawn boost) need dedicated methods:
 - `knightMoveCard` → `playKnightMoveCard` + `knightAttacks(sq)` exported helper
-- `pawnBoostCard` → `playPawnBoostCard` + `pawnBoostDestsFor(sq)` — player pawns move forward = decreasing row (toward rank 8); slide same file until blocked; enemy piece on end square = valid capture
+- `pawnBoostCard` → `playPawnBoostCard` + `pawnBoostDestsFor(sq)` — player pawns move forward = decreasing row (toward rank 8); slide same file until blocked; stops before any piece (cannot capture)
 
 ### ui.js patterns
 

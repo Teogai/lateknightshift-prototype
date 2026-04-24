@@ -15,7 +15,7 @@ export const CARD_DEFS = [
   { id: 'bishop_move',  name: 'Bishop Move',    type: 'move',   moveVariant: 'bishop', rarity: 'uncommon', image: './img/Chess_blt60.png', desc: 'Move like {bishop}.' },
   { id: 'rook_move',    name: 'Rook Move',      type: 'move',   moveVariant: 'rook',   rarity: 'uncommon', image: './img/Chess_rlt60.png', desc: 'Move like {rook}.' },
   { id: 'queen_move',   name: 'Queen Move',     type: 'move',   moveVariant: 'queen',  rarity: 'rare', image: './img/Chess_qlt60.png', desc: 'Move like {queen}.' },
-  { id: 'pawn_boost',   name: 'Pawn Boost',     type: 'move',   moveVariant: 'pawn_boost', rarity: 'common', image: './img/pawn-boost.png', desc: 'Slide {pawn} forward.' },
+  { id: 'pawn_boost',   name: 'Pawn Boost',     type: 'move',   moveVariant: 'pawn_boost', rarity: 'common', image: './img/pawn-boost.png', desc: 'Slide {pawn} forward without capturing.' },
   { id: 'summon_duck',  name: 'Duck',           type: 'piece',  piece: 'duck', rarity: 'uncommon', image: './img/duck.png', desc: 'Summon {duck} anywhere.' },
   { id: 'move_duck',    name: 'Move Duck',      type: 'move',   moveVariant: 'duck', rarity: 'uncommon', image: './img/duck.png', desc: 'Move any {duck}.' },
   { id: 'stun',         name: 'Stun',           type: 'action', actionType: 'stun', rarity: 'common', desc: 'Apply {stun} for 2 turns.' },

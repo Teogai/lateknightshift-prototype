@@ -336,7 +336,7 @@ describe('pawn boost', () => {
     expect(dests).toHaveLength(2);
   });
 
-  test('can capture enemy piece at end of slide', () => {
+  test('cannot capture enemy piece at end of slide', () => {
     const state = makeStateWithPawnBoost([
       { sq: 'e1', type: 'king', owner: 'player' },
       { sq: 'e8', type: 'king', owner: 'enemy' },
@@ -344,12 +344,11 @@ describe('pawn boost', () => {
       { sq: 'a6', type: 'pawn', owner: 'enemy' },
     ]);
     const dests = state.pawnBoostDestsFor('a2');
-    expect(dests).toContain('a6');
+    expect(dests).not.toContain('a6');
     expect(dests).not.toContain('a7');
+    expect(dests).toHaveLength(3); // a3, a4, a5 only
     const result = state.playPawnBoostCard(0, 'a2', 'a6');
-    expect(result.error).toBeUndefined();
-    expect(state.toDict().board['a6'].type).toBe('pawn');
-    expect(state.toDict().board['a6'].color).toBe('white');
+    expect(result.error).toBeDefined();
   });
 
   test('promotion on rank 8', () => {
