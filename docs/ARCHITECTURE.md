@@ -80,6 +80,7 @@
 - `docs/TASKS.md` — task log
 - `docs/EXPLORATION.md` — reusable patterns for common tasks
 - `docs/PROMOTION.md` — pawn promotion system, centralized detection
+- `docs/TAGS.md` — tag system, colors, how to add new tags
 
 ## Stack
 - Vite v5 (dev server)
