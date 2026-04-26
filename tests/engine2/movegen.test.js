@@ -484,6 +484,18 @@ describe('castling', () => {
     expect(castleAction).toBeUndefined();
   });
 
+  test('castling BLOCKED when enemy piece with knight_power attacks king destination', () => {
+    const state = makeState([
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'h1', type: 'rook', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'e2', type: 'pawn', owner: 'enemy', tags: ['knight_power'] },  // attacks g1 via knight move
+    ], { castling: { wK: true, wQ: false, bK: false, bQ: false } });
+    const actions = generateLegalActions(state, 'player');
+    const castleAction = actions.find(a => a.kind === 'castle' && a.targets[0] === 'g1');
+    expect(castleAction).toBeUndefined();
+  });
+
   test('castling rights false: no castling generated', () => {
     const state = makeState([
       { sq: 'e1', type: 'king', owner: 'player' },
