@@ -53,12 +53,18 @@ const KEYWORD_REGISTRY = {
   atomic:     { color: '#ff4444', desc: 'Atomic: piece explodes in a 3x3 area on capture.' },
 };
 
-const STATUS_BADGE_COLORS = {
+export const STATUS_BADGE_COLORS = {
   stunned: '#ff6666',
   ghost: '#aa88ff',
   shielded: '#44aaff',
   frozen: '#88ccff',
   wounded: '#ff4444',
+  knight_power: '#66cc66',
+  bishop_power: '#aa66dd',
+  rook_power: '#dd4444',
+  queen_power: '#ffcc00',
+  king_power: '#ffaa00',
+  uncapturable: '#aaaaaa',
 };
 
 let _tooltipEl = null;

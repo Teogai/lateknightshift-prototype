@@ -194,6 +194,42 @@ test('redrawHand replaces hand cards', () => {
   expect(secondHand).not.toEqual(firstHand);
 });
 
+test('redrawHand draws remaining deck cards before shuffling discard', () => {
+  const state = freshGame();
+  // Setup: deck has 2 cards, discard has 10, hand has 1
+  // Total cards = 13, but we only draw HAND_SIZE (6)
+  // Bug: current code shuffles all 13 together, so deck cards might not be drawn
+  // Fix: draw 2 deck cards first, then shuffle 10 discard and draw 4 more
+  const deckTop = state._state.deck[0];
+  const deckSecond = state._state.deck[1];
+  state._state.deck = [deckTop, deckSecond];
+  state._state.discard = Array.from({ length: 10 }, (_, i) => ({
+    id: `d${i}`,
+    name: `Discard ${i}`,
+  }));
+  state._state.hand = [{ id: 'h1', name: 'Hand 1' }];
+  state.redrawCountdown = 0; // free redraw
+
+  // Run redraw multiple times to catch flaky behavior
+  let deckCardsAlwaysInHand = true;
+  for (let i = 0; i < 20; i++) {
+    state._state.deck = [deckTop, deckSecond];
+    state._state.discard = Array.from({ length: 10 }, (_, j) => ({
+      id: `d${j}`,
+      name: `Discard ${j}`,
+    }));
+    state._state.hand = [{ id: 'h1', name: 'Hand 1' }];
+    state.redrawHand();
+    const newHandIds = state.toDict().hand.map(c => c.id);
+    if (!newHandIds.includes(deckTop.id) || !newHandIds.includes(deckSecond.id)) {
+      deckCardsAlwaysInHand = false;
+      break;
+    }
+  }
+
+  expect(deckCardsAlwaysInHand).toBe(true);
+});
+
 describe('debugMovePiece', () => {
   test('moves piece without consuming card', () => {
     const state = freshGame();

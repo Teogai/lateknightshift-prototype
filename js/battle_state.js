@@ -1261,20 +1261,26 @@ export class GameState {
   // ─── redraw ────────────────────────────────────────────────────────────────
 
   redrawHand() {
+    // Move current hand to discard
     this._state.discard.push(...this._state.hand);
     this._state.hand = [];
-    if (this._state.deck.length < HAND_SIZE) {
+
+    // Draw from remaining deck first
+    const deckCardsToDraw = Math.min(this._state.deck.length, HAND_SIZE);
+    this._state.hand = this._state.deck.splice(0, deckCardsToDraw);
+
+    // If still need cards, shuffle discard into deck and draw rest
+    if (this._state.hand.length < HAND_SIZE) {
       this._state.deck.push(...this._state.discard);
       this._state.discard = [];
       for (let i = this._state.deck.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [this._state.deck[i], this._state.deck[j]] = [this._state.deck[j], this._state.deck[i]];
       }
+      const remaining = HAND_SIZE - this._state.hand.length;
+      this._state.hand.push(...this._state.deck.splice(0, remaining));
     }
-    const dealt = dealHand(this._state.deck, HAND_SIZE, this._state.discard);
-    this._state.deck = dealt.deck;
-    this._state.hand = dealt.hand;
-    this._state.discard = dealt.discard;
+
     console.log('[battle_state] redraw countdown=%d free=%s', this.redrawCountdown, this.redrawCountdown === 0);
     if (this.redrawCountdown === 0) {
       this.redrawCountdown = REDRAW_COUNTDOWN_START;
