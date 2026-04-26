@@ -12,8 +12,7 @@
 import { sqToRC, rcToSq, inBounds, get, set } from './board.js';
 import { PIECE_DEFS } from './pieces.js';
 import { resolveAction } from './actions.js';
-
-const POWER_TAGS = ['knight_power', 'bishop_power', 'rook_power', 'queen_power', 'king_power'];
+import { POWER_TAGS } from './constants2.js';
 
 // ─── void-tile helpers ────────────────────────────────────────────────────────
 

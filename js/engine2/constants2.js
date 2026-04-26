@@ -15,4 +15,6 @@ export {
   VALID_CHARACTERS,
 } from '../../config/characters.js';
 
+export const POWER_TAGS = ['knight_power', 'bishop_power', 'rook_power', 'queen_power', 'king_power'];
+
 console.log('[engine2/constants2] loaded');
