@@ -50,6 +50,7 @@
 - `js/cards2/aoe_card.js` — AOE card
 - `js/cards2/line_card.js` — line card
 - `js/cards2/index.js` — barrel re-export
+- See `docs/CARD_DESCRIPTIONS.md` for description/tooltip rules
 
 ## charms
 - `js/charms.js` — CHARM_CATALOG, getCharmById(), canApplyCharm()
