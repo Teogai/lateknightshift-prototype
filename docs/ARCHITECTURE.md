@@ -91,9 +91,13 @@
 
 ## State persistence
 - `js/battle_state.js` — `GameState.toJSON()` / `GameState.fromJSON()` / `saveSession()` / `loadSession()` — persists battle to `sessionStorage`
-- `js/main.js` — restores saved battle on page load; saves on `visibilitychange` to `hidden`
+- `js/run.js` — `RunState.toJSON()` / `RunState.fromJSON()` / `saveSession()` / `loadSession()` — persists full run to `sessionStorage`
+- `js/main.js` — saves on `visibilitychange` to `hidden`; **no auto-restore on load**
+- `js/ui.js` — `handleContinue()` restores saved run+battle when user clicks Continue; `handleNewGame()` goes to character select
+- Title screen: `screen-title` — manual New Game / Continue. Continue disabled when no save.
+- Full run persistence: deck, pieces, lives, floor, relics, phase, and battle state
 - `sw.js` — minimal Service Worker caches app shell; reduces Chrome Android tab discard rate
-- See `tests/state_persistence.test.js`
+- See `tests/state_persistence.test.js`, `tests/run_persistence.test.js`, `tests/title_screen.test.js`
 
 ## Key design notes
 - engine2 uses owner: 'player'|'enemy'|'neutral' (not chess.js color 'w'|'b')
