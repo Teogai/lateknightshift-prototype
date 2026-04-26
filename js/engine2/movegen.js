@@ -267,6 +267,11 @@ function castlingActions(board, owner, castling) {
     // Extra clear square for queenside (b-file must also be empty)
     if (side.extraClear && get(board, side.extraClear)) continue;
 
+    // King cannot castle out of, through, or into check
+    if (isAttackedBy(board, kingSq, attackerOwner)) continue;
+    if (isAttackedBy(board, side.passSq, attackerOwner)) continue;
+    if (isAttackedBy(board, side.kingTo, attackerOwner)) continue;
+
     actions.push({
       kind: 'castle',
       source: kingSq,

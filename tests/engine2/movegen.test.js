@@ -459,7 +459,7 @@ describe('castling', () => {
     expect(castleAction).toBeUndefined();
   });
 
-  test('castling ALLOWED even if king in check — king-capture mode', () => {
+  test('castling BLOCKED if king in check', () => {
     const state = makeState([
       { sq: 'e1', type: 'king', owner: 'player' },
       { sq: 'h1', type: 'rook', owner: 'player' },
@@ -468,11 +468,11 @@ describe('castling', () => {
     ], { castling: { wK: true, wQ: false, bK: false, bQ: false } });
     const actions = generateLegalActions(state, 'player');
     const castleAction = actions.find(a => a.kind === 'castle' && a.targets[0] === 'g1');
-    expect(castleAction).toBeDefined();
+    expect(castleAction).toBeUndefined();
   });
 
-  test('castling ALLOWED even if king passes through attacked square — king-capture mode', () => {
-    // f1 is attacked by enemy rook, but king CAN pass through it (kingside)
+  test('castling BLOCKED if king passes through attacked square', () => {
+    // f1 is attacked by enemy rook, king cannot pass through it (kingside)
     const state = makeState([
       { sq: 'e1', type: 'king', owner: 'player' },
       { sq: 'h1', type: 'rook', owner: 'player' },
@@ -481,7 +481,7 @@ describe('castling', () => {
     ], { castling: { wK: true, wQ: false, bK: false, bQ: false } });
     const actions = generateLegalActions(state, 'player');
     const castleAction = actions.find(a => a.kind === 'castle' && a.targets[0] === 'g1');
-    expect(castleAction).toBeDefined();
+    expect(castleAction).toBeUndefined();
   });
 
   test('castling rights false: no castling generated', () => {
