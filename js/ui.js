@@ -707,6 +707,9 @@ function startBattle(nodeType) {
     runState.startingPieces,
     runState,
   );
+  // Save immediately after battle starts
+  runState.saveSession();
+  gameState.saveSession();
   resetUiState();
   showScreen('screen-game');
   renderSidebar(enemy, nodeType);

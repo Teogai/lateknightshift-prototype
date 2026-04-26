@@ -1,4 +1,4 @@
-import { startGame, handleRedraw, handlePromotionChoice, handleUndo, handleDebugMove, handleDebugWin, initPileButtons, hidePieceDetail, restoreGameState, gameState, handleNewGame, handleContinue } from './ui.js';
+import { startGame, handleRedraw, handlePromotionChoice, handleUndo, handleDebugMove, handleDebugWin, initPileButtons, hidePieceDetail, restoreGameState, gameState, runState, handleNewGame, handleContinue } from './ui.js';
 import { GameState } from './battle_state.js';
 
 // Check if continue is available
@@ -32,10 +32,11 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') hidePieceDetail();
 });
 
-// Save battle state before tab is discarded
+// Save full run state before tab is discarded
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') {
     try {
+      if (runState?.saveSession) runState.saveSession();
       if (gameState?.saveSession) gameState.saveSession();
     } catch (e) {
       // ignore
