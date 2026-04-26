@@ -74,4 +74,50 @@ export class RunState {
   isComplete() {
     return this.currentFloor > 16 && this.phase === 'complete';
   }
+
+  // ─── serialization ─────────────────────────────────────────────────────────
+
+  toJSON() {
+    return {
+      character: this.character,
+      deck: this.deck.map(c => ({ ...c })),
+      startingPieces: [...this.startingPieces],
+      lives: this.lives,
+      currentFloor: this.currentFloor,
+      phase: this.phase,
+      currentNodes: [...this.currentNodes],
+      pendingEnemy: this.pendingEnemy,
+      pendingNode: this.pendingNode ? { ...this.pendingNode } : null,
+      relics: [...this.relics],
+    };
+  }
+
+  static fromJSON(json) {
+    const rs = new RunState(json.character);
+    rs.deck = json.deck.map(c => ({ ...c }));
+    rs.startingPieces = [...json.startingPieces];
+    rs.lives = json.lives;
+    rs.currentFloor = json.currentFloor;
+    rs.phase = json.phase;
+    rs.currentNodes = [...json.currentNodes];
+    rs.pendingEnemy = json.pendingEnemy;
+    rs.pendingNode = json.pendingNode ? { ...json.pendingNode } : null;
+    rs.relics = [...json.relics];
+    return rs;
+  }
+
+  saveSession() {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem('lks_run_state', JSON.stringify(this.toJSON()));
+    }
+  }
+
+  static loadSession() {
+    if (typeof sessionStorage === 'undefined') return null;
+    const raw = sessionStorage.getItem('lks_run_state');
+    if (!raw) return null;
+    const json = JSON.parse(raw);
+    sessionStorage.removeItem('lks_run_state');
+    return RunState.fromJSON(json);
+  }
 }
