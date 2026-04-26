@@ -75,7 +75,18 @@ export function isAttackedBy(board, sq, attackerOwner) {
     for (let c = 0; c < 8; c++) {
       const piece = board[r][c];
       if (!piece || piece.owner !== attackerOwner) continue;
+      // Skip frozen/stunned pieces — they cannot attack
+      if (piece.tags?.has('frozen') || piece.tags?.has('stunned')) continue;
+      // Check base type
       if (attacksPseudo(board, r, c, piece, tr, tc)) return true;
+      // Check power tags
+      for (const tag of POWER_TAGS) {
+        if (piece.tags?.has(tag)) {
+          const powerType = tag.replace('_power', '');
+          const powerPiece = { ...piece, type: powerType };
+          if (attacksPseudo(board, r, c, powerPiece, tr, tc)) return true;
+        }
+      }
     }
   }
   return false;

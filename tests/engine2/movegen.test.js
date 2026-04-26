@@ -13,7 +13,7 @@ import { describe, test, expect } from 'vitest';
 // engine2 public API
 import { makePiece } from '../../js/engine2/pieces.js';
 import { makeBoard, get, set, sqToRC, rcToSq, inBounds } from '../../js/engine2/board.js';
-import { generateLegalActions } from '../../js/engine2/movegen.js';
+import { generateLegalActions, isAttackedBy } from '../../js/engine2/movegen.js';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -716,5 +716,49 @@ describe('action structure', () => {
     for (const a of [...playerActions, ...enemyActions]) {
       expect(a.piece.owner).not.toBe('neutral');
     }
+  });
+});
+
+// ─── isAttackedBy ─────────────────────────────────────────────────────────────
+
+describe('isAttackedBy', () => {
+  test('detects knight_power tagged piece attacking king', () => {
+    const board = Array(8).fill(null).map(() => Array(8).fill(null));
+    const enemyPawn = { type: 'pawn', owner: 'enemy', tags: new Set(['knight_power']) };
+    const playerKing = { type: 'king', owner: 'player', tags: new Set() };
+    board[3][4] = enemyPawn; // e5
+    board[1][6] = playerKing; // g7 - knight move from e5 (dr=-2, dc=+2? No, knight is 2+1)
+    // Actually from e5, knight moves to: f7(1,5), d7(1,3), g6(2,6), c6(2,2), g4(4,6), c4(4,2), f3(5,5), d3(5,3)
+    // Let's use g6 instead: (2,6)
+    board[1][6] = null;
+    board[2][6] = playerKing; // g6
+    expect(isAttackedBy(board, 'g6', 'enemy')).toBe(true);
+  });
+
+  test('detects bishop_power tagged piece attacking king', () => {
+    const board = Array(8).fill(null).map(() => Array(8).fill(null));
+    const enemyPawn = { type: 'pawn', owner: 'enemy', tags: new Set(['bishop_power']) };
+    const playerKing = { type: 'king', owner: 'player', tags: new Set() };
+    board[3][4] = enemyPawn; // e5
+    board[1][6] = playerKing; // g7 - diagonal from e5 (dr=-2, dc=+2)
+    expect(isAttackedBy(board, 'g7', 'enemy')).toBe(true);
+  });
+
+  test('returns false for frozen piece', () => {
+    const board = Array(8).fill(null).map(() => Array(8).fill(null));
+    const enemyRook = { type: 'rook', owner: 'enemy', tags: new Set(['frozen']) };
+    const playerKing = { type: 'king', owner: 'player', tags: new Set() };
+    board[3][4] = enemyRook; // e5
+    board[3][6] = playerKing; // g5 - same rank
+    expect(isAttackedBy(board, 'g5', 'enemy')).toBe(false);
+  });
+
+  test('returns false for stunned piece', () => {
+    const board = Array(8).fill(null).map(() => Array(8).fill(null));
+    const enemyRook = { type: 'rook', owner: 'enemy', tags: new Set(['stunned']) };
+    const playerKing = { type: 'king', owner: 'player', tags: new Set() };
+    board[3][4] = enemyRook; // e5
+    board[3][6] = playerKing; // g5 - same rank
+    expect(isAttackedBy(board, 'g5', 'enemy')).toBe(false);
   });
 });
