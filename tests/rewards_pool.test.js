@@ -21,7 +21,7 @@ test('getRewardPool includes power cards', () => {
   const knightPower = pool.find(e => e.card().name === 'Knight Power');
   const queenPower = pool.find(e => e.card().name === 'Queen Power');
 
-  expect(knightPower).toBeDefined();
+  expect(knightPower).toBeUndefined(); // starter card, excluded from pool
   expect(queenPower).toBeDefined();
 });
 

@@ -28,8 +28,8 @@ function weightedSample(items) {
 }
 
 // Non-starter cards for a given character, grouped by rarity
-function cardKey(c) {
-  return c.type + (c.piece || '') + (c.moveVariant || '');
+export function cardKey(c) {
+  return c.type + (c.piece || '') + (c.moveVariant || '') + (c.actionType || '');
 }
 
 export function getRewardPool(character) {

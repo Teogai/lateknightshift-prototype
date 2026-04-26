@@ -1,11 +1,7 @@
 import { test, expect } from 'vitest';
-import { getRewardPool, pickCardChoices, pickPieceChoices } from '../js/rewards.js';
+import { getRewardPool, pickCardChoices, pickPieceChoices, cardKey } from '../js/rewards.js';
 import { STARTER_DECKS, pawnBoostCard } from '../js/cards2/move_cards.js';
 import { REWARD_CHOICES, PIECE_REWARD_CHOICES, PIECE_RARITY_WEIGHTS } from '../config/game.js';
-
-function cardKey(c) {
-  return c.type + (c.piece || '') + (c.moveVariant || '');
-}
 
 // --- getRewardPool ---
 test('getRewardPool excludes knight starter types', () => {

@@ -77,6 +77,6 @@ export const STARTER_DECK_DEFS = {
   knight: [
     { id: 'move', count: 7 },
     { id: 'piece_pawn', count: 2 },
-    { id: 'knight_move', count: 1 },
+    { id: 'knight_power', count: 1 },
   ],
 };

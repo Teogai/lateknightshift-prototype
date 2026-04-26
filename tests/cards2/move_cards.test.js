@@ -353,3 +353,13 @@ test('power cards are in reward pool', () => {
   expect(knightPower.inRewardPool).not.toBe(false);
   expect(queenPower.inRewardPool).not.toBe(false);
 });
+
+test('STARTER_DECKS knight contains knight_power not knight_move', () => {
+  const ids = STARTER_DECKS.knight.map(c => {
+    if (c.actionType === 'knight_power') return 'knight_power';
+    if (c.moveVariant === 'knight') return 'knight_move';
+    return c.id || c.name;
+  });
+  expect(ids).toContain('knight_power');
+  expect(ids).not.toContain('knight_move');
+});
