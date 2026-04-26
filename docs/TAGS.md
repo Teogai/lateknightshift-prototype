@@ -8,6 +8,7 @@ Tags are status effects applied to pieces via cards or game mechanics.
 - Tags affect piece behavior (e.g., `knight_power` grants knight moves)
 - Tags are removed after piece moves (power tags), after N turns (`ghost`), or by effects (`shielded`)
 - `isAttackedBy` in `js/engine2/movegen.js` respects power tags (pieces with power tags can attack using those movement patterns) and skips `frozen`/`stunned` pieces (they cannot attack)
+- `findAttacker` in `js/battle_state.js` respects power tags for check attacker highlight and skips `frozen`/`stunned` pieces
 - Castling is blocked if the king is in check, passes through an attacked square, or lands on an attacked square (including attacks from power-tagged pieces)
 
 ## Adding a New Tag

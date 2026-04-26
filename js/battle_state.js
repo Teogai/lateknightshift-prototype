@@ -15,7 +15,7 @@ import { generateLegalActions, isAttackedBy } from './engine2/movegen.js';
 import { PIECE_DEFS } from './engine2/pieces.js';
 import { buildStarterDeck, dealHand } from './cards2/move_cards.js';
 import { ENEMIES, VALID_ENEMIES } from './enemies2.js';
-import { VALID_CHARACTERS, CHARACTER_PIECES, HAND_SIZE, REDRAW_COUNTDOWN_START, VALID_PROMO } from './engine2/constants2.js';
+import { VALID_CHARACTERS, CHARACTER_PIECES, HAND_SIZE, REDRAW_COUNTDOWN_START, VALID_PROMO, POWER_TAGS } from './engine2/constants2.js';
 import { attachEffect } from './engine2/effects.js';
 import { makeShieldEffect } from './engine2/effect_types/shield.js';
 import { resolvePromotions } from './engine2/promotion.js';
@@ -107,10 +107,20 @@ function findAttacker(board, targetSq, attackerOwner) {
     for (let c = 0; c < 8; c++) {
       const p = board[r][c];
       if (!p || p.owner !== attackerOwner) continue;
+      // Skip frozen/stunned pieces — they cannot attack
+      if (p.tags?.has('frozen') || p.tags?.has('stunned')) continue;
       const from = rcToSq(r, c);
-      // Use pseudo-legal check: does this piece attack targetSq?
+      // Check base type
       const pseudos = PIECE_DEFS[p.type]?.generateMoves(board, from, p, {}) ?? [];
       if (pseudos.some(m => m.sq === targetSq)) return from;
+      // Check power tags
+      for (const tag of POWER_TAGS) {
+        if (p.tags?.has(tag)) {
+          const powerType = tag.replace('_power', '');
+          const powerMoves = PIECE_DEFS[powerType]?.generateMoves(board, from, p, {}) ?? [];
+          if (powerMoves.some(m => m.sq === targetSq)) return from;
+        }
+      }
     }
   return null;
 }

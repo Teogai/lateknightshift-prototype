@@ -1028,3 +1028,41 @@ describe('new card play methods', () => {
     expect(state._moveTogetherFirstPieceSq).toBeNull();
   });
 });
+
+// ─── findAttacker power tag tests ────────────────────────────────────────────
+
+test('check_attacker_sq detects power-tagged piece attacking king', () => {
+  const state = freshGame('knight', 'pawn_pusher');
+  const board = state._state.board;
+  
+  // Clear board
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) board[r][c] = null;
+  
+  // Set up: player king on e1 (row 7, col 4), enemy rook with knight_power on c2 (row 6, col 2)
+  // c2 to e1 is a knight move: +2 files, -1 rank
+  board[7][4] = makePiece('king', 'player');
+  const enemyRook = makePiece('rook', 'enemy');
+  enemyRook.tags.add('knight_power');
+  board[6][2] = enemyRook;
+  
+  const d = state.toDict();
+  expect(d.in_check).toBe(true);
+  expect(d.check_attacker_sq).toBe('c2');
+});
+
+test('check_attacker_sq returns null for frozen piece', () => {
+  const state = freshGame('knight', 'pawn_pusher');
+  const board = state._state.board;
+  
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) board[r][c] = null;
+  
+  // Player king on e1, frozen enemy rook on e5 (same file, should attack)
+  board[7][4] = makePiece('king', 'player');
+  const enemyRook = makePiece('rook', 'enemy');
+  enemyRook.tags.add('frozen');
+  board[3][4] = enemyRook; // e5
+  
+  const d = state.toDict();
+  expect(d.in_check).toBe(false); // isAttackedBy also skips frozen
+  expect(d.check_attacker_sq).toBeNull();
+});
