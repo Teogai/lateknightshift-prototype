@@ -43,7 +43,7 @@ const KEYWORD_REGISTRY = {
   queen:      { color: '#dddddd', desc: 'Queen: moves diagonal or straight.' },
   king:       { color: '#ffdd44', desc: 'King: moves 1 square. Lose if captured.' },
   piece:      { color: '#dddddd', desc: 'Any chess piece.' },
-  stun:       { color: '#ff6666', desc: 'Stun: cannot move for 2 turns.' },
+  stun:       { color: '#ff6666', desc: 'Stun: cannot move.' },
   ghost:      { color: '#aa88ff', desc: 'Ghost: does not block sliding moves.' },
   shield:     { color: '#44aaff', desc: 'Shield: blocks first capture.' },
   frozen:     { color: '#88ccff', desc: 'Frozen: cannot move.' },
@@ -51,11 +51,11 @@ const KEYWORD_REGISTRY = {
   uncapturable: { color: '#aaaaaa', desc: 'Uncapturable: cannot be taken.' },
   push:       { color: '#ff8844', desc: 'Push: after moving, push all adjacent pieces 1 square away.' },
   atomic:     { color: '#ff4444', desc: 'Atomic: piece explodes in a 3x3 area on capture.' },
-  knight_power: { color: '#66cc66', desc: 'Knight Power: can move like a knight for 1 move.' },
-  bishop_power: { color: '#aa66dd', desc: 'Bishop Power: can move like a bishop for 1 move.' },
-  rook_power:   { color: '#dd4444', desc: 'Rook Power: can move like a rook for 1 move.' },
-  queen_power:  { color: '#ffcc00', desc: 'Queen Power: can move like a queen for 1 move.' },
-  king_power:   { color: '#ffaa00', desc: 'King Power: can move like a king for 1 move.' },
+  knight_power: { color: '#66cc66', desc: 'Knight Power: can move like a knight.' },
+  bishop_power: { color: '#aa66dd', desc: 'Bishop Power: can move like a bishop.' },
+  rook_power:   { color: '#dd4444', desc: 'Rook Power: can move like a rook.' },
+  queen_power:  { color: '#ffcc00', desc: 'Queen Power: can move like a queen.' },
+  king_power:   { color: '#ffaa00', desc: 'King Power: can move like a king.' },
 };
 
 export const STATUS_BADGE_COLORS = {

@@ -41,7 +41,7 @@ When adding a tag that needs UI visibility:
 
 | Tag | Color | Source | Effect |
 |-----|-------|--------|--------|
-| stunned | `#ff6666` | Stun card | Cannot move for 2 turns |
+| stunned | `#ff6666` | Stun card | Cannot move |
 | ghost | `#aa88ff` | Unblock card | Does not block sliding moves |
 | shielded | `#44aaff` | Shield card | Blocks first capture |
 | frozen | `#88ccff` | Ice tile | Cannot move |
