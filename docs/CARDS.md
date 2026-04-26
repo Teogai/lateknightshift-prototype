@@ -22,7 +22,7 @@
 
 - **piece** cards: `piece: 'pawn' | 'knight' | 'bishop' | 'rook' | 'queen' | 'duck'`
 - **move** cards: `moveVariant: 'knight' | 'bishop' | 'rook' | 'queen' | 'pawn_boost' | 'duck' | 'teleport' | 'blitz' | 'move_together' | 'swap' | 'atomic' | 'push'` (absent = standard move)
-- **action** cards: `actionType: 'stun' | 'shield' | 'sacrifice' | 'unblock' | 'snap'`
+- **action** cards: `actionType: 'stun' | 'shield' | 'sacrifice' | 'unblock' | 'snap' | 'knight_power' | 'bishop_power' | 'rook_power' | 'queen_power' | 'king_power'`
 
 ## Naming & Description Rules
 
@@ -42,6 +42,7 @@
 ## Reward Pool
 - Card rewards exclude **starter cards** (character-specific) and **piece cards** (separate piece reward pool)
 - **Curse cards are excluded** from card rewards (only obtained via defeat or events)
+- Cards with `inRewardPool: false` are excluded from rewards (e.g., pattern move cards)
 - Implementation: `js/rewards.js` `pickCardChoices()`
 
 ## Transform Rules
@@ -59,15 +60,25 @@
 - See `docs/CHARMS.md` for full charm system
 
 ## Card data
-- Definitions: `config/cards.js` (id, name, type, rarity, desc, image)
+- Definitions: `config/cards.js` (id, name, type, rarity, desc, image, inRewardPool)
 - Factories: `js/cards2/move_cards.js`
 - Catalog / starter decks: `js/cards2/move_cards.js` (`CARD_CATALOG`, `STARTER_DECKS`)
+
+## Power Cards
+- Action cards that grant temporary movement abilities
+- `actionType` ends with `_power`: `knight_power`, `bishop_power`, `rook_power`, `queen_power`, `king_power`
+- Applied as tags on friendly pieces (e.g., `piece.tags.add('knight_power')`)
+- Multiple power tags can stack on one piece
+- All power tags removed after the piece makes any move
+- Power move destinations highlighted in blue (`.power-dest`)
+- Implementation: `js/engine2/movegen.js` (extra move generation), `js/engine2/actions.js` (tag removal), `js/battle_state.js` (`playPowerCard`), `js/ui.js` (blue highlighting)
 
 ## How to add a new card
 
 1. `config/cards.js` — add entry to `CARD_DEFS` with id, name, type, subtype, rarity, desc, image
    - Choose `type` from: `piece`, `move`, `action`, `curse`
    - Add subtype: `piece`, `moveVariant`, or `actionType`
+   - Set `inRewardPool: false` to exclude from reward pool
 2. `js/cards2/move_cards.js` — add factory function, wire in `CARD_FACTORY_KEYS`, add to `CARD_CATALOG` builder if needed
 3. `js/battle_state.js` — add `playXxxCard(cardIndex, ...)` method (validate `type` + subtype)
 4. `js/ui.js` — add `handleCardClick` hint branch + `handleSquareClick` phase handlers + render highlights

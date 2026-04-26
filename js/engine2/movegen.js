@@ -298,6 +298,21 @@ export function generateLegalActions(state, owner) {
 
       const pseudoMoves = def.generateMoves(board, sq, piece, ctx);
 
+      // Power tags: generate extra moves using alternative piece movement
+      const powerTags = ['knight_power', 'bishop_power', 'rook_power', 'queen_power', 'king_power'];
+      for (const tag of powerTags) {
+        if (piece.tags?.has(tag)) {
+          const powerType = tag.replace('_power', '');
+          const powerDef = PIECE_DEFS[powerType];
+          if (powerDef) {
+            const powerMoves = powerDef.generateMoves(board, sq, piece, ctx);
+            for (const mv of powerMoves) {
+              pseudoMoves.push({ ...mv, isPowerMove: true });
+            }
+          }
+        }
+      }
+
       for (const mv of pseudoMoves) {
         // P8: skip destinations that are void tiles
         if (_isVoid(state.tiles, mv.sq)) {
@@ -335,6 +350,7 @@ export function generateLegalActions(state, owner) {
             targets: [mv.sq],
             piece,
             ...(mv.capture ? { capture: mv.capture } : {}),
+            ...(mv.isPowerMove ? { isPowerMove: true } : {}),
           };
         }
 

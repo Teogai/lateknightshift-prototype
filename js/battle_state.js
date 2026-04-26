@@ -341,6 +341,15 @@ export class GameState {
       .map(a => a.targets[0]);
   }
 
+  powerDestsFor(sq) {
+    const piece = get(this._state.board, sq);
+    if (!piece || piece.owner !== 'player') return [];
+    const actions = generateLegalActions(this._state, 'player');
+    return actions
+      .filter(a => a.source === sq && a.isPowerMove)
+      .map(a => a.targets[0]);
+  }
+
   geometricDestsFor(sq, pattern) {
     const piece = get(this._state.board, sq);
     if (!piece || piece.owner !== 'player') return [];
@@ -782,6 +791,22 @@ export class GameState {
     piece.tags.add('shielded');
     const shieldFx = makeShieldEffect(piece.id);
     attachEffect(this._state, { piece: piece.id }, shieldFx);
+
+    this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
+
+    return { ok: true };
+  }
+
+  playPowerCard(cardIndex, sq) {
+    if (cardIndex < 0 || cardIndex >= this._state.hand.length) return { error: 'invalid card index' };
+    const card = this._state.hand[cardIndex];
+    if (card.type !== 'action' || !card.actionType?.endsWith('_power')) return { error: 'not a power card' };
+
+    const piece = get(this._state.board, sq);
+    if (!piece || piece.owner !== 'player') return { error: 'select a friendly piece' };
+
+    const tag = card.actionType;
+    piece.tags.add(tag);
 
     this._state.discard.push(this._state.hand.splice(cardIndex, 1)[0]);
 

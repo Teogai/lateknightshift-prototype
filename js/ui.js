@@ -161,6 +161,7 @@ export const uiState = {
   pendingPromos: [],
   knightTargets: [],
   legalDests: [],
+  powerDests: [],
   summonTargets: [],
   geometricTargets: [],
   pawnBoostTargets: [],
@@ -179,6 +180,8 @@ export function resetUiState() {
   uiState.pendingPromos = [];
   uiState.knightTargets = [];
   uiState.legalDests = [];
+      uiState.powerDests = [];
+  uiState.powerDests = [];
   uiState.summonTargets = [];
   uiState.geometricTargets = [];
   uiState.pawnBoostTargets = [];
@@ -269,6 +272,7 @@ export function renderBoard() {
       }
       if (uiState.knightTargets.includes(sqName))   div.classList.add('knight-target');
       if (uiState.legalDests.includes(sqName))      div.classList.add('legal-dest');
+      if (uiState.powerDests.includes(sqName))      div.classList.add('power-dest');
       if (uiState.summonTargets.includes(sqName))   div.classList.add('summon-target');
       if (uiState.geometricTargets.includes(sqName)) div.classList.add('legal-dest');
       if (uiState.pawnBoostTargets.includes(sqName)) div.classList.add('legal-dest');
@@ -961,6 +965,9 @@ export function handleCardClick(index, card) {
   } else if (card.type === 'action' && card.actionType === 'snap') {
     uiState.phase = 'snap_selected';
     setHint('Snap: click a friendly piece');
+  } else if (card.type === 'action' && card.actionType?.endsWith('_power')) {
+    uiState.phase = 'power_selected';
+    setHint(`Power: click a friendly piece to apply ${card.actionType.replace('_power', '')} power`);
   } else if (card.type === 'move' && card.moveVariant === 'blitz') {
     uiState.phase = 'blitz_selected';
     setHint('Blitz: click a friendly piece');
@@ -1177,6 +1184,7 @@ export function handleSquareClick(sq) {
           uiState.legalDests = moves;
         } else {
           uiState.legalDests = gameState.legalDestinationsFor(sq);
+          uiState.powerDests = gameState.powerDestsFor(sq);
         }
         uiState.phase = 'from_selected';
         uiState.fromSq = sq;
@@ -1260,6 +1268,7 @@ export function handleSquareClick(sq) {
       uiState.phase = 'card_selected';
       uiState.fromSq = null;
       uiState.legalDests = [];
+      uiState.powerDests = [];
       setHint('Click a friendly piece to move');
       render(); return;
     }
@@ -1339,6 +1348,7 @@ export function handleSquareClick(sq) {
       uiState.fromSq = sq;
       uiState.phase = 'move_duck_from_selected';
       uiState.legalDests = [];
+      uiState.powerDests = [];
       for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
           const dest = 'abcdefgh'[c] + (r + 1);
@@ -1358,6 +1368,7 @@ export function handleSquareClick(sq) {
       uiState.phase = 'move_duck_selected';
       uiState.fromSq = null;
       uiState.legalDests = [];
+      uiState.powerDests = [];
       setHint('Click a duck to move');
       render(); return;
     }
@@ -1401,6 +1412,7 @@ export function handleSquareClick(sq) {
       uiState.phase = 'sacrifice_target_selected';
       const sacrificedVal = PIECE_VALUES[piece.type] ?? 0;
       uiState.legalDests = [];
+      uiState.powerDests = [];
       for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
           const dest = 'abcdefgh'[c] + (r + 1);
@@ -1428,6 +1440,7 @@ export function handleSquareClick(sq) {
       uiState.phase = 'sacrifice_selected';
       uiState.fromSq = null;
       uiState.legalDests = [];
+      uiState.powerDests = [];
       setHint('Click a friendly piece to sacrifice');
       render(); return;
     }
@@ -1462,6 +1475,7 @@ export function handleSquareClick(sq) {
         uiState.legalDests = duckDestsFor(d.board, sq, 'swap');
       } else {
         uiState.legalDests = [];
+      uiState.powerDests = [];
         for (let r = 0; r < 8; r++) {
           for (let c = 0; c < 8; c++) {
             const dest = 'abcdefgh'[c] + (r + 1);
@@ -1489,6 +1503,7 @@ export function handleSquareClick(sq) {
       uiState.phase = 'swap_move_selected';
       uiState.fromSq = null;
       uiState.legalDests = [];
+      uiState.powerDests = [];
       setHint('Click a friendly piece to swap');
       render(); return;
     }
@@ -1511,6 +1526,7 @@ export function handleSquareClick(sq) {
         uiState.legalDests = duckDestsFor(d.board, sq, 'teleport');
       } else {
         uiState.legalDests = [];
+      uiState.powerDests = [];
         for (let r = 0; r < 8; r++) {
           for (let c = 0; c < 8; c++) {
             const dest = 'abcdefgh'[c] + (r + 1);
@@ -1531,6 +1547,7 @@ export function handleSquareClick(sq) {
       uiState.phase = 'teleport_selected';
       uiState.fromSq = null;
       uiState.legalDests = [];
+      uiState.powerDests = [];
       setHint('Teleport: click a friendly piece');
       render(); return;
     }
@@ -1570,6 +1587,7 @@ export function handleSquareClick(sq) {
       uiState.phase = 'snap_selected';
       uiState.fromSq = null;
       uiState.legalDests = [];
+      uiState.powerDests = [];
       setHint('Snap: click a friendly piece');
       render(); return;
     }
@@ -1579,6 +1597,18 @@ export function handleSquareClick(sq) {
     const result = gameState.playSnapCard(uiState.selectedCardIndex, uiState.fromSq, sq);
     if (result.error) { setHint(result.error); return; }
     handlePostAction();
+    return;
+  }
+
+  if (uiState.phase === 'power_selected') {
+    const piece = d.board[sq];
+    if (piece && piece.color === 'white') {
+      const result = gameState.playPowerCard(uiState.selectedCardIndex, sq);
+      if (result.error) { setHint(result.error); return; }
+      handlePostAction();
+    } else {
+      setHint('Pick a friendly piece');
+    }
     return;
   }
 
@@ -1606,6 +1636,7 @@ export function handleSquareClick(sq) {
       uiState.phase = 'blitz_selected';
       uiState.fromSq = null;
       uiState.legalDests = [];
+      uiState.powerDests = [];
       setHint('Blitz: click a friendly piece');
       render(); return;
     }
@@ -1662,6 +1693,7 @@ export function handleSquareClick(sq) {
       uiState.phase = 'move_together_selected';
       uiState.fromSq = null;
       uiState.legalDests = [];
+      uiState.powerDests = [];
       setHint('Move Together: click first friendly piece');
       render(); return;
     }
@@ -1703,6 +1735,7 @@ export function handleSquareClick(sq) {
       uiState.phase = 'move_together_second_piece';
       uiState.fromSq = null;
       uiState.legalDests = [];
+      uiState.powerDests = [];
       setHint('Move Together: click second friendly piece');
       render(); return;
     }

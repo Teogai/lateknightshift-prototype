@@ -5,6 +5,7 @@ import {
   summonDuckCard, moveDuckCard, stunCard, shieldCard, sacrificeCard, unblockCard, swapCard,
   teleportCard, snapCard, blitzCard, moveTogetherCard,
   atomicMoveCard, pushMoveCard,
+  knightPowerCard, bishopPowerCard, rookPowerCard, queenPowerCard, kingPowerCard,
   CARD_CATALOG, STARTER_DECKS, buildStarterDeck, dealHand,
 } from '../../js/cards2/move_cards.js';
 import { STARTER_DECK_DEFS, CARD_DEFS } from '../../config/cards.js';
@@ -288,4 +289,67 @@ test('buildStarterDeck returns cards with rarity', () => {
     expect(card.rarity).toBeDefined();
     expect(['common', 'uncommon', 'rare']).toContain(card.rarity);
   }
+});
+
+// --- power cards ---
+test('knightPowerCard has type action and actionType knight_power', () => {
+  const c = knightPowerCard();
+  expect(c.type).toBe('action');
+  expect(c.actionType).toBe('knight_power');
+});
+
+test('bishopPowerCard has type action and actionType bishop_power', () => {
+  const c = bishopPowerCard();
+  expect(c.type).toBe('action');
+  expect(c.actionType).toBe('bishop_power');
+});
+
+test('rookPowerCard has type action and actionType rook_power', () => {
+  const c = rookPowerCard();
+  expect(c.type).toBe('action');
+  expect(c.actionType).toBe('rook_power');
+});
+
+test('queenPowerCard has type action and actionType queen_power', () => {
+  const c = queenPowerCard();
+  expect(c.type).toBe('action');
+  expect(c.actionType).toBe('queen_power');
+});
+
+test('kingPowerCard has type action and actionType king_power', () => {
+  const c = kingPowerCard();
+  expect(c.type).toBe('action');
+  expect(c.actionType).toBe('king_power');
+});
+
+test('CARD_CATALOG includes Knight Power with config rarity', () => {
+  const entry = CARD_CATALOG.find(e => e.card().name === 'Knight Power');
+  const configDef = CARD_DEFS.find(d => d.id === 'knight_power');
+  expect(entry).toBeDefined();
+  expect(entry.rarity).toBe(configDef.rarity);
+});
+
+test('CARD_CATALOG includes Queen Power as rare', () => {
+  const entry = CARD_CATALOG.find(e => e.card().name === 'Queen Power');
+  expect(entry).toBeDefined();
+  expect(entry.rarity).toBe('rare');
+});
+
+// --- inRewardPool filtering ---
+test('pattern move cards have inRewardPool false in config', () => {
+  const knightMove = CARD_DEFS.find(d => d.id === 'knight_move');
+  const bishopMove = CARD_DEFS.find(d => d.id === 'bishop_move');
+  const rookMove = CARD_DEFS.find(d => d.id === 'rook_move');
+  const queenMove = CARD_DEFS.find(d => d.id === 'queen_move');
+  expect(knightMove.inRewardPool).toBe(false);
+  expect(bishopMove.inRewardPool).toBe(false);
+  expect(rookMove.inRewardPool).toBe(false);
+  expect(queenMove.inRewardPool).toBe(false);
+});
+
+test('power cards are in reward pool', () => {
+  const knightPower = CARD_DEFS.find(d => d.id === 'knight_power');
+  const queenPower = CARD_DEFS.find(d => d.id === 'queen_power');
+  expect(knightPower.inRewardPool).not.toBe(false);
+  expect(queenPower.inRewardPool).not.toBe(false);
 });

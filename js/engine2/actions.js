@@ -270,6 +270,17 @@ function _resolveMove(state, action, log) {
   } else {
     _set(board, dest, movingPiece, log);
   }
+
+  // Remove power tags from the moved piece after it completes a move
+  const landedPiece = board[sqToRC(dest)[0]][sqToRC(dest)[1]];
+  if (landedPiece) {
+    const powerTags = ['knight_power', 'bishop_power', 'rook_power', 'queen_power', 'king_power'];
+    for (const tag of powerTags) {
+      if (landedPiece.tags.has(tag)) {
+        _setTag(landedPiece, tag, 'delete', log);
+      }
+    }
+  }
 }
 
 // ─── castle ───────────────────────────────────────────────────────────────────

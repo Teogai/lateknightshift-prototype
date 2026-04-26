@@ -76,6 +76,26 @@ export function snapCard() {
   return { name: 'Snap', type: 'action', actionType: 'snap' };
 }
 
+export function knightPowerCard() {
+  return { name: 'Knight Power', type: 'action', actionType: 'knight_power' };
+}
+
+export function bishopPowerCard() {
+  return { name: 'Bishop Power', type: 'action', actionType: 'bishop_power' };
+}
+
+export function rookPowerCard() {
+  return { name: 'Rook Power', type: 'action', actionType: 'rook_power' };
+}
+
+export function queenPowerCard() {
+  return { name: 'Queen Power', type: 'action', actionType: 'queen_power' };
+}
+
+export function kingPowerCard() {
+  return { name: 'King Power', type: 'action', actionType: 'king_power' };
+}
+
 export function blitzCard() {
   return { name: 'Blitz', type: 'move', moveVariant: 'blitz' };
 }
@@ -121,6 +141,11 @@ const _factories = {
   swapCard,
   teleportCard,
   snapCard,
+  knightPowerCard,
+  bishopPowerCard,
+  rookPowerCard,
+  queenPowerCard,
+  kingPowerCard,
   blitzCard,
   moveTogetherCard,
   atomicMoveCard,
@@ -142,6 +167,7 @@ function makeCardInstance(def) {
   if (def.image) card.image = def.image;
   if (def.desc) card.desc = def.desc;
   if (def.rarity) card.rarity = def.rarity;
+  if (def.inRewardPool !== undefined) card.inRewardPool = def.inRewardPool;
   return card;
 }
 
@@ -162,6 +188,7 @@ export const CARD_CATALOG = CARD_DEFS.map(def => {
       if (def.image) c.image = def.image;
       if (def.desc) c.desc = def.desc;
       if (def.rarity) c.rarity = def.rarity;
+      if (def.inRewardPool !== undefined) c.inRewardPool = def.inRewardPool;
       return c;
     },
     rarity: def.rarity,

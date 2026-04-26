@@ -36,7 +36,7 @@ export function getRewardPool(character) {
   const starterTypes = new Set((STARTER_DECKS[character] || []).map(cardKey));
   return CARD_CATALOG.filter(({ card }) => {
     const c = card();
-    return !starterTypes.has(cardKey(c));
+    return !starterTypes.has(cardKey(c)) && c.inRewardPool !== false;
   });
 }
 
