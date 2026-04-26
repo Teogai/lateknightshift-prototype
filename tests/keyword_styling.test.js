@@ -34,4 +34,26 @@ describe('atomic and push keyword styling', () => {
     
     expect(atomicKeyword).toBeDefined();
   });
+
+  test('multi-word knight_power keyword is parsed with correct class and color', () => {
+    const card = { name: 'Knight Power', type: 'action', desc: 'Apply {knight power}: can move like a {knight}. Lasts 1 move.' };
+    const el = makeCardEl(card);
+    const keywords = el.querySelectorAll('.keyword');
+    
+    const knightPowerKeyword = Array.from(keywords).find(k => k.textContent === 'knight power');
+    expect(knightPowerKeyword).toBeDefined();
+    expect(knightPowerKeyword.classList.contains('keyword-knight_power')).toBe(true);
+    expect(knightPowerKeyword.style.color).not.toBe(''); // Color is applied inline
+  });
+
+  test('multi-word bishop_power keyword is parsed with correct class and color', () => {
+    const card = { name: 'Bishop Power', type: 'action', desc: 'Apply {bishop power}: can move like a {bishop}. Lasts 1 move.' };
+    const el = makeCardEl(card);
+    const keywords = el.querySelectorAll('.keyword');
+    
+    const bishopPowerKeyword = Array.from(keywords).find(k => k.textContent === 'bishop power');
+    expect(bishopPowerKeyword).toBeDefined();
+    expect(bishopPowerKeyword.classList.contains('keyword-bishop_power')).toBe(true);
+    expect(bishopPowerKeyword.style.color).not.toBe('');
+  });
 });

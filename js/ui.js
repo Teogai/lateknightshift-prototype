@@ -51,6 +51,11 @@ const KEYWORD_REGISTRY = {
   uncapturable: { color: '#aaaaaa', desc: 'Uncapturable: cannot be taken.' },
   push:       { color: '#ff8844', desc: 'Push: after moving, push all adjacent pieces 1 square away.' },
   atomic:     { color: '#ff4444', desc: 'Atomic: piece explodes in a 3x3 area on capture.' },
+  knight_power: { color: '#66cc66', desc: 'Knight Power: can move like a knight for 1 move.' },
+  bishop_power: { color: '#aa66dd', desc: 'Bishop Power: can move like a bishop for 1 move.' },
+  rook_power:   { color: '#dd4444', desc: 'Rook Power: can move like a rook for 1 move.' },
+  queen_power:  { color: '#ffcc00', desc: 'Queen Power: can move like a queen for 1 move.' },
+  king_power:   { color: '#ffaa00', desc: 'King Power: can move like a king for 1 move.' },
 };
 
 export const STATUS_BADGE_COLORS = {
@@ -99,18 +104,19 @@ function _hideTooltip() {
 let _tooltipTarget = null;
 function _parseCardDesc(desc, container) {
   if (!desc) return;
-  const regex = /\{(\w+)\}/g;
+  const regex = /\{([\w ]+)\}/g;
   let lastIdx = 0;
   let match;
   while ((match = regex.exec(desc)) !== null) {
     const before = desc.slice(lastIdx, match.index);
     if (before) container.appendChild(document.createTextNode(before));
-    const key = match[1].toLowerCase();
+    const rawKey = match[1];
+    const key = rawKey.toLowerCase().replace(/\s+/g, '_');
     const info = KEYWORD_REGISTRY[key];
     const span = document.createElement('span');
     span.className = 'keyword' + (info ? ` keyword-${key}` : '');
     if (info) span.style.color = info.color;
-    span.textContent = key;
+    span.textContent = rawKey.toLowerCase();
     if (info) {
       span.addEventListener('mouseenter', () => {
         _tooltipTarget = span;
