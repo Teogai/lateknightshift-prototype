@@ -1,16 +1,20 @@
-import { startGame, handleRedraw, handlePromotionChoice, handleUndo, handleDebugMove, handleDebugWin, initPileButtons, hidePieceDetail, restoreGameState, gameState } from './ui.js';
+import { startGame, handleRedraw, handlePromotionChoice, handleUndo, handleDebugMove, handleDebugWin, initPileButtons, hidePieceDetail, restoreGameState, gameState, handleNewGame, handleContinue } from './ui.js';
 import { GameState } from './battle_state.js';
 
-// Restore battle state if page was refreshed after sleep
+// Check if continue is available
 try {
-  const saved = GameState.loadSession();
-  if (saved) {
-    restoreGameState(saved);
+  const hasSave = typeof sessionStorage !== 'undefined' && 
+                  sessionStorage.getItem('lks_run_state') !== null;
+  const continueBtn = document.getElementById('btn-continue');
+  if (continueBtn) {
+    continueBtn.disabled = !hasSave;
   }
 } catch (e) {
-  console.log('[main] no saved state to restore');
+  // ignore
 }
 
+document.getElementById('btn-new-game').addEventListener('click', handleNewGame);
+document.getElementById('btn-continue').addEventListener('click', handleContinue);
 document.getElementById('btn-knight').addEventListener('click', () => startGame('knight'));
 document.getElementById('btn-redraw').addEventListener('click', handleRedraw);
 document.getElementById('btn-undo').addEventListener('click', handleUndo);

@@ -157,7 +157,7 @@ if (typeof document !== 'undefined') {
   });
 }
 
-const ALL_SCREENS = ['screen-select', 'screen-map', 'screen-game', 'screen-room', 'screen-defeat', 'screen-victory', 'screen-complete'];
+const ALL_SCREENS = ['screen-title', 'screen-select', 'screen-map', 'screen-game', 'screen-room', 'screen-defeat', 'screen-victory', 'screen-complete'];
 
 export let gameState = null;
 export let runState = null;
@@ -1917,6 +1917,41 @@ export function restoreGameState(savedState) {
   showScreen('screen-game');
   renderSidebar(currentEnemyKey, 'monster');
   render();
+}
+
+export function handleNewGame() {
+  showScreen('screen-select');
+}
+
+export function handleContinue() {
+  try {
+    const savedRun = RunState.loadSession();
+    const savedBattle = GameState.loadSession();
+
+    if (!savedRun) {
+      showScreen('screen-select');
+      return;
+    }
+
+    runState = savedRun;
+
+    if (savedBattle) {
+      gameState = savedBattle;
+      gameState.runState = runState;
+      currentEnemyKey = gameState._enemyKey;
+      resetUiState();
+      showScreen('screen-game');
+      renderSidebar(currentEnemyKey, 'monster');
+      render();
+    } else {
+      // No battle saved — show map
+      showScreen('screen-map');
+      renderPathTrack(runState, handleNodeChosen);
+    }
+  } catch (e) {
+    console.error('[continue] failed to restore:', e);
+    showScreen('screen-select');
+  }
 }
 
 export function startGame(character) {
