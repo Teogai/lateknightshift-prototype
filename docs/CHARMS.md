@@ -50,5 +50,5 @@ Charms enhance cards. Obtained from elite battles.
 - Applied to piece cards: summoned piece gets `data.atomic = true`
 - On capture by atomic piece: 3x3 explosion at destination after move
 - On capture of atomic piece: 3x3 explosion at destination before removal
-- Explosion destroys ALL pieces including kings
+- Explosion destroys ALL pieces in the 3x3 area including the piece that triggered it
 - Tracked in both player moves (`checkAndResolveAtomic`) and enemy moves (`_applyEnemyAction`)

@@ -194,7 +194,7 @@ export function resolvePush(board, centerSq, runState = null) {
 }
 
 /** Resolve atomic explosion: destroy all pieces in 3x3 area centered on sq,
- *  EXCEPT the piece that just moved there (at centerSq).
+ *  INCLUDING the piece that just moved there (at centerSq).
  */
 function resolveAtomicExplosion(board, centerSq) {
   const [cr, cc] = sqToRC(centerSq);
@@ -204,7 +204,6 @@ function resolveAtomicExplosion(board, centerSq) {
       const r = cr + dr, c = cc + dc;
       if (!inBounds(r, c)) continue;
       const sq = rcToSq(r, c);
-      if (sq === centerSq) continue; // Don't destroy the piece that just moved here
       const piece = get(board, sq);
       if (piece) {
         destroyed.push({ sq, piece });

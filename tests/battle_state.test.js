@@ -971,13 +971,28 @@ describe('new card play methods', () => {
       { sq: 'e5', type: 'pawn', owner: 'enemy' },
       { sq: 'd5', type: 'pawn', owner: 'enemy' },
     ]);
-    // d4 pawn captures e5 pawn — atomic should destroy d5 too
+    // d4 pawn captures e5 pawn — atomic should destroy d5 and the moved piece too
     const result = state.playMoveCard(0, 'd4', 'e5');
     expect(result.error).toBeUndefined();
     const board = state.toDict().board;
-    expect(board['e5'].type).toBe('pawn'); // our pawn moved there
-    expect(board['e5'].color).toBe('white');
+    expect(board['e5']).toBeUndefined(); // moved piece destroyed by atomic
     expect(board['d5']).toBeUndefined(); // destroyed by atomic
+  });
+
+  test('playMoveCard with atomic_move destroys the moved piece on capture', () => {
+    const state = makeStateWithCards([
+      { name: 'Atomic Move', type: 'move', moveVariant: 'atomic' }
+    ], [
+      { sq: 'e1', type: 'king', owner: 'player' },
+      { sq: 'e8', type: 'king', owner: 'enemy' },
+      { sq: 'd4', type: 'knight', owner: 'player' },
+      { sq: 'f5', type: 'pawn', owner: 'enemy' },
+    ]);
+    // d4 knight captures f5 pawn — atomic should destroy the knight too
+    const result = state.playMoveCard(0, 'd4', 'f5');
+    expect(result.error).toBeUndefined();
+    const board = state.toDict().board;
+    expect(board['f5']).toBeUndefined(); // moved piece destroyed by atomic
   });
 
   test('playMoveCard with atomic_move does not explode on non-capture', () => {
