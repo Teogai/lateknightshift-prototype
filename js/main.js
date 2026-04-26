@@ -1,4 +1,15 @@
-import { startGame, handleRedraw, handlePromotionChoice, handleUndo, handleDebugMove, handleDebugWin, initPileButtons, hidePieceDetail } from './ui.js';
+import { startGame, handleRedraw, handlePromotionChoice, handleUndo, handleDebugMove, handleDebugWin, initPileButtons, hidePieceDetail, restoreGameState, gameState } from './ui.js';
+import { GameState } from './battle_state.js';
+
+// Restore battle state if page was refreshed after sleep
+try {
+  const saved = GameState.loadSession();
+  if (saved) {
+    restoreGameState(saved);
+  }
+} catch (e) {
+  console.log('[main] no saved state to restore');
+}
 
 document.getElementById('btn-knight').addEventListener('click', () => startGame('knight'));
 document.getElementById('btn-redraw').addEventListener('click', handleRedraw);
@@ -16,4 +27,16 @@ document.getElementById('piece-detail-close').addEventListener('click', hidePiec
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') hidePieceDetail();
 });
+
+// Save battle state before tab is discarded
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    try {
+      if (gameState?.saveSession) gameState.saveSession();
+    } catch (e) {
+      // ignore
+    }
+  }
+});
+
 initPileButtons();

@@ -261,6 +261,7 @@ export class GameState {
       set(this._state.board, sq, makePiece(type, owner || 'enemy'));
     }
 
+    this._enemyKey = enemy;
     this._enemyAI = enemyDef.createAI();
     this._personality = enemyDef.personality;
     this._enemyAiType = enemyDef.aiType;
@@ -1326,6 +1327,55 @@ export class GameState {
     const { pendingMoves, warnNext, error } = this.startEnemyTurn();
     if (error) return { error };
     return this.finishEnemyTurn(pendingMoves, warnNext);
+  }
+
+  // ─── serialization ─────────────────────────────────────────────────────────
+
+  toJSON() {
+    return {
+      _state: this._state.toJSON(),
+      character: this.character,
+      enemy: this._enemyKey,
+      turn: this.turn,
+      redrawCountdown: this.redrawCountdown,
+      enemyWillDoubleMove: this.enemyWillDoubleMove,
+      enemyPhase: this.enemyPhase,
+      lastMove: { ...this.lastMove },
+      _blitzPieceSq: this._blitzPieceSq,
+      _blitzCardIndex: this._blitzCardIndex,
+      _moveTogetherFirstPieceSq: this._moveTogetherFirstPieceSq,
+      _moveTogetherCardIndex: this._moveTogetherCardIndex,
+    };
+  }
+
+  static fromJSON(json) {
+    const state = new GameState(json.character, json.enemy || 'pawn_pusher');
+    state._state = Engine2State.fromJSON(json._state);
+    state.turn = json.turn ?? 'player';
+    state.redrawCountdown = json.redrawCountdown ?? REDRAW_COUNTDOWN_START;
+    state.enemyWillDoubleMove = json.enemyWillDoubleMove ?? false;
+    state.enemyPhase = json.enemyPhase ?? 'normal';
+    state.lastMove = json.lastMove ?? { from: null, to: null };
+    state._blitzPieceSq = json._blitzPieceSq ?? null;
+    state._blitzCardIndex = json._blitzCardIndex ?? null;
+    state._moveTogetherFirstPieceSq = json._moveTogetherFirstPieceSq ?? null;
+    state._moveTogetherCardIndex = json._moveTogetherCardIndex ?? null;
+    return state;
+  }
+
+  saveSession() {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem('lks_battle_state', JSON.stringify(this.toJSON()));
+    }
+  }
+
+  static loadSession() {
+    if (typeof sessionStorage === 'undefined') return null;
+    const raw = sessionStorage.getItem('lks_battle_state');
+    if (!raw) return null;
+    const json = JSON.parse(raw);
+    sessionStorage.removeItem('lks_battle_state');
+    return GameState.fromJSON(json);
   }
 }
 

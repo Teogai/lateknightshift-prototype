@@ -89,6 +89,12 @@
 - Vanilla JS ES modules — no React, no bundler output, no chess.js in game code
 - No backend server, no HTTP
 
+## State persistence
+- `js/battle_state.js` — `GameState.toJSON()` / `GameState.fromJSON()` / `saveSession()` / `loadSession()` — persists battle to `sessionStorage`
+- `js/main.js` — restores saved battle on page load; saves on `visibilitychange` to `hidden`
+- `sw.js` — minimal Service Worker caches app shell; reduces Chrome Android tab discard rate
+- See `tests/state_persistence.test.js`
+
 ## Key design notes
 - engine2 uses owner: 'player'|'enemy'|'neutral' (not chess.js color 'w'|'b')
 - King-capture is the win condition (not checkmate); movegen includes pseudo-legal king-capture targets

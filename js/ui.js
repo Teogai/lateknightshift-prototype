@@ -1909,6 +1909,16 @@ function renderSquarePickerForPiece(pieceType, onPlaced) {
   content.appendChild(confirmBtn);
 }
 
+export function restoreGameState(savedState) {
+  gameState = savedState;
+  currentEnemyKey = savedState._enemyKey;
+  runState = savedState.runState;
+  resetUiState();
+  showScreen('screen-game');
+  renderSidebar(currentEnemyKey, 'monster');
+  render();
+}
+
 export function startGame(character) {
   document.getElementById('select-error').textContent = '';
   try {
